@@ -3,10 +3,11 @@ A high-performance implementation of some core SETI algorithms.
 
 ## Installation
 
-Only Ubuntu is supported. You need to install Boost:
+Only Ubuntu is supported. You need to install some dependencies:
 
 ```
 sudo apt-get install libboost-all-dev
+sudo apt-get install libhdf5-dev
 ```
 
 ## Running things

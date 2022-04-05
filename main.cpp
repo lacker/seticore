@@ -55,11 +55,15 @@ int main(int argc, char **argv) {
     return 1;
   }
   int num_coarse_channels = dimensions[2] / coarse_channel_size;
-
+  int num_timesteps = dimensions[0];
+  
   // Loop through the coarse channels
   for (int coarse_channel = 0; coarse_channel < num_coarse_channels; ++coarse_channel) {
-    vector<float> data;
-    dataset.select(
+    vector<vector<vector<float> > > data;
+    dataset.select({0, 0, coarse_channel * coarse_channel_size},
+		   {num_timesteps, 1, coarse_channel_size}).read(data);
+
+    cout << "sample " << coarse_channel << ": " << data[13][0][37] << endl;
   }
   return 0;
 }
