@@ -1,4 +1,4 @@
 all: seticore
 
 seticore:
-	g++ -o bin/seticore hello.cpp
+	g++ -o bin/seticore main.cpp
