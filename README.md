@@ -3,7 +3,7 @@ A high-performance implementation of some core SETI algorithms.
 
 ## Installation
 
-I've been developing on Ubuntu 18. You need to install Boost:
+The build is using CMake. I've been developing on Ubuntu 18. You need to install Boost:
 
 ```
 sudo apt-get install libboost-all-dev
@@ -36,11 +36,13 @@ way I got it working.
 
 ## Checking that it works on your machine
 
-To check if `hdf5` is installed okay:
+To check if your installation is okay:
 
 ```
 ./make.sh
 ```
+
+The plugin installation won't be validated until runtime.
 
 Then grab a Green Bank data file from
 
