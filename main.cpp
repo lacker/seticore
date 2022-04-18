@@ -1,3 +1,4 @@
+#include <fmt/core.h>
 #include <iostream>
 
 #include <highfive/H5File.hpp>
@@ -63,7 +64,7 @@ int main(int argc, char **argv) {
     dataset.select({0, 0, coarse_channel * coarse_channel_size},
 		   {num_timesteps, 1, coarse_channel_size}).read(data);
 
-    cout << "sample " << coarse_channel << ": " << data[13][0][37] << endl;
+    cout << "sample " << coarse_channel << fmt::format(": {:.3f}\n", data[13][0][37]);
   }
   return 0;
 }

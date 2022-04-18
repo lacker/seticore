@@ -1,3 +1,6 @@
 [submodule "HighFive"]
 	path = HighFive
 	url = git@github.com:BlueBrain/HighFive.git
+[submodule "fmt"]
+	path = fmt
+	url = https://github.com/fmtlib/fmt
