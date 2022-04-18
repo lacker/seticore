@@ -1,6 +1,9 @@
-#include <fmt/core.h>
+#include <algorithm>
+#include <functional>
 #include <iostream>
+#include <math.h>
 
+#include <fmt/core.h>
 #include <highfive/H5File.hpp>
 
 using namespace std;
@@ -64,7 +67,34 @@ int main(int argc, char **argv) {
     dataset.select({0, 0, coarse_channel * coarse_channel_size},
 		   {num_timesteps, 1, coarse_channel_size}).read(data);
 
-    cout << "sample " << coarse_channel << fmt::format(": {:.3f}\n", data[13][0][37]);
+    // Calculate distribution statistics
+    vector<float> column_sums(coarse_channel_size, 0);
+    for (auto boxed_row : data) {
+      std::transform(column_sums.begin(), column_sums.end(), boxed_row[0].begin(),
+		     column_sums.begin(), std::plus<float>());
+    }
+    std::sort(column_sums.begin(), column_sums.end());
+    int mid = column_sums.size() / 2;
+    float median;
+    if (mid % 2 == 0) {
+      median = column_sums[mid];
+    } else {
+      median = (column_sums[mid - 1] + column_sums[mid]) / 2.0;
+    }
+    // cout << fmt::format("sample {} median: {:.3f}\n", coarse_channel, median);
+
+    // Use the central 90% to calculate standard deviation
+    int begin = ceil(0.05 * column_sums.size());
+    int end = floor(0.95 * column_sums.size()) + 1;
+    float sum = std::accumulate(column_sums.begin() + begin, column_sums.begin() + end, 0.0);
+    float m = sum / (end - begin);
+    float accum = 0.0;
+    std::for_each(column_sums.begin() + begin, column_sums.begin() + end,
+		  [&](const float f) {
+		    accum += (f - m) * (f - m);
+		  });
+    float stdev = sqrt(accum / (end - begin));
+    cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
   }
   return 0;
 }
