@@ -20,10 +20,26 @@ int main(int argc, char **argv) {
   string filename = string(argv[1]);
   cout << "argument is: " << filename << endl;
   HighFive::File file(filename, HighFive::File::ReadOnly);
-
-  // Find the dimensions of the data
   HighFive::DataSet dataset = file.getDataSet("data");
 
+  double foff;
+  auto foff_attr = dataset.getAttribute("foff");
+  string foff_datatype = foff_attr.getDataType().string();
+  if (foff_datatype != "Float64") {
+    cout << "foff is " << foff_datatype << " but we expected Float64" << endl;
+    return 1;
+  }
+  foff_attr.read(&foff);
+  
+  double tsamp;
+  auto tsamp_attr = dataset.getAttribute("tsamp");
+  string tsamp_datatype = tsamp_attr.getDataType().string();
+  if (tsamp_datatype != "Float64") {
+    cout << "tsamp is " << tsamp_datatype << " but we expected Float64" << endl;
+    return 1;
+  }
+  tsamp_attr.read(&tsamp);
+  
   string datatype = dataset.getDataType().string();
   if (datatype != "Float32") {
     cout << "this data is " << datatype << " but we can only handle Float32" << endl;
@@ -60,6 +76,9 @@ int main(int argc, char **argv) {
   }
   int num_coarse_channels = dimensions[2] / coarse_channel_size;
   int num_timesteps = dimensions[0];
+  double obs_length = num_timesteps * tsamp;
+  double drift_rate_resolution = 1e6 * foff / obs_length;
+  cout << fmt::format("drift rate resolution: {:.8f}\n", drift_rate_resolution);
   
   // Loop through the coarse channels
   for (int coarse_channel = 0; coarse_channel < num_coarse_channels; ++coarse_channel) {
@@ -69,12 +88,16 @@ int main(int argc, char **argv) {
 
     // Calculate distribution statistics
     vector<float> column_sums(coarse_channel_size, 0);
+    int mid = coarse_channel_size / 2;
     for (auto boxed_row : data) {
-      std::transform(column_sums.begin(), column_sums.end(), boxed_row[0].begin(),
+      auto row = boxed_row[0];
+      std::transform(column_sums.begin(), column_sums.end(), row.begin(),
 		     column_sums.begin(), std::plus<float>());
+
+      // Remove the DC spike by making it the average of the adjacent columns
+      row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
     std::sort(column_sums.begin(), column_sums.end());
-    int mid = column_sums.size() / 2;
     float median;
     if (mid % 2 == 0) {
       median = column_sums[mid];
@@ -95,6 +118,9 @@ int main(int argc, char **argv) {
 		  });
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
+
+    float max_drift = 10.0;
+    
   }
   return 0;
 }
