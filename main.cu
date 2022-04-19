@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cuda.h>
 #include <functional>
 #include <iostream>
 #include <math.h>
@@ -77,14 +78,26 @@ int main(int argc, char **argv) {
   int num_coarse_channels = dimensions[2] / coarse_channel_size;
   int num_timesteps = dimensions[0];
   double obs_length = num_timesteps * tsamp;
-  double drift_rate_resolution = 1e6 * foff / obs_length;
-  cout << fmt::format("drift rate resolution: {:.8f}\n", drift_rate_resolution);
+  double drift_rate_resolution = 1e6 * abs(foff) / obs_length;
+  double max_drift = 10.0;
+  double block_drift = drift_rate_resolution * num_timesteps;
+  
+  // We search through drift blocks in the range [-max_drift_block, max_drift_block].
+  // Drift block i represents a search for slopes in the ranges
+  // [i, i+1] and [-(i+1), -i]
+  // when measured in horizontal pixels per vertical pixel.
+  int max_drift_block = floor(max_drift / (drift_rate_resolution * num_timesteps));
+  
+  cout << fmt::format("block_drift: {:.8f}\n", block_drift);
+  cout << fmt::format("max_drift_block: {}\n", max_drift_block);
   
   // Loop through the coarse channels
+  float *input;
+  cudaMallocManaged(&input, num_timesteps * coarse_channel_size * sizeof(float));
   for (int coarse_channel = 0; coarse_channel < num_coarse_channels; ++coarse_channel) {
     vector<vector<vector<float> > > data;
-    dataset.select({0, 0, coarse_channel * coarse_channel_size},
-		   {num_timesteps, 1, coarse_channel_size}).read(data);
+    dataset.select({0, 0, unsigned(coarse_channel * coarse_channel_size)},
+		   {unsigned(num_timesteps), 1, unsigned(coarse_channel_size)}).read(data);
 
     // Calculate distribution statistics
     vector<float> column_sums(coarse_channel_size, 0);
@@ -119,8 +132,7 @@ int main(int argc, char **argv) {
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
 
-    float max_drift = 10.0;
-    
+    // Transfer data to device
   }
   return 0;
 }
