@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 
   double obs_length = file.num_timesteps * file.tsamp;
   double drift_rate_resolution = 1e6 * abs(file.foff) / obs_length;
-  double max_drift = 10.0;
+  double max_drift = 0.4;
   double block_drift = drift_rate_resolution * file.num_timesteps;
   
   // We search through drift blocks in the range [-max_drift_block, max_drift_block].
