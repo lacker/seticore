@@ -122,6 +122,47 @@ public:
 };
 
 
+// Runs one round of the Taylor tree algorithm, calculating the sums
+// of paths of length `set_size` from the sums of paths of length `set_size / 2`.
+//
+// A contains the input data in row-major order
+// B will contain the output data in row-major order
+// This does not overwrite the elements of B that do not correspond to
+// a valid sum, so they may contain garbage data from previous
+// runs. The caller is responsible for knowing which ranges are valid.
+// TODO: describe which ranges that is more exactly
+//
+// kmin is the first valid frequency index
+// kmax is one past the last valid frequency index
+// n_time is the number of timesteps
+// n_freq is the number of frequency bins
+// So (n_time * n_freq) is the expected size of A and B.
+// 
+// Based on the original kernel by Franklin Antonio, available at
+//   https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
+// which also contains performance testing information. Be sure to
+// read that if you are interested in trying to speed this up.
+__global__ void taylorTree(const float* A, float* B, int kmin, int kmax,
+			   int set_size, int n_time, int n_freq) {
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int k = kmin + tid;
+  bool worker = (k >= kmin) && (k < kmax) && set_size <= n_time;
+  if (!worker) {
+    return;
+  }
+  for (int j = 0; j < n_time; j += set_size) {
+    for (int j0 = set_size - 1; j0 >= 0; j0--) {
+      int j1 = j0 / 2;
+      int j2 = j1 + set_size / 2;
+      int j3 = (j0 + 1) / 2;
+      if (k + j3 < kmax) {
+        B[(j + j0) * n_freq + k] = A[(j + j1) * n_freq + k] + A[(j + j2) * n_freq + k + j3];
+      }
+    }
+  }
+}
+
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     cerr << "usage: seticore <h5file>" << endl;
@@ -146,11 +187,15 @@ int main(int argc, char **argv) {
   
   cout << fmt::format("block_drift: {:.8f}\n", block_drift);
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
-  
-  // Load one coarse channel at a time from the hdf5
-  float* input;
-  cudaMallocManaged(&input, file.sizeOfCoarseChannel());
 
+  // We use three unified memory arrays, each the size of one coarse channel. One array to
+  // read the source data, and two buffers to use for Taylor tree calculations.
+  float *input, *buffer1, *buffer2;
+  cudaMallocManaged(&input, file.sizeOfCoarseChannel());
+  cudaMallocManaged(&buffer1, file.sizeOfCoarseChannel());
+  cudaMallocManaged(&buffer2, file.sizeOfCoarseChannel());
+
+  // Load and process one coarse channel at a time from the hdf5  
   for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
     file.loadCoarseChannel(coarse_channel, input);
 
@@ -188,6 +233,16 @@ int main(int argc, char **argv) {
 		  });
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
+
+    // Run the Taylor tree algorithm.
+    // The dataflow among the buffers looks like:
+    // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
+    // We use the aliases bufferA and bufferB to make this simpler.
+    // In each pass through the upcoming loop, we are reading from
+    // bufferA and writing to bufferB.
+    float* bufferA = input;
+    float* bufferB = buffer1;
+    
   }
   return 0;
 }
