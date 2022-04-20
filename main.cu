@@ -1,15 +1,137 @@
 #include <algorithm>
 #include <cuda.h>
 #include <functional>
+#include "hdf5.h"
 #include <iostream>
 #include <math.h>
+#include <numeric>
+#include <vector>
 
 #include <fmt/core.h>
-#include <highfive/H5File.hpp>
 
 using namespace std;
 
 static_assert(sizeof(float) == 4, "require 32-bit floats");
+
+
+class H5File {
+public:
+  hid_t file, dataset, dataspace;
+  double tsamp, foff;
+  int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
+  
+  H5File(const string& filename) {
+    file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+    if (file == H5I_INVALID_HID) {
+      cerr << "could not open file: " << filename << endl;
+      exit(1);
+    }
+    dataset = H5Dopen2(file, "data", H5P_DEFAULT);
+    if (dataset == H5I_INVALID_HID) {
+      cerr << "could not open dataset\n";
+      exit(1);
+    }
+    if (!H5Tequal(H5Dget_type(dataset), H5T_NATIVE_FLOAT)) {
+      cerr << "dataset is not float\n";
+      exit(1);
+    }
+    
+    this->getDoubleAttr("tsamp", &tsamp);
+    this->getDoubleAttr("foff", &foff);
+
+    dataspace = H5Dget_space(dataset);
+    if (dataspace == H5I_INVALID_HID) {
+      cerr << "could not open dataspace\n";
+      exit(1);
+    }
+    if (H5Sget_simple_extent_ndims(dataspace) != 3) {
+      cerr << "data is not three-dimensional\n";
+      exit(1);
+    }
+    hsize_t dims[3];
+    H5Sget_simple_extent_dims(dataspace, dims, NULL);
+    if (dims[1] != 1) {
+      cerr << "unexpected second dimension: " << dims[1] << endl;
+      exit(1);
+    }
+    num_timesteps = dims[0];
+    num_freqs = dims[2];
+    H5Sclose(dataspace);
+
+    // Guess the coarse channel size
+    if (num_timesteps == 16 && num_freqs % 1048576 == 0) {
+      // Looks like Green Bank data
+      coarse_channel_size = 1048576;
+    } else {
+      cerr << "unrecognized data dimensions: " << num_timesteps << " x " << num_freqs << endl;
+      exit(1);
+    }
+    num_coarse_channels = num_freqs / coarse_channel_size;
+  }
+
+  void getDoubleAttr(const string& name, double* output) {
+    auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
+    if (attr == H5I_INVALID_HID) {
+      cerr << "could not access attr " << name << endl;
+      exit(1);
+    }
+    if (H5Aread(attr, H5T_NATIVE_DOUBLE, output) < 0) {
+      cerr << "attr " << name << " could not be read as double\n";
+      exit(1);
+    }
+    H5Aclose(attr);
+  }
+
+  int sizeOfCoarseChannel() {
+    return num_timesteps * coarse_channel_size * sizeof(float);
+  }
+
+  // Loads the data in row-major order.
+  // output should have size sizeOfCoarseChannel
+  void loadCoarseChannel(int i, float* output) {
+    // Define a memory dataspace
+    // The memory dataspace is 1-dimensional, whereas the original dataspace is
+    // 3-dimensional, but according to the HDF5 documentation
+    // this outputs data in row-major order as we desire.
+    const hsize_t single_dim[1] = {unsigned(num_timesteps * coarse_channel_size)};
+    hid_t memspace = H5Screate_simple(1, single_dim, NULL);
+    if (memspace == H5I_INVALID_HID) {
+      cerr << "failed to create memspace\n";
+      exit(1);
+    }
+
+    // Select an in-memory hyperslab that contains the whole dataspace
+    if (H5Sselect_hyperslab(memspace, H5S_SELECT_SET, {0}, NULL, single_dim, NULL) < 0) {
+      cerr << "failed to select memory hyperslab\n";
+      exit(1);
+    }
+
+    // Select a hyperslab containing just the coarse channel we want
+    const hsize_t offset[3] = {0, 0, unsigned(i * coarse_channel_size)};
+    const hsize_t coarse_channel_dim[3] = {unsigned(num_timesteps), 1,
+					   unsigned(coarse_channel_size)};
+    if (H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+			    offset, NULL, coarse_channel_dim, NULL) < 0) {
+      cerr << "failed to select coarse channel hyperslab\n";
+      exit(1);
+    }
+
+    // Copy from dataspace to memspace
+    if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, output) < 0) {
+      cerr << "h5 read failed\n";
+      exit(1);
+    }
+    
+    H5Fclose(memspace);
+  }
+  
+  ~H5File() {
+    H5Fclose(dataspace);
+    H5Fclose(dataset);
+    H5Fclose(file);
+  }
+};
+
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -20,95 +142,39 @@ int main(int argc, char **argv) {
   // Open the file
   string filename = string(argv[1]);
   cout << "argument is: " << filename << endl;
-  HighFive::File file(filename, HighFive::File::ReadOnly);
-  HighFive::DataSet dataset = file.getDataSet("data");
+  H5File file(filename);
 
-  double foff;
-  auto foff_attr = dataset.getAttribute("foff");
-  string foff_datatype = foff_attr.getDataType().string();
-  if (foff_datatype != "Float64") {
-    cout << "foff is " << foff_datatype << " but we expected Float64" << endl;
-    return 1;
-  }
-  foff_attr.read(&foff);
-  
-  double tsamp;
-  auto tsamp_attr = dataset.getAttribute("tsamp");
-  string tsamp_datatype = tsamp_attr.getDataType().string();
-  if (tsamp_datatype != "Float64") {
-    cout << "tsamp is " << tsamp_datatype << " but we expected Float64" << endl;
-    return 1;
-  }
-  tsamp_attr.read(&tsamp);
-  
-  string datatype = dataset.getDataType().string();
-  if (datatype != "Float32") {
-    cout << "this data is " << datatype << " but we can only handle Float32" << endl;
-    return 1;
-  }
-  auto dimensions = dataset.getDimensions();
-  for (int i = 0; i < dimensions.size(); ++i) {
-    if (i == 0) {
-      cout << "hdf5 data dimensions = ";
-    } else {
-      cout << " x ";
-    }
-    cout << dimensions[i];
-  }
-  cout << endl;
-
-  if (dimensions.size() != 3) {
-    cout << "expected three data dimensions" << endl;
-    return 1;
-  }
-
-  if (dimensions[1] != 1) {
-    cout << "unexpected second dimension: " << dimensions[1] << endl;
-  }
-
-  // Guess the coarse channel size
-  int coarse_channel_size;
-  if (dimensions[0] == 16 && dimensions[2] % 1048576 == 0) {
-    // Looks like Green Bank data
-    coarse_channel_size = 1048576;
-  } else {
-    cout << "unrecognized data dimensions" << endl;
-    return 1;
-  }
-  int num_coarse_channels = dimensions[2] / coarse_channel_size;
-  int num_timesteps = dimensions[0];
-  double obs_length = num_timesteps * tsamp;
-  double drift_rate_resolution = 1e6 * abs(foff) / obs_length;
+  double obs_length = file.num_timesteps * file.tsamp;
+  double drift_rate_resolution = 1e6 * abs(file.foff) / obs_length;
   double max_drift = 10.0;
-  double block_drift = drift_rate_resolution * num_timesteps;
+  double block_drift = drift_rate_resolution * file.num_timesteps;
   
   // We search through drift blocks in the range [-max_drift_block, max_drift_block].
   // Drift block i represents a search for slopes in the ranges
   // [i, i+1] and [-(i+1), -i]
   // when measured in horizontal pixels per vertical pixel.
-  int max_drift_block = floor(max_drift / (drift_rate_resolution * num_timesteps));
+  int max_drift_block = floor(max_drift / (drift_rate_resolution * file.num_timesteps));
   
   cout << fmt::format("block_drift: {:.8f}\n", block_drift);
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
   
-  // Loop through the coarse channels
+  // Load one coarse channel at a time from disk into unified memory
   float *input;
-  cudaMallocManaged(&input, num_timesteps * coarse_channel_size * sizeof(float));
-  for (int coarse_channel = 0; coarse_channel < num_coarse_channels; ++coarse_channel) {
-    vector<vector<vector<float> > > data;
-    dataset.select({0, 0, unsigned(coarse_channel * coarse_channel_size)},
-		   {unsigned(num_timesteps), 1, unsigned(coarse_channel_size)}).read(data);
+  cudaMallocManaged(&input, file.sizeOfCoarseChannel());
+
+  for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
+    file.loadCoarseChannel(coarse_channel, input);
 
     // Calculate distribution statistics
-    vector<float> column_sums(coarse_channel_size, 0);
-    int mid = coarse_channel_size / 2;
-    for (auto boxed_row : data) {
-      auto row = boxed_row[0];
-      std::transform(column_sums.begin(), column_sums.end(), row.begin(),
+    vector<float> column_sums(file.coarse_channel_size, 0);
+    int mid = file.coarse_channel_size / 2;
+    for (int row = 0; row < file.num_timesteps; ++row) {
+      std::transform(column_sums.begin(), column_sums.end(),
+		     input + row * file.coarse_channel_size,
 		     column_sums.begin(), std::plus<float>());
 
-      // Remove the DC spike by making it the average of the adjacent columns
-      row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
+      // XXX Remove the DC spike by making it the average of the adjacent columns
+      // row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
     std::sort(column_sums.begin(), column_sums.end());
     float median;
@@ -132,7 +198,7 @@ int main(int argc, char **argv) {
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
 
-    // Transfer data to device
+    // XXX Transfer data to device
   }
   return 0;
 }
