@@ -148,24 +148,24 @@ int main(int argc, char **argv) {
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
   
   // Load one coarse channel at a time from the hdf5
-  float* input = (float*) malloc(file.sizeOfCoarseChannel());
-  // cudaMallocManaged(&input, file.sizeOfCoarseChannel());
+  float* input;
+  cudaMallocManaged(&input, file.sizeOfCoarseChannel());
 
   for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
     file.loadCoarseChannel(coarse_channel, input);
 
     cout << "loaded coarse channel " << coarse_channel << endl;
-    
+
     // Calculate distribution statistics
     vector<float> column_sums(file.coarse_channel_size, 0);
     int mid = file.coarse_channel_size / 2;
-    for (int row = 0; row < file.num_timesteps; ++row) {
-      std::transform(column_sums.begin(), column_sums.end(),
-		     input + row * file.coarse_channel_size,
+    for (int row_index = 0; row_index < file.num_timesteps; ++row_index) {
+      float* row = input + row_index * file.coarse_channel_size;
+      std::transform(column_sums.begin(), column_sums.end(), row,
 		     column_sums.begin(), std::plus<float>());
 
-      // XXX Remove the DC spike by making it the average of the adjacent columns
-      // row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
+      // Remove the DC spike by making it the average of the adjacent columns
+      row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
     std::sort(column_sums.begin(), column_sums.end());
     float median;
@@ -188,8 +188,6 @@ int main(int argc, char **argv) {
 		  });
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
-
-    // XXX Transfer data to device
   }
   return 0;
 }
