@@ -101,7 +101,8 @@ public:
     }
 
     // Select an in-memory hyperslab that contains the whole dataspace
-    if (H5Sselect_hyperslab(memspace, H5S_SELECT_SET, {0}, NULL, single_dim, NULL) < 0) {
+    const hsize_t zero[1] = {0};
+    if (H5Sselect_hyperslab(memspace, H5S_SELECT_SET, zero, NULL, single_dim, NULL) < 0) {
       cerr << "failed to select memory hyperslab\n";
       exit(1);
     }
