@@ -56,7 +56,6 @@ public:
     }
     num_timesteps = dims[0];
     num_freqs = dims[2];
-    H5Sclose(dataspace);
 
     // Guess the coarse channel size
     if (num_timesteps == 16 && num_freqs % 1048576 == 0) {
@@ -89,24 +88,6 @@ public:
   // Loads the data in row-major order.
   // output should have size sizeOfCoarseChannel
   void loadCoarseChannel(int i, float* output) {
-    // Define a memory dataspace
-    // The memory dataspace is 1-dimensional, whereas the original dataspace is
-    // 3-dimensional, but according to the HDF5 documentation
-    // this outputs data in row-major order as we desire.
-    const hsize_t single_dim[1] = {unsigned(num_timesteps * coarse_channel_size)};
-    hid_t memspace = H5Screate_simple(1, single_dim, NULL);
-    if (memspace == H5I_INVALID_HID) {
-      cerr << "failed to create memspace\n";
-      exit(1);
-    }
-
-    // Select an in-memory hyperslab that contains the whole dataspace
-    const hsize_t zero[1] = {0};
-    if (H5Sselect_hyperslab(memspace, H5S_SELECT_SET, zero, NULL, single_dim, NULL) < 0) {
-      cerr << "failed to select memory hyperslab\n";
-      exit(1);
-    }
-
     // Select a hyperslab containing just the coarse channel we want
     const hsize_t offset[3] = {0, 0, unsigned(i * coarse_channel_size)};
     const hsize_t coarse_channel_dim[3] = {unsigned(num_timesteps), 1,
@@ -117,18 +98,25 @@ public:
       exit(1);
     }
 
+    // Define a memory dataspace
+    hid_t memspace = H5Screate_simple(3, coarse_channel_dim, NULL);
+    if (memspace == H5I_INVALID_HID) {
+      cerr << "failed to create memspace\n";
+      exit(1);
+    }
+    
     // Copy from dataspace to memspace
     if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, output) < 0) {
       cerr << "h5 read failed\n";
       exit(1);
     }
     
-    H5Fclose(memspace);
+    H5Sclose(memspace);
   }
   
   ~H5File() {
-    H5Fclose(dataspace);
-    H5Fclose(dataset);
+    H5Sclose(dataspace);
+    H5Dclose(dataset);
     H5Fclose(file);
   }
 };
@@ -159,13 +147,15 @@ int main(int argc, char **argv) {
   cout << fmt::format("block_drift: {:.8f}\n", block_drift);
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
   
-  // Load one coarse channel at a time from disk into unified memory
-  float *input;
-  cudaMallocManaged(&input, file.sizeOfCoarseChannel());
+  // Load one coarse channel at a time from the hdf5
+  float* input = (float*) malloc(file.sizeOfCoarseChannel());
+  // cudaMallocManaged(&input, file.sizeOfCoarseChannel());
 
   for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
     file.loadCoarseChannel(coarse_channel, input);
 
+    cout << "loaded coarse channel " << coarse_channel << endl;
+    
     // Calculate distribution statistics
     vector<float> column_sums(file.coarse_channel_size, 0);
     int mid = file.coarse_channel_size / 2;
