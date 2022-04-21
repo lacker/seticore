@@ -121,42 +121,49 @@ public:
   }
 };
 
+/*
+Runs one round of the Taylor tree algorithm, calculating the sums
+of paths of length `path_length`. given 
 
-// Runs one round of the Taylor tree algorithm, calculating the sums
-// of paths of length `set_size` from the sums of paths of length `set_size / 2`.
-//
-// A contains the input data in row-major order
-// B will contain the output data in row-major order
-// This does not overwrite the elements of B that do not correspond to
-// a valid sum, so they may contain garbage data from previous
-// runs. The caller is responsible for knowing which ranges are valid.
-// TODO: describe which ranges that is more exactly
-//
-// kmin is the first valid frequency index
-// kmax is one past the last valid frequency index
-// n_time is the number of timesteps
-// n_freq is the number of frequency bins
-// So (n_time * n_freq) is the expected size of A and B.
-// 
-// Based on the original kernel by Franklin Antonio, available at
-//   https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
-// which also contains performance testing information. Be sure to
-// read that if you are interested in trying to speed this up.
-__global__ void taylorTree(const float* A, float* B, int kmin, int kmax,
-			   int set_size, int n_time, int n_freq) {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
-  int k = kmin + tid;
-  bool worker = (k >= kmin) && (k < kmax) && set_size <= n_time;
+source_buffer contains the sums of paths of length `path_length / 2`
+in row-major order.
+When path_length is 2, these sums are just single elements, so we
+can use the plain data for our base case.
+
+target_buffer will contain the output data in row-major order.
+This does not overwrite the elements of the target buffer that do
+not correspond to a valid sum, so they may contain garbage data from previous
+runs. The caller is responsible for not accessing this garbage
+data.
+
+TODO: describe the precise meaning of the elements of source_buffer
+and target_buffer, as well as which elements are garbage
+
+num_timesteps is the number of timesteps
+num_freqs is the number of frequency bins
+So each buffer holds (num_timesteps * num_freqs) elements.
+ 
+Based on the Taylor kernel by Franklin Antonio, available at
+  https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
+which also contains kernel performance testing information.
+*/
+__global__ void taylorTree(const float* source_buffer, float* target_buffer,
+			   int num_timesteps, int num_freqs, int path_length) {
+
+  int k = blockIdx.x * blockDim.x + threadIdx.x;
+  bool worker = (k >= 0) && (k < num_freqs) && path_length <= num_timesteps;
   if (!worker) {
     return;
   }
-  for (int j = 0; j < n_time; j += set_size) {
-    for (int j0 = set_size - 1; j0 >= 0; j0--) {
+  for (int j = 0; j < num_timesteps; j += path_length) {
+    for (int j0 = path_length - 1; j0 >= 0; j0--) {
       int j1 = j0 / 2;
-      int j2 = j1 + set_size / 2;
+      int j2 = j1 + path_length / 2;
       int j3 = (j0 + 1) / 2;
-      if (k + j3 < kmax) {
-        B[(j + j0) * n_freq + k] = A[(j + j1) * n_freq + k] + A[(j + j2) * n_freq + k + j3];
+      if (k + j3 < num_freqs) {
+        target_buffer[(j + j0) * num_freqs + k] =
+	  source_buffer[(j + j1) * num_freqs + k] +
+	  source_buffer[(j + j2) * num_freqs + k + j3];
       }
     }
   }
@@ -234,15 +241,38 @@ int main(int argc, char **argv) {
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
 
-    // Run the Taylor tree algorithm.
-    // The dataflow among the buffers looks like:
+    // Cuda parameters
+    int block_size = 1024;
+    int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
+
+    // In the Taylor tree algorithm, the dataflow among the buffers looks like:
     // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
-    // We use the aliases bufferA and bufferB to make this simpler.
+    // We use the aliases source_buffer and target_buffer to make this simpler.
     // In each pass through the upcoming loop, we are reading from
-    // bufferA and writing to bufferB.
-    float* bufferA = input;
-    float* bufferB = buffer1;
-    
+    // source_buffer and writing to target_buffer.
+    float* source_buffer = input;
+    float* target_buffer = buffer1;
+
+    // Each pass through the data calculates the sum of paths that are
+    // twice as long as the previous path, until we reach our goal,
+    // which is paths of length num_timesteps.
+    for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
+      // XXX launch the kernel
+
+      // Swap buffer aliases to make the old target the new source
+      if (target_buffer == buffer1) {
+	source_buffer = buffer1;
+	target_buffer = buffer2;
+      } else if (target_buffer == buffer2) {
+	source_buffer = buffer2;
+	target_buffer = buffer1;
+      } else {
+	cerr << "programmer error; control flow should not reach here\n";
+	exit(1);
+      }
+    }
+
+    // The final sums are in source_buffer because we did one last alias-swap
   }
   return 0;
 }
