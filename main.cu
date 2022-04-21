@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
     } else {
       median = (column_sums[mid - 1] + column_sums[mid]) / 2.0;
     }
-    // cout << fmt::format("sample {} median: {:.3f}\n", coarse_channel, median);
+    cout << fmt::format("sample {} median: {:.3f}\n", coarse_channel, median);
 
     // Use the central 90% to calculate standard deviation
     int begin = ceil(0.05 * column_sums.size());
@@ -257,7 +257,9 @@ int main(int argc, char **argv) {
     // twice as long as the previous path, until we reach our goal,
     // which is paths of length num_timesteps.
     for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
-      // XXX launch the kernel
+      taylorTree<<<grid_size, block_size>>>(source_buffer, target_buffer,
+					    file.num_timesteps, file.coarse_channel_size,
+					    path_length);
 
       // Swap buffer aliases to make the old target the new source
       if (target_buffer == buffer1) {
@@ -272,7 +274,21 @@ int main(int argc, char **argv) {
       }
     }
 
+    cudaDeviceSynchronize();
+
     // The final sums are in source_buffer because we did one last alias-swap
+    if (coarse_channel == 0) {
+      for (int k = 0; k < file.num_timesteps; ++k) {
+	cout << fmt::format("k = {}; sums = {:.3f} {:.3f} {:.3f}\n", k,
+			    source_buffer[k * file.coarse_channel_size + 13],
+			    source_buffer[k * file.coarse_channel_size + 37],
+			    source_buffer[k * file.coarse_channel_size + 123456]);
+      }
+    }
+
+    if (coarse_channel > 5) {
+      return 0;
+    }
   }
   return 0;
 }
