@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <assert.h>
 #include <cuda.h>
 #include <functional>
 #include "hdf5.h"
@@ -122,49 +123,120 @@ public:
 };
 
 /*
-Runs one round of the Taylor tree algorithm, calculating the sums
-of paths of length `path_length`. given 
+Kernel to runs one round of the Taylor tree algorithm, calculating the sums
+of paths of length `path_length`.
+Each thread does the calculations for one frequency.
 
-source_buffer contains the sums of paths of length `path_length / 2`
-in row-major order.
-When path_length is 2, these sums are just single elements, so we
-can use the plain data for our base case.
+Apologies if this comment is long, but the Taylor tree algorithm is
+fairly complicated for the number of lines of code it is, so it takes
+a while to explain.
 
-target_buffer will contain the output data in row-major order.
-This does not overwrite the elements of the target buffer that do
-not correspond to a valid sum, so they may contain garbage data from previous
-runs. The caller is responsible for not accessing this garbage
-data.
+The key to understanding this algorithm is to understand the format of
+the buffers, source_buffer and target_buffer.
+source_buffer and target_buffer store the sum along an
+approximately-linear path through the input data. The best way to
+think of them is as three-dimensional arrays, indexed like
 
-TODO: describe the precise meaning of the elements of source_buffer
-and target_buffer, as well as which elements are garbage
+buffer[time_block][path_offset][start_frequency]
 
-num_timesteps is the number of timesteps
-num_freqs is the number of frequency bins
+First, let's focus on the case where the drift block is zero. In this
+case, our paths are drifting rightwards.
+path_offset is the difference between the frequency of the starting
+point of the path and the ending point of the path. It's in the range
+[0, path_length)
+
+start_frequency is the index of the starting frequency, in
+[0, num_freqs)
+
+time_block is a bit weirder. In our recursion, we don't need to keep
+sums for every possible start time. We can cut the number of start
+times in half, every step through the recursion. After n steps of
+recursion, we only need to keep a sum for every 2^n timesteps. So if
+start_time is the index of the starting time, in [0, num_timesteps),
+time_block obeys the relation
+
+time_block * path_length = start_time
+
+time_block thus is in the range
+[0, num_timesteps / path_length)
+
+and each time block represents data for sums over path_length
+different start times.
+
 So each buffer holds (num_timesteps * num_freqs) elements.
- 
-Based on the Taylor kernel by Franklin Antonio, available at
+
+When we read input data, it's normally thought of as a two-dimensional
+array, indexed like
+
+input[time][frequency]
+
+Since we just pass the buffers around as one-dimensional arrays, this
+is essentially equivalent to thinking of it as a three-dimensional
+array in the above format, with path_offset always equal to zero.
+
+When we finish running the Taylor tree algorithm, time_block will
+always be zero. Thus we can think of the final output as a
+two-dimensional array as well, indexed like
+
+output[path_offset][start_frequency]
+
+It's really just for understanding the intervening steps that it's
+better to think of these buffers as being three-dimensional arrays.
+
+TODO: explain drift blocks
+TODO: describe which elements are garbage
+
+This code is based on the original kernel by Franklin Antonio, available at
   https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
 which also contains kernel performance testing information.
 */
 __global__ void taylorTree(const float* source_buffer, float* target_buffer,
 			   int num_timesteps, int num_freqs, int path_length) {
-
-  int k = blockIdx.x * blockDim.x + threadIdx.x;
-  bool worker = (k >= 0) && (k < num_freqs) && path_length <= num_timesteps;
+  assert(path_length <= num_timesteps);
+  int freq = blockIdx.x * blockDim.x + threadIdx.x;
+  bool worker = (freq >= 0) && (freq < num_freqs);
   if (!worker) {
     return;
   }
-  for (int j = 0; j < num_timesteps; j += path_length) {
-    for (int j0 = path_length - 1; j0 >= 0; j0--) {
-      int j1 = j0 / 2;
-      int j2 = j1 + path_length / 2;
-      int j3 = (j0 + 1) / 2;
-      if (k + j3 < num_freqs) {
-        target_buffer[(j + j0) * num_freqs + k] =
-	  source_buffer[(j + j1) * num_freqs + k] +
-	  source_buffer[(j + j2) * num_freqs + k + j3];
+
+  int num_time_blocks = num_timesteps / path_length;
+  for (int time_block = 0; time_block < num_time_blocks; ++time_block) {
+    int j = time_block * path_length;
+
+    for (int path_offset = path_length - 1; path_offset >= 0; path_offset--) {
+
+      // The recursion calculates sums for a target time block based on two
+      // different source time blocks.
+      // Data for block b comes from blocks 2b and 2b+1.
+      // Remember there are twice as many source time blocks, so the
+      // indices are different.
+
+      // The recursion adds up two smaller paths, each with offset (path_offset/2).
+      // When path_offset is odd, we need to shift the second path
+      // over by one, so that the total adds back up to path_offset.
+      // freq_shift thus represents the amount we need to shift the
+      // second path.
+      int half_offset = path_offset / 2;
+      int freq_shift = (path_offset + 1) / 2;
+
+      if (freq + freq_shift >= num_freqs) {
+	// We can't calculate this path sum, because it would require
+	// reading out-of-range data.
+	continue;
       }
+
+      // With 3d indices this assignment would look like:
+      //   target_buffer[time_block][path_offset][freq] =
+      //     source_buffer[2*time_block][half_offset][freq] +
+      //     source_buffer[2*time_block+1][half_offset][freq + freq_shift]
+      //
+      // The data is stored as a 1d array in row-major order, so the
+      // actual code here multiplies out some indexes and looks more confusing.
+      int j2 = half_offset + path_length / 2;
+
+      target_buffer[(j + path_offset) * num_freqs + freq] =
+	source_buffer[(j + half_offset) * num_freqs + freq] +
+	source_buffer[(j + j2) * num_freqs + freq + freq_shift];
     }
   }
 }
@@ -241,10 +313,8 @@ int main(int argc, char **argv) {
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
 
-    // Cuda parameters
-    int block_size = 1024;
-    int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
-
+    // TODO: loop over drift blocks
+    
     // In the Taylor tree algorithm, the dataflow among the buffers looks like:
     // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
     // We use the aliases source_buffer and target_buffer to make this simpler.
@@ -257,6 +327,10 @@ int main(int argc, char **argv) {
     // twice as long as the previous path, until we reach our goal,
     // which is paths of length num_timesteps.
     for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
+
+      // Invoke cuda kernel
+      int block_size = 1024;
+      int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
       taylorTree<<<grid_size, block_size>>>(source_buffer, target_buffer,
 					    file.num_timesteps, file.coarse_channel_size,
 					    path_length);
