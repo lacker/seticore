@@ -139,13 +139,13 @@ think of them is as three-dimensional arrays, indexed like
 
 buffer[time_block][path_offset][start_frequency]
 
-First, let's focus on the case where the drift block is zero. In this
-case, our paths are drifting rightwards.
+First, let's focus on the case where the drift block is zero.
+
 path_offset is the difference between the frequency of the starting
-point of the path and the ending point of the path. It's in the range
+point of the path and the ending point of the path. It's in the range:
 [0, path_length)
 
-start_frequency is the index of the starting frequency, in
+start_frequency is the index of the starting frequency, in the range:
 [0, num_freqs)
 
 time_block is a bit weirder. In our recursion, we don't need to keep
@@ -157,7 +157,7 @@ time_block obeys the relation
 
 time_block * path_length = start_time
 
-time_block thus is in the range
+time_block thus is in the range:
 [0, num_timesteps / path_length)
 
 and each time block represents data for sums over path_length
@@ -184,11 +184,20 @@ It's really just for understanding the intervening steps that it's
 better to think of these buffers as being three-dimensional arrays.
 
 TODO: explain drift blocks
-TODO: describe which elements are garbage
+
+This kernel is designed to run one thread per frequency in the
+data. If it's trying to calculate the sum of a path that goes out of
+the range, it just won't write to that value. Any in-range path will
+get a value written to it. So you don't have to initialize the
+buffers, as long as you recognize that
+output[path_offset][start_frequency] is only valid when
+
+path_offset + start_frequency < num_freqs
+
+TODO: update that statement for drift blocks
 
 This code is based on the original kernel by Franklin Antonio, available at
   https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
-which also contains kernel performance testing information.
 */
 __global__ void taylorTree(const float* source_buffer, float* target_buffer,
 			   int num_timesteps, int num_freqs, int path_length) {
