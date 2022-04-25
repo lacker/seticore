@@ -127,20 +127,32 @@ Kernel to runs one round of the Taylor tree algorithm, calculating the sums
 of paths of length `path_length`.
 Each thread does the calculations for one frequency.
 
-Apologies if this comment is long, but the Taylor tree algorithm is
+Apologies for the length of this comment, but the Taylor tree algorithm is
 fairly complicated for the number of lines of code it is, so it takes
 a while to explain. My hope is that this code will be comprehensible
 for people that have not seen the Taylor tree algorithm before.
 
-The key to understanding this algorithm is to understand the format of
+These paths are diagonal paths through the data, touching one element
+per row, using the nearest cell to a straight line. For example, if
+num_timesteps is 4, the paths for each path_offset look like:
+
+path_offset:   0        1         2          3
+               ..X..    ..X...    ..X....    ..X.....
+               ..X..    ..X...    ...X...    ...X....
+               ..X..    ...X..    ...X...    ....X...
+               ..X..    ...X..    ....X..    .....X..
+
+At a high level, you can recursively calculate all the sums of these
+paths in O(n log n) operations by running on the top half, then the
+bottom half, then adding them up appropriately.
+
+The key to understanding this code is to understand the format of
 the buffers, source_buffer and target_buffer.
 source_buffer and target_buffer store the sum along an
 approximately-linear path through the input data. The best way to
 think of them is as three-dimensional arrays, indexed like
 
 buffer[time_block][path_offset][start_frequency]
-
-First, let's focus on the case where the drift block is zero.
 
 path_offset is the difference between the frequency of the starting
 point of the path and the ending point of the path. It's in the range:
@@ -184,24 +196,29 @@ output[path_offset][start_frequency]
 It's really just for understanding the intervening steps that it's
 better to think of these buffers as being three-dimensional arrays.
 
-TODO: explain drift blocks
+There's one more detail: drift blocks. So far we've explained the case
+where drift_block = 0, and we are calculating slopes between vertical
+and one horizontal-step-per-vertical step. You can think of this as
+the drift range [0, 1] when measured in units of
+horizontal-step-per-vertical-step. We can use a similar algorithm to
+calculate sums for all slopes in [drift_block, drift_block+1], if we just shift all
+accesses of the kth timestep by an extra drift_block * k.
 
 This kernel is designed to run one thread per frequency in the
 data. If it's trying to calculate the sum of a path that goes out of
 the range, it just won't write to that value. Any in-range path will
 get a value written to it. So you don't have to initialize the
 buffers, as long as you recognize that
-output[path_offset][start_frequency] is only valid when
+output[path_offset][start_frequency] is only valid when the last
+frequency of the path is within bounds, i.e.
 
-path_offset + start_frequency < num_freqs
-
-TODO: update that statement for drift blocks
+0 <= (num_timesteps - 1) * drift_block + path_offset + start_frequency < num_freqs
 
 This code is based on the original kernel by Franklin Antonio, available at
   https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
 */
 __global__ void taylorTree(const float* source_buffer, float* target_buffer,
-			   int num_timesteps, int num_freqs, int path_length) {
+			   int num_timesteps, int num_freqs, int path_length, int drift_block) {
   assert(path_length <= num_timesteps);
   int freq = blockIdx.x * blockDim.x + threadIdx.x;
   bool worker = (freq >= 0) && (freq < num_freqs);
@@ -221,13 +238,14 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
 
       // The recursion adds up two smaller paths, each with offset (path_offset/2).
       // When path_offset is odd, we need to shift the second path
-      // over by one, so that the total adds back up to path_offset.
+      // over by an extra one, so that the total adds back up to path_offset.
       // freq_shift thus represents the amount we need to shift the
       // second path.
       int half_offset = path_offset / 2;
-      int freq_shift = (path_offset + 1) / 2;
+      int freq_shift = (path_offset + 1) / 2 + drift_block * path_length / 2;
 
-      if (freq + freq_shift >= num_freqs) {
+      if (freq + freq_shift < 0 ||
+	  freq + freq_shift >= num_freqs) {
 	// We can't calculate this path sum, because it would require
 	// reading out-of-range data.
 	continue;
@@ -273,11 +291,10 @@ int main(int argc, char **argv) {
   double max_drift = 0.4;
   double block_drift = drift_rate_resolution * file.num_timesteps;
   
-  // We search through drift blocks in the range [-max_drift_block, max_drift_block].
-  // Drift block i represents a search for slopes in the ranges
-  // [i, i+1] and [-(i+1), -i]
-  // when measured in horizontal pixels per vertical pixel.
-  int max_drift_block = floor(max_drift / (drift_rate_resolution * file.num_timesteps));
+  // Normalize the max drift in units of "horizontal steps per vertical step"
+  double normalized_max_drift = max_drift / (drift_rate_resolution * file.num_timesteps);
+  int min_drift_block = floor(-normalized_max_drift);
+  int max_drift_block = floor(normalized_max_drift);
   
   cout << fmt::format("block_drift: {:.8f}\n", block_drift);
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
@@ -328,55 +345,56 @@ int main(int argc, char **argv) {
     float stdev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
 
-    // TODO: loop over drift blocks
+    for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
     
-    // In the Taylor tree algorithm, the dataflow among the buffers looks like:
-    // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
-    // We use the aliases source_buffer and target_buffer to make this simpler.
-    // In each pass through the upcoming loop, we are reading from
-    // source_buffer and writing to target_buffer.
-    float* source_buffer = input;
-    float* target_buffer = buffer1;
+      // In the Taylor tree algorithm, the dataflow among the buffers looks like:
+      // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
+      // We use the aliases source_buffer and target_buffer to make this simpler.
+      // In each pass through the upcoming loop, we are reading from
+      // source_buffer and writing to target_buffer.
+      float* source_buffer = input;
+      float* target_buffer = buffer1;
 
-    // Each pass through the data calculates the sum of paths that are
-    // twice as long as the previous path, until we reach our goal,
-    // which is paths of length num_timesteps.
-    for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
+      // Each pass through the data calculates the sum of paths that are
+      // twice as long as the previous path, until we reach our goal,
+      // which is paths of length num_timesteps.
+      for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
 
-      // Invoke cuda kernel
-      int block_size = 1024;
-      int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
-      taylorTree<<<grid_size, block_size>>>(source_buffer, target_buffer,
-					    file.num_timesteps, file.coarse_channel_size,
-					    path_length);
+	// Invoke cuda kernel
+	int block_size = 1024;
+	int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
+	taylorTree<<<grid_size, block_size>>>(source_buffer, target_buffer,
+					      file.num_timesteps, file.coarse_channel_size,
+					      path_length, 0);
 
-      // Swap buffer aliases to make the old target the new source
-      if (target_buffer == buffer1) {
-	source_buffer = buffer1;
-	target_buffer = buffer2;
-      } else if (target_buffer == buffer2) {
-	source_buffer = buffer2;
-	target_buffer = buffer1;
-      } else {
-	cerr << "programmer error; control flow should not reach here\n";
-	exit(1);
+	// Swap buffer aliases to make the old target the new source
+	if (target_buffer == buffer1) {
+	  source_buffer = buffer1;
+	  target_buffer = buffer2;
+	} else if (target_buffer == buffer2) {
+	  source_buffer = buffer2;
+	  target_buffer = buffer1;
+	} else {
+	  cerr << "programmer error; control flow should not reach here\n";
+	  exit(1);
+	}
       }
-    }
 
-    cudaDeviceSynchronize();
+      cudaDeviceSynchronize();
 
-    // The final sums are in source_buffer because we did one last alias-swap
-    if (coarse_channel == 0) {
-      for (int k = 0; k < file.num_timesteps; ++k) {
-	cout << fmt::format("k = {}; sums = {:.3f} {:.3f} {:.3f}\n", k,
-			    source_buffer[k * file.coarse_channel_size + 13],
-			    source_buffer[k * file.coarse_channel_size + 37],
-			    source_buffer[k * file.coarse_channel_size + 123456]);
+      // The final sums are in source_buffer because we did one last alias-swap
+      if (drift_block == 0 && coarse_channel == 0) {
+	for (int k = 0; k < file.num_timesteps; ++k) {
+	  cout << fmt::format("k = {}; sums = {:.3f} {:.3f} {:.3f}\n", k,
+			      source_buffer[k * file.coarse_channel_size + 13],
+			      source_buffer[k * file.coarse_channel_size + 37],
+			      source_buffer[k * file.coarse_channel_size + 123456]);
+	}
       }
-    }
 
-    if (coarse_channel > 5) {
-      return 0;
+      if (coarse_channel > 5) {
+	return 0;
+      }
     }
   }
   return 0;
