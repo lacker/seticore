@@ -129,7 +129,8 @@ Each thread does the calculations for one frequency.
 
 Apologies if this comment is long, but the Taylor tree algorithm is
 fairly complicated for the number of lines of code it is, so it takes
-a while to explain.
+a while to explain. My hope is that this code will be comprehensible
+for people that have not seen the Taylor tree algorithm before.
 
 The key to understanding this algorithm is to understand the format of
 the buffers, source_buffer and target_buffer.
@@ -210,8 +211,6 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
 
   int num_time_blocks = num_timesteps / path_length;
   for (int time_block = 0; time_block < num_time_blocks; ++time_block) {
-    int j = time_block * path_length;
-
     for (int path_offset = path_length - 1; path_offset >= 0; path_offset--) {
 
       // The recursion calculates sums for a target time block based on two
@@ -241,11 +240,18 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
       //
       // The data is stored as a 1d array in row-major order, so the
       // actual code here multiplies out some indexes and looks more confusing.
-      int j2 = half_offset + path_length / 2;
+      // In row-major order, for an x*y*z array, the element
+      // array[i][j][k]
+      // is stored at the location
+      // array[((i * y) + j) * z + k]
 
-      target_buffer[(j + path_offset) * num_freqs + freq] =
-	source_buffer[(j + half_offset) * num_freqs + freq] +
-	source_buffer[(j + j2) * num_freqs + freq + freq_shift];
+      // Here, the target buffer has dimensions num_time_blocks * path_length * num_freqs
+      // The source buffer has dimensions (2 * num_time_blocks) * (path_length / 2) * num_freqs
+      // so this line of code is just substituting the appropriate
+      // dimensions into the above formula.
+      target_buffer[(time_block * path_length + path_offset) * num_freqs + freq] =
+	source_buffer[(time_block * path_length + half_offset) * num_freqs + freq] +
+	source_buffer[(time_block * path_length + half_offset + path_length / 2) * num_freqs + freq + freq_shift];
     }
   }
 }
