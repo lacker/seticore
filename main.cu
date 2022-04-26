@@ -383,9 +383,10 @@ int main(int argc, char **argv) {
       cudaDeviceSynchronize();
 
       // The final sums are in source_buffer because we did one last alias-swap
-      if (drift_block == 0 && coarse_channel == 0) {
+      if (0 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
 	for (int k = 0; k < file.num_timesteps; ++k) {
-	  cout << fmt::format("k = {}; sums = {:.3f} {:.3f} {:.3f}\n", k,
+	  cout << fmt::format("db = {}; k = {}; sums = {:.3f} {:.3f} {:.3f}\n",
+			      drift_block, k,
 			      source_buffer[k * file.coarse_channel_size + 13],
 			      source_buffer[k * file.coarse_channel_size + 37],
 			      source_buffer[k * file.coarse_channel_size + 123456]);
