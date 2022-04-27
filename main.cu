@@ -82,12 +82,7 @@ public:
     H5Aclose(attr);
   }
 
-  int sizeOfCoarseChannel() {
-    return num_timesteps * coarse_channel_size * sizeof(float);
-  }
-
   // Loads the data in row-major order.
-  // output should have size sizeOfCoarseChannel
   void loadCoarseChannel(int i, float* output) {
     // Select a hyperslab containing just the coarse channel we want
     const hsize_t offset[3] = {0, 0, unsigned(i * coarse_channel_size)};
@@ -123,106 +118,105 @@ public:
 };
 
 /*
-Kernel to runs one round of the Taylor tree algorithm, calculating the sums
-of paths of length `path_length`.
-Each thread does the calculations for one frequency.
+  Kernel to runs one round of the Taylor tree algorithm, calculating the sums
+  of paths of length `path_length`.
+  Each thread does the calculations for one frequency.
 
-Apologies for the length of this comment, but the Taylor tree algorithm is
-fairly complicated for the number of lines of code it is, so it takes
-a while to explain. My hope is that this code will be comprehensible
-for people that have not seen the Taylor tree algorithm before.
+  Apologies for the length of this comment, but the Taylor tree algorithm is
+  fairly complicated for the number of lines of code it is, so it takes
+  a while to explain. My hope is that this code will be comprehensible
+  for people that have not seen the Taylor tree algorithm before.
 
-These paths are diagonal paths through the data, touching one element
-per row, using the nearest cell to a straight line. For example, if
-num_timesteps is 4, the paths for each path_offset look like:
+  These paths are diagonal paths through the data, touching one element
+  per row, using the nearest cell to a straight line. For example, if
+  num_timesteps is 4, the paths for each path_offset look like:
 
-path_offset:   0        1         2          3
-               ..X..    ..X...    ..X....    ..X.....
-               ..X..    ..X...    ...X...    ...X....
-               ..X..    ...X..    ...X...    ....X...
-               ..X..    ...X..    ....X..    .....X..
+  path_offset:   0        1         2          3
+                 ..X..    ..X...    ..X....    ..X.....
+                 ..X..    ..X...    ...X...    ...X....
+                 ..X..    ...X..    ...X...    ....X...
+                 ..X..    ...X..    ....X..    .....X..
 
-At a high level, you can recursively calculate all the sums of these
-paths in O(n log n) operations by running on the top half, then the
-bottom half, then adding them up appropriately.
+  At a high level, you can recursively calculate all the sums of these
+  paths in O(n log n) operations by running on the top half, then the
+  bottom half, then adding them up appropriately.
 
-The key to understanding this code is to understand the format of
-the buffers, source_buffer and target_buffer.
-source_buffer and target_buffer store the sum along an
-approximately-linear path through the input data. The best way to
-think of them is as three-dimensional arrays, indexed like
+  The key to understanding this code is to understand the format of
+  the buffers, source_buffer and target_buffer.
+  source_buffer and target_buffer store the sum along an
+  approximately-linear path through the input data. The best way to
+  think of them is as three-dimensional arrays, indexed like
 
-buffer[time_block][path_offset][start_frequency]
+  buffer[time_block][path_offset][start_frequency]
 
-path_offset is the difference between the frequency of the starting
-point of the path and the ending point of the path. It's in the range:
-[0, path_length)
+  path_offset is the difference between the frequency of the starting
+  point of the path and the ending point of the path. It's in the range:
+  [0, path_length)
 
-start_frequency is the index of the starting frequency, in the range:
-[0, num_freqs)
+  start_frequency is the index of the starting frequency, in the range:
+  [0, num_freqs)
 
-time_block is a bit weirder. In our recursion, we don't need to keep
-sums for every possible start time. We can cut the number of start
-times in half, every step through the recursion. After n steps of
-recursion, we only need to keep a sum for every 2^n timesteps. So if
-start_time is the index of the starting time, in [0, num_timesteps),
-time_block obeys the relation
+  time_block is a bit weirder. In our recursion, we don't need to keep
+  sums for every possible start time. We can cut the number of start
+  times in half, every step through the recursion. After n steps of
+  recursion, we only need to keep a sum for every 2^n timesteps. So if
+  start_time is the index of the starting time, in [0, num_timesteps),
+  time_block obeys the relation
 
-time_block * path_length = start_time
+  time_block * path_length = start_time
 
-time_block thus is in the range:
-[0, num_timesteps / path_length)
+  time_block thus is in the range:
+  [0, num_timesteps / path_length)
 
-and each time block represents data for sums over path_length
-different start times.
+  and each time block represents data for sums over path_length
+  different start times.
 
-So each buffer holds (num_timesteps * num_freqs) elements.
+  So each buffer holds (num_timesteps * num_freqs) elements.
 
-When we read input data, it's normally thought of as a two-dimensional
-array, indexed like
+  When we read input data, it's normally thought of as a two-dimensional
+  array, indexed like
 
-input[time][frequency]
+  input[time][frequency]
 
-Since we just pass the buffers around as one-dimensional arrays, this
-is essentially equivalent to thinking of it as a three-dimensional
-array in the above format, with path_offset always equal to zero.
+  Since we just pass the buffers around as one-dimensional arrays, this
+  is essentially equivalent to thinking of it as a three-dimensional
+  array in the above format, with path_offset always equal to zero.
 
-When we finish running the Taylor tree algorithm, time_block will
-always be zero. Thus we can think of the final output as a
-two-dimensional array as well, indexed like
+  When we finish running the Taylor tree algorithm, time_block will
+  always be zero. Thus we can think of the final output as a
+  two-dimensional array as well, indexed like
 
-output[path_offset][start_frequency]
+  output[path_offset][start_frequency]
 
-It's really just for understanding the intervening steps that it's
-better to think of these buffers as being three-dimensional arrays.
+  It's really just for understanding the intervening steps that it's
+  better to think of these buffers as being three-dimensional arrays.
 
-There's one more detail: drift blocks. So far we've explained the case
-where drift_block = 0, and we are calculating slopes between vertical
-and one horizontal-step-per-vertical step. You can think of this as
-the drift range [0, 1] when measured in units of
-horizontal-step-per-vertical-step. We can use a similar algorithm to
-calculate sums for all slopes in [drift_block, drift_block+1], if we just shift all
-accesses of the kth timestep by an extra drift_block * k.
+  There's one more detail: drift blocks. So far we've explained the case
+  where drift_block = 0, and we are calculating slopes between vertical
+  and one horizontal-step-per-vertical step. You can think of this as
+  the drift range [0, 1] when measured in units of
+  horizontal-step-per-vertical-step. We can use a similar algorithm to
+  calculate sums for all slopes in [drift_block, drift_block+1], if we just shift all
+  accesses of the kth timestep by an extra drift_block * k.
 
-This kernel is designed to run one thread per frequency in the
-data. If it's trying to calculate the sum of a path that goes out of
-the range, it just won't write to that value. Any in-range path will
-get a value written to it. So you don't have to initialize the
-buffers, as long as you recognize that
-output[path_offset][start_frequency] is only valid when the last
-frequency of the path is within bounds, i.e.
+  This kernel is designed to run one thread per frequency in the
+  data. If it's trying to calculate the sum of a path that goes out of
+  the range, it just won't write to that value. Any in-range path will
+  get a value written to it. So you don't have to initialize the
+  buffers, as long as you recognize that
+  output[path_offset][start_frequency] is only valid when the last
+  frequency of the path is within bounds, i.e.
 
-0 <= (num_timesteps - 1) * drift_block + path_offset + start_frequency < num_freqs
+  0 <= (num_timesteps - 1) * drift_block + path_offset + start_frequency < num_freqs
 
-This code is based on the original kernel by Franklin Antonio, available at
-  https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
+  This code is based on the original kernel by Franklin Antonio, available at
+    https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
 */
 __global__ void taylorTree(const float* source_buffer, float* target_buffer,
 			   int num_timesteps, int num_freqs, int path_length, int drift_block) {
   assert(path_length <= num_timesteps);
   int freq = blockIdx.x * blockDim.x + threadIdx.x;
-  bool worker = (freq >= 0) && (freq < num_freqs);
-  if (!worker) {
+  if (freq < 0 || freq >= num_freqs) {
     return;
   }
 
@@ -275,6 +269,49 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
 }
 
 
+/*
+  Gather information about the top hits.
+
+  The eventual goal is for every frequency freq, we want:
+
+  top_path_sums[freq] to contain the largest path sum that starts at freq
+  top_drift_blocks[freq] to contain the drift block of that path
+  top_path_offsets[freq] to contain the path offset of that path
+
+  path_sums[path_offset][freq] contains one path sum.
+  (In row-major order.)
+  So we are just taking the max along a column and carrying some
+  metadata along as we find it. One thread per freq.
+
+  The function ignores data corresponding to invalid paths. See
+  comments in taylorTree for details.
+*/
+__global__ void findTopPathSums(const float* path_sums, int num_timesteps, int num_freqs,
+				int drift_block, float* top_path_sums,
+				int* top_drift_blocks, int* top_path_offsets) {
+  int freq = blockIdx.x * blockDim.x + threadIdx.x;
+  if (freq < 0 || freq >= num_freqs) {
+    return;
+  }
+
+  for (int path_offset = 0; path_offset < num_timesteps; ++path_offset) {
+    // Check if the last frequency in this path is out of bounds
+    int last_freq = (num_timesteps - 1) * drift_block + path_offset + freq;
+    if (last_freq < 0 || last_freq >= num_freqs) {
+      // No more of these paths can be valid, either
+      return;
+    }
+
+    float path_sum = path_sums[num_freqs * path_offset + freq];
+    if (path_sum > top_path_sums[freq]) {
+      top_path_sums[freq] = path_sum;
+      top_drift_blocks[freq] = drift_block;
+      top_path_offsets[freq] = path_offset;
+    }
+  }
+}
+
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     cerr << "usage: seticore <h5file>" << endl;
@@ -303,18 +340,40 @@ int main(int argc, char **argv) {
   
   cout << fmt::format("diagonal_drift_rate: {:.8f}\n", diagonal_drift_rate);
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
-
-  // We use three unified memory arrays, each the size of one coarse channel. One array to
-  // read the source data, and two buffers to use for Taylor tree calculations.
+  cout << fmt::format("max_drift: {}\n", max_drift);
+  cout << fmt::format("obs_length: {}\n", obs_length);
+  
+  // For computing Taylor sums, we use three unified memory arrays,
+  // each the size of one coarse channel. One array to read the source
+  // data, and two buffers to use for Taylor tree calculations.
   float *input, *buffer1, *buffer2;
-  cudaMallocManaged(&input, file.sizeOfCoarseChannel());
-  cudaMallocManaged(&buffer1, file.sizeOfCoarseChannel());
-  cudaMallocManaged(&buffer2, file.sizeOfCoarseChannel());
+  cudaMallocManaged(&input, file.coarse_channel_size * file.num_timesteps * sizeof(float));
+  cudaMallocManaged(&buffer1, file.coarse_channel_size * file.num_timesteps * sizeof(float));
+  cudaMallocManaged(&buffer2, file.coarse_channel_size * file.num_timesteps * sizeof(float));
+
+  // For aggregating top hits, we use three arrays, each the size of
+  // one row of the coarse channel. One array to store the largest
+  // path sum, one to store which drift block it came from, and one to
+  // store its path offset.
+  float *top_path_sums;
+  int *top_drift_blocks, *top_path_offsets;
+  cudaMallocManaged(&top_path_sums, file.coarse_channel_size * sizeof(float));
+  cudaMallocManaged(&top_drift_blocks, file.coarse_channel_size * sizeof(int));
+  cudaMallocManaged(&top_path_offsets, file.coarse_channel_size * sizeof(int));
 
   // Load and process one coarse channel at a time from the hdf5  
   for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
     file.loadCoarseChannel(coarse_channel, input);
 
+    // Zero out the path sums in between each coarse channel because
+    // we pick the top hits separately for each coarse channel
+    memset(top_path_sums, 0, file.coarse_channel_size * sizeof(float));
+
+    // We shouldn't need to zero out the index trackers, but the time
+    // should be negligible and maybe it helps avoid bugs.
+    memset(top_drift_blocks, 0, file.coarse_channel_size * sizeof(int));
+    memset(top_path_offsets, 0, file.coarse_channel_size * sizeof(int));
+    
     cout << "loaded coarse channel " << coarse_channel << endl;
 
     // Calculate distribution statistics
@@ -388,9 +447,12 @@ int main(int argc, char **argv) {
       cudaDeviceSynchronize();
 
       // The final sums are in source_buffer because we did one last alias-swap
-      if (0 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
+      if (-2 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
 	for (int k = 0; k < file.num_timesteps; ++k) {
 	  double drift_rate = drift_block * diagonal_drift_rate + k * drift_rate_resolution;
+	  if (ts_compat && drift_block < 0) {
+	    drift_rate += drift_rate_resolution;
+	  }
 	  cout << fmt::format("db = {}; k = {}; dr = {}; sums = {:.3f} {:.3f} {:.3f}\n",
 			      drift_block, k, drift_rate,
 			      source_buffer[k * file.coarse_channel_size + 13],
