@@ -365,7 +365,7 @@ int main(int argc, char **argv) {
 	int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
 	taylorTree<<<grid_size, block_size>>>(source_buffer, target_buffer,
 					      file.num_timesteps, file.coarse_channel_size,
-					      path_length, 0);
+					      path_length, drift_block);
 
 	// Swap buffer aliases to make the old target the new source
 	if (target_buffer == buffer1) {
