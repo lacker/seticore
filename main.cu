@@ -286,17 +286,22 @@ int main(int argc, char **argv) {
   cout << "argument is: " << filename << endl;
   H5File file(filename);
 
-  double obs_length = file.num_timesteps * file.tsamp;
-  double drift_rate_resolution = 1e6 * abs(file.foff) / obs_length;
+  // Whether we are calculating drift rates to be compatible with
+  // turboseti, or the way I actually think is correct.
+  bool ts_compat = true;
+  
+  int drift_timesteps = file.num_timesteps - (ts_compat ? 0 : 1);
+  double obs_length = drift_timesteps * file.tsamp;
+  double drift_rate_resolution = 1e6 * file.foff / obs_length;
   double max_drift = 0.4;
-  double block_drift = drift_rate_resolution * file.num_timesteps;
   
   // Normalize the max drift in units of "horizontal steps per vertical step"
-  double normalized_max_drift = max_drift / (drift_rate_resolution * file.num_timesteps);
+  double diagonal_drift_rate = drift_rate_resolution * drift_timesteps;
+  double normalized_max_drift = max_drift / abs(diagonal_drift_rate);
   int min_drift_block = floor(-normalized_max_drift);
   int max_drift_block = floor(normalized_max_drift);
   
-  cout << fmt::format("block_drift: {:.8f}\n", block_drift);
+  cout << fmt::format("diagonal_drift_rate: {:.8f}\n", diagonal_drift_rate);
   cout << fmt::format("max_drift_block: {}\n", max_drift_block);
 
   // We use three unified memory arrays, each the size of one coarse channel. One array to
@@ -385,8 +390,9 @@ int main(int argc, char **argv) {
       // The final sums are in source_buffer because we did one last alias-swap
       if (0 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
 	for (int k = 0; k < file.num_timesteps; ++k) {
-	  cout << fmt::format("db = {}; k = {}; sums = {:.3f} {:.3f} {:.3f}\n",
-			      drift_block, k,
+	  double drift_rate = drift_block * diagonal_drift_rate + k * drift_rate_resolution;
+	  cout << fmt::format("db = {}; k = {}; dr = {}; sums = {:.3f} {:.3f} {:.3f}\n",
+			      drift_block, k, drift_rate,
 			      source_buffer[k * file.coarse_channel_size + 13],
 			      source_buffer[k * file.coarse_channel_size + 37],
 			      source_buffer[k * file.coarse_channel_size + 123456]);
