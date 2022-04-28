@@ -332,6 +332,7 @@ int main(int argc, char **argv) {
   double obs_length = drift_timesteps * file.tsamp;
   double drift_rate_resolution = 1e6 * file.foff / obs_length;
   double max_drift = 0.4;
+  double snr_threshold = 2.0;
   
   // Normalize the max drift in units of "horizontal steps per vertical step"
   double diagonal_drift_rate = drift_rate_resolution * drift_timesteps;
@@ -411,8 +412,8 @@ int main(int argc, char **argv) {
 		  [&](const float f) {
 		    accum += (f - m) * (f - m);
 		  });
-    float stdev = sqrt(accum / (end - begin));
-    cout << fmt::format("sample {} stdev: {:.3f}\n", coarse_channel, stdev);
+    float std_dev = sqrt(accum / (end - begin));
+    cout << fmt::format("sample {} std_dev: {:.3f}\n", coarse_channel, std_dev);
 
     for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
     
@@ -454,27 +455,44 @@ int main(int argc, char **argv) {
 						      top_path_sums, top_drift_blocks,
 						      top_path_offsets);
 
-      // TODO: see if we can only do this after the last drift block
+      /*
+      // Sync out of gpu memory, then output purely for debugging purposes
       cudaDeviceSynchronize();
-
       if (-2 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
-	for (int k = 0; k < file.num_timesteps; ++k) {
-	  double drift_rate = drift_block * diagonal_drift_rate + k * drift_rate_resolution;
+	for (int path_offset = 0; path_offset < file.num_timesteps; ++path_offset) {
+	  double drift_rate = drift_block * diagonal_drift_rate +
+	                      path_offset * drift_rate_resolution;
 	  if (ts_compat && drift_block < 0) {
 	    drift_rate += drift_rate_resolution;
 	  }
 	  cout << fmt::format("db = {}; k = {}; dr = {}; sums = {:.3f} {:.3f} {:.3f}\n",
-			      drift_block, k, drift_rate,
-			      source_buffer[k * file.coarse_channel_size + 13],
-			      source_buffer[k * file.coarse_channel_size + 37],
-			      source_buffer[k * file.coarse_channel_size + 123456]);
+			      drift_block, path_offset, drift_rate,
+			      source_buffer[path_offset * file.coarse_channel_size + 13],
+			      source_buffer[path_offset * file.coarse_channel_size + 37],
+			      source_buffer[path_offset * file.coarse_channel_size + 123456]);
 	}
       }
+      */
     }
 
-    // Now that we have processed all drift blocks for one coarse
-    // channel, analyze the top hits.
-    // TODO
+    // Now that we have done all the expensive processing for one coarse
+    // channel, we can copy the data back out of the GPU.
+    cudaDeviceSynchronize();
+
+    // Find the top hits
+    // TODO: deduplicate nearby hits
+    for (int i = 0; i < file.coarse_channel_size; ++i) {
+      float path_sum = top_path_sums[i];
+      float snr = (path_sum - median) / std_dev;
+      if (snr < snr_threshold) {
+	continue;
+      }
+      double drift_rate = top_drift_blocks[i] * diagonal_drift_rate +
+	                  top_path_offsets[i] * drift_rate_resolution;
+      cout << fmt::format("i={} snr={:.3f} ps={:.3f} drift={:.3f}\n",
+			  i, snr, path_sum, drift_rate);
+    }
+    
     
     // During development we only want to process some of the coarse channels.
     if (coarse_channel > 5) {
