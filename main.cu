@@ -14,6 +14,7 @@ using namespace std;
 
 static_assert(sizeof(float) == 4, "require 32-bit floats");
 
+const int CUDA_BLOCK_SIZE = 1024;
 
 class H5File {
 public:
@@ -361,9 +362,13 @@ int main(int argc, char **argv) {
   cudaMallocManaged(&top_drift_blocks, file.coarse_channel_size * sizeof(int));
   cudaMallocManaged(&top_path_offsets, file.coarse_channel_size * sizeof(int));
 
+  
   // Load and process one coarse channel at a time from the hdf5  
   for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
     file.loadCoarseChannel(coarse_channel, input);
+
+    // For now all cuda operations use the same grid
+    int grid_size = (file.coarse_channel_size + CUDA_BLOCK_SIZE - 1) / CUDA_BLOCK_SIZE;
 
     // Zero out the path sums in between each coarse channel because
     // we pick the top hits separately for each coarse channel
@@ -425,11 +430,9 @@ int main(int argc, char **argv) {
       for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
 
 	// Invoke cuda kernel
-	int block_size = 1024;
-	int grid_size = (file.coarse_channel_size + block_size - 1) / block_size;
-	taylorTree<<<grid_size, block_size>>>(source_buffer, target_buffer,
-					      file.num_timesteps, file.coarse_channel_size,
-					      path_length, drift_block);
+	taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
+						   file.num_timesteps, file.coarse_channel_size,
+						   path_length, drift_block);
 
 	// Swap buffer aliases to make the old target the new source
 	if (target_buffer == buffer1) {
@@ -444,9 +447,16 @@ int main(int argc, char **argv) {
 	}
       }
 
+      // Invoke cuda kernel
+      // The final path sums are in source_buffer because we did one last alias-swap
+      findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, file.num_timesteps,
+						      file.coarse_channel_size, drift_block,
+						      top_path_sums, top_drift_blocks,
+						      top_path_offsets);
+
+      // TODO: see if we can only do this after the last drift block
       cudaDeviceSynchronize();
 
-      // The final sums are in source_buffer because we did one last alias-swap
       if (-2 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
 	for (int k = 0; k < file.num_timesteps; ++k) {
 	  double drift_rate = drift_block * diagonal_drift_rate + k * drift_rate_resolution;
@@ -460,10 +470,15 @@ int main(int argc, char **argv) {
 			      source_buffer[k * file.coarse_channel_size + 123456]);
 	}
       }
+    }
 
-      if (coarse_channel > 5) {
-	return 0;
-      }
+    // Now that we have processed all drift blocks for one coarse
+    // channel, analyze the top hits.
+    // TODO
+    
+    // During development we only want to process some of the coarse channels.
+    if (coarse_channel > 5) {
+      break;
     }
   }
   return 0;
