@@ -479,20 +479,53 @@ int main(int argc, char **argv) {
     // channel, we can copy the data back out of the GPU.
     cudaDeviceSynchronize();
 
-    // Find the top hits
-    // TODO: deduplicate nearby hits
-    for (int i = 0; i < file.coarse_channel_size; ++i) {
-      float path_sum = top_path_sums[i];
-      float snr = (path_sum - median) / std_dev;
-      if (snr < snr_threshold) {
+    // We consider two hits to be duplicates if the distance in their
+    // frequency indexes is less than window_size. We only want to
+    // output the largest representative of any set of duplicates.
+    // window_size is chosen just large enough so that a single bright
+    // pixel cannot cause multiple hits.
+    // First we break up the data into a set of nonoverlapping
+    // windows. Any candidate hit must be the largest within this
+    // window.
+    float path_sum_threshold = snr_threshold * std_dev + median;
+    int window_size = ceil(normalized_max_drift * drift_timesteps);
+    for (int i = 0; i * window_size < file.coarse_channel_size; ++i) {
+      int candidate_freq = -1;
+      float candidate_path_sum = path_sum_threshold;
+
+      for (int j = 0; j < window_size; ++j) {
+	int freq = i * window_size + j;
+	if (freq >= file.coarse_channel_size) {
+	  break;
+	}
+	if (top_path_sums[freq] > candidate_path_sum) {
+	  // This is the new best candidate of the window
+	  candidate_freq = freq;
+	  candidate_path_sum = top_path_sums[freq];
+	}
+      }
+      if (candidate_freq < 0) {
 	continue;
       }
-      double drift_rate = top_drift_blocks[i] * diagonal_drift_rate +
-	                  top_path_offsets[i] * drift_rate_resolution;
-      cout << fmt::format("i={} snr={:.3f} ps={:.3f} drift={:.3f}\n",
-			  i, snr, path_sum, drift_rate);
+      
+      // Check every frequency closer than window_size if we have a candidate
+      int window_end = min(file.coarse_channel_size, candidate_freq + window_size);
+      bool found_larger_path_sum = false;
+      for (int freq = max(0, candidate_freq - window_size + 1); freq < window_end; ++freq) {
+	if (top_path_sums[freq] > candidate_path_sum) {
+	  found_larger_path_sum = true;
+	  break;
+	}
+      }
+      if (!found_larger_path_sum) {
+	// The candidate frequency is the best within its window
+	double drift_rate = top_drift_blocks[candidate_freq] * diagonal_drift_rate +
+                            top_path_offsets[candidate_freq] * drift_rate_resolution;
+        float snr = (candidate_path_sum - median) / std_dev;
+	cout << fmt::format("hit: snr = {}; dr = {}; index = {}\n",
+                            snr, drift_rate, candidate_freq);
+      }
     }
-    
     
     // During development we only want to process some of the coarse channels.
     if (coarse_channel > 5) {
