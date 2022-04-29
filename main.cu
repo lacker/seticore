@@ -88,9 +88,9 @@ public:
     // Select a hyperslab containing just the coarse channel we want
     const hsize_t offset[3] = {0, 0, unsigned(i * coarse_channel_size)};
     const hsize_t coarse_channel_dim[3] = {unsigned(num_timesteps), 1,
-					   unsigned(coarse_channel_size)};
+                                           unsigned(coarse_channel_size)};
     if (H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
-			    offset, NULL, coarse_channel_dim, NULL) < 0) {
+                            offset, NULL, coarse_channel_dim, NULL) < 0) {
       cerr << "failed to select coarse channel hyperslab\n";
       exit(1);
     }
@@ -214,7 +214,7 @@ public:
     https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
 */
 __global__ void taylorTree(const float* source_buffer, float* target_buffer,
-			   int num_timesteps, int num_freqs, int path_length, int drift_block) {
+                           int num_timesteps, int num_freqs, int path_length, int drift_block) {
   assert(path_length <= num_timesteps);
   int freq = blockIdx.x * blockDim.x + threadIdx.x;
   if (freq < 0 || freq >= num_freqs) {
@@ -240,10 +240,10 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
       int freq_shift = (path_offset + 1) / 2 + drift_block * path_length / 2;
 
       if (freq + freq_shift < 0 ||
-	  freq + freq_shift >= num_freqs) {
-	// We can't calculate this path sum, because it would require
-	// reading out-of-range data.
-	continue;
+          freq + freq_shift >= num_freqs) {
+        // We can't calculate this path sum, because it would require
+        // reading out-of-range data.
+        continue;
       }
 
       // With 3d indices this assignment would look like:
@@ -263,8 +263,8 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
       // so this line of code is just substituting the appropriate
       // dimensions into the above formula.
       target_buffer[(time_block * path_length + path_offset) * num_freqs + freq] =
-	source_buffer[(time_block * path_length + half_offset) * num_freqs + freq] +
-	source_buffer[(time_block * path_length + half_offset + path_length / 2) * num_freqs + freq + freq_shift];
+        source_buffer[(time_block * path_length + half_offset) * num_freqs + freq] +
+        source_buffer[(time_block * path_length + half_offset + path_length / 2) * num_freqs + freq + freq_shift];
     }
   }
 }
@@ -288,8 +288,8 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
   comments in taylorTree for details.
 */
 __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int num_freqs,
-				int drift_block, float* top_path_sums,
-				int* top_drift_blocks, int* top_path_offsets) {
+                                int drift_block, float* top_path_sums,
+                                int* top_drift_blocks, int* top_path_offsets) {
   int freq = blockIdx.x * blockDim.x + threadIdx.x;
   if (freq < 0 || freq >= num_freqs) {
     return;
@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
     for (int row_index = 0; row_index < file.num_timesteps; ++row_index) {
       float* row = input + row_index * file.coarse_channel_size;
       std::transform(column_sums.begin(), column_sums.end(), row,
-		     column_sums.begin(), std::plus<float>());
+                     column_sums.begin(), std::plus<float>());
 
       // Remove the DC spike by making it the average of the adjacent columns
       row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
@@ -409,9 +409,9 @@ int main(int argc, char **argv) {
     float m = sum / (end - begin);
     float accum = 0.0;
     std::for_each(column_sums.begin() + begin, column_sums.begin() + end,
-		  [&](const float f) {
-		    accum += (f - m) * (f - m);
-		  });
+                  [&](const float f) {
+                    accum += (f - m) * (f - m);
+                  });
     float std_dev = sqrt(accum / (end - begin));
     cout << fmt::format("sample {} std_dev: {:.3f}\n", coarse_channel, std_dev);
 
@@ -430,49 +430,30 @@ int main(int argc, char **argv) {
       // which is paths of length num_timesteps.
       for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
 
-	// Invoke cuda kernel
-	taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
-						   file.num_timesteps, file.coarse_channel_size,
-						   path_length, drift_block);
+        // Invoke cuda kernel
+        taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
+                                                   file.num_timesteps, file.coarse_channel_size,
+                                                   path_length, drift_block);
 
-	// Swap buffer aliases to make the old target the new source
-	if (target_buffer == buffer1) {
-	  source_buffer = buffer1;
-	  target_buffer = buffer2;
-	} else if (target_buffer == buffer2) {
-	  source_buffer = buffer2;
-	  target_buffer = buffer1;
-	} else {
-	  cerr << "programmer error; control flow should not reach here\n";
-	  exit(1);
-	}
+        // Swap buffer aliases to make the old target the new source
+        if (target_buffer == buffer1) {
+          source_buffer = buffer1;
+          target_buffer = buffer2;
+        } else if (target_buffer == buffer2) {
+          source_buffer = buffer2;
+          target_buffer = buffer1;
+        } else {
+          cerr << "programmer error; control flow should not reach here\n";
+          exit(1);
+        }
       }
 
       // Invoke cuda kernel
       // The final path sums are in source_buffer because we did one last alias-swap
       findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, file.num_timesteps,
-						      file.coarse_channel_size, drift_block,
-						      top_path_sums, top_drift_blocks,
-						      top_path_offsets);
-
-      /*
-      // Sync out of gpu memory, then output purely for debugging purposes
-      cudaDeviceSynchronize();
-      if (-2 <= drift_block && drift_block <= 1 && coarse_channel == 0) {
-	for (int path_offset = 0; path_offset < file.num_timesteps; ++path_offset) {
-	  double drift_rate = drift_block * diagonal_drift_rate +
-	                      path_offset * drift_rate_resolution;
-	  if (ts_compat && drift_block < 0) {
-	    drift_rate += drift_rate_resolution;
-	  }
-	  cout << fmt::format("db = {}; k = {}; dr = {}; sums = {:.3f} {:.3f} {:.3f}\n",
-			      drift_block, path_offset, drift_rate,
-			      source_buffer[path_offset * file.coarse_channel_size + 13],
-			      source_buffer[path_offset * file.coarse_channel_size + 37],
-			      source_buffer[path_offset * file.coarse_channel_size + 123456]);
-	}
-      }
-      */
+                                                      file.coarse_channel_size, drift_block,
+                                                      top_path_sums, top_drift_blocks,
+                                                      top_path_offsets);
     }
 
     // Now that we have done all the expensive processing for one coarse
@@ -494,35 +475,35 @@ int main(int argc, char **argv) {
       float candidate_path_sum = path_sum_threshold;
 
       for (int j = 0; j < window_size; ++j) {
-	int freq = i * window_size + j;
-	if (freq >= file.coarse_channel_size) {
-	  break;
-	}
-	if (top_path_sums[freq] > candidate_path_sum) {
-	  // This is the new best candidate of the window
-	  candidate_freq = freq;
-	  candidate_path_sum = top_path_sums[freq];
-	}
+        int freq = i * window_size + j;
+        if (freq >= file.coarse_channel_size) {
+          break;
+        }
+        if (top_path_sums[freq] > candidate_path_sum) {
+          // This is the new best candidate of the window
+          candidate_freq = freq;
+          candidate_path_sum = top_path_sums[freq];
+        }
       }
       if (candidate_freq < 0) {
-	continue;
+        continue;
       }
-      
+
       // Check every frequency closer than window_size if we have a candidate
       int window_end = min(file.coarse_channel_size, candidate_freq + window_size);
       bool found_larger_path_sum = false;
       for (int freq = max(0, candidate_freq - window_size + 1); freq < window_end; ++freq) {
-	if (top_path_sums[freq] > candidate_path_sum) {
-	  found_larger_path_sum = true;
-	  break;
-	}
+        if (top_path_sums[freq] > candidate_path_sum) {
+          found_larger_path_sum = true;
+          break;
+        }
       }
       if (!found_larger_path_sum) {
-	// The candidate frequency is the best within its window
-	double drift_rate = top_drift_blocks[candidate_freq] * diagonal_drift_rate +
+        // The candidate frequency is the best within its window
+        double drift_rate = top_drift_blocks[candidate_freq] * diagonal_drift_rate +
                             top_path_offsets[candidate_freq] * drift_rate_resolution;
         float snr = (candidate_path_sum - median) / std_dev;
-	cout << fmt::format("hit: snr = {}; dr = {}; index = {}\n",
+        cout << fmt::format("hit: snr = {}; dr = {}; index = {}\n",
                             snr, drift_rate, candidate_freq);
       }
     }
