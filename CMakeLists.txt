@@ -10,5 +10,5 @@ set(_hdf5_libs hdf5 hdf5_cpp)
 	
 add_subdirectory(fmt)
 
-add_executable(seticore main.cu h5_file.cpp)
+add_executable(seticore main.cpp dedoppler.cu h5_file.cpp)
 target_link_libraries(seticore fmt ${HDF5_C_LIBRARIES})

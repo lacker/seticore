@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <cuda.h>
 #include <functional>
-#include "hdf5.h"
 #include <iostream>
 #include <math.h>
 #include <numeric>
@@ -214,15 +213,7 @@ __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int n
 }
 
 
-int main(int argc, char* argv[]) {
-  if (argc != 2) {
-    cerr << "usage: seticore <h5file>" << endl;
-    return 1;
-  }
-
-  // Open the file
-  string filename = string(argv[1]);
-  cout << "argument is: " << filename << endl;
+void dedoppler(const string& filename) {
   H5File file(filename);
 
   // Whether we are calculating drift rates to be compatible with
@@ -414,5 +405,4 @@ int main(int argc, char* argv[]) {
       break;
     }
   }
-  return 0;
 }

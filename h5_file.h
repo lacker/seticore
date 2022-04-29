@@ -1,6 +1,8 @@
 #pragma once
 using namespace std;
 
+#include "hdf5.h"
+
 /*
   This class contains helper methods for processing .h5 files that are specific to the
   astronomical data format we expect, like extracting particular data from headers.
