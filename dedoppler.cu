@@ -1,13 +1,12 @@
 #include <algorithm>
 #include <assert.h>
 #include <cuda.h>
+#include <fmt/core.h>
 #include <functional>
 #include <iostream>
 #include <math.h>
 #include <numeric>
 #include <vector>
-
-#include <fmt/core.h>
 
 #include "h5_file.h"
 
@@ -213,8 +212,17 @@ __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int n
 }
 
 
-void dedoppler(const string& filename) {
-  H5File file(filename);
+/*
+  Runs a dedoppler algorithm and writes the results to a .dat file.
+
+  input_filename is assumed to be in the .h5 format
+  output_filename is where a .dat file will be written with results
+  max_drift is the maximum drift we are looking for, in Hz/sec
+  snr is the minimum SNR we require to report a signal
+ */
+void dedoppler(const string& input_filename, const string& output_filename,
+               double max_drift, double snr) {
+  H5File file(input_filename);
 
   // Whether we are calculating drift rates to be compatible with
   // turboseti, or the way I actually think is correct.
@@ -223,7 +231,6 @@ void dedoppler(const string& filename) {
   int drift_timesteps = file.num_timesteps - (ts_compat ? 0 : 1);
   double obs_length = drift_timesteps * file.tsamp;
   double drift_rate_resolution = 1e6 * file.foff / obs_length;
-  double max_drift = 0.4;
   double snr_threshold = 2.0;
   
   // Normalize the max drift in units of "horizontal steps per vertical step"
