@@ -16,7 +16,8 @@ class H5File {
  public:
   H5File(const string& filename);
   ~H5File();
-  
+
+  const string filename;
   double tsamp, foff;
   int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
   

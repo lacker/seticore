@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+#include <fstream>
+
 #include "h5_file.h"
 
 using namespace std;
@@ -11,6 +14,7 @@ using namespace std;
 class DatFile {
  private:
 
+  ofstream file;
   
  public:
   DatFile(const string& filename, const H5File& metadata);
