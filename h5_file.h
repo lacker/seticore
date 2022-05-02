@@ -1,7 +1,8 @@
 #pragma once
-using namespace std;
 
 #include "hdf5.h"
+
+using namespace std;
 
 /*
   This class contains helper methods for processing .h5 files that are specific to the
@@ -9,7 +10,7 @@ using namespace std;
  */
 class H5File {
  private:
-  void getDoubleAttr(const string &name, double* output);
+  void getDoubleAttr(const string &name, double* output) const;
   hid_t file, dataset, dataspace;
 
  public:
@@ -19,5 +20,5 @@ class H5File {
   double tsamp, foff;
   int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
   
-  void loadCoarseChannel(int i, float* output);
+  void loadCoarseChannel(int i, float* output) const;
 };

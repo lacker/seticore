@@ -8,9 +8,9 @@ using namespace std;
 
 
 /*
-  Opens an h5 file, assuming it contains standard radio telescope input from one of the
-  known telescopes. If the data is an unexpected size or shape we should be conservative
-  and exit.
+  Opens an h5 file for reading, assuming it contains standard radio
+  telescope input from one of the known telescopes. If the data is an
+  unexpected size or shape we should be conservative and exit.
  */
 H5File::H5File(const string& filename) {
   file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -60,7 +60,7 @@ H5File::H5File(const string& filename) {
   num_coarse_channels = num_freqs / coarse_channel_size;
 }
 
-void H5File::getDoubleAttr(const string& name, double* output) {
+void H5File::getDoubleAttr(const string& name, double* output) const {
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
     cerr << "could not access attr " << name << endl;
@@ -74,7 +74,7 @@ void H5File::getDoubleAttr(const string& name, double* output) {
 }
 
 // Loads the data in row-major order.
-void H5File::loadCoarseChannel(int i, float* output) {
+void H5File::loadCoarseChannel(int i, float* output) const {
   // Select a hyperslab containing just the coarse channel we want
   const hsize_t offset[3] = {0, 0, unsigned(i * coarse_channel_size)};
   const hsize_t coarse_channel_dim[3] = {unsigned(num_timesteps), 1,

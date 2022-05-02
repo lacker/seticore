@@ -8,6 +8,7 @@
 #include <numeric>
 #include <vector>
 
+#include "dat_file.h"
 #include "h5_file.h"
 
 using namespace std;
@@ -223,9 +224,10 @@ __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int n
 void dedoppler(const string& input_filename, const string& output_filename,
                double max_drift, double snr) {
   H5File file(input_filename);
-
+  DatFile output(output_filename, file);
+  
   // Whether we are calculating drift rates to be compatible with
-  // turboseti, or the way I actually think is correct.
+  // turboseti, as opposed to the way I actually think is correct.
   bool ts_compat = true;
   
   int drift_timesteps = file.num_timesteps - (ts_compat ? 0 : 1);
@@ -405,11 +407,6 @@ void dedoppler(const string& input_filename, const string& output_filename,
         cout << fmt::format("hit: snr = {}; dr = {}; index = {}\n",
                             snr, drift_rate, candidate_freq);
       }
-    }
-    
-    // During development we only want to process some of the coarse channels.
-    if (coarse_channel > 5) {
-      break;
     }
   }
 }
