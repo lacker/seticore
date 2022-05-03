@@ -4,9 +4,11 @@ dedoppler algorithm that creates .dat files from .h5 files.
 
 ## Quickstart
 
-Git clone this repo, run the make script
+Git clone this repo, then update submodules and run the make script:
 
 ```
+git submodule init
+git submodule update
 ./make.sh
 ```
 
