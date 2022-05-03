@@ -84,6 +84,8 @@ To check if your installation is okay:
 ./make.sh
 ```
 
+You may need to set `CUDACXX` to be the path to your `nvcc` binary.
+
 The plugin installation won't be validated until runtime.
 
 Then grab a Green Bank data file from
