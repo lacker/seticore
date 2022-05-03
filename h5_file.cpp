@@ -141,6 +141,8 @@ string H5File::getStringAttr(const string& name) const {
     H5Tclose(fixed_type);
   }
   
+  string output(buffer);
+  
   free(buffer);
   H5Aclose(attr);
   H5Tclose(attr_type);
