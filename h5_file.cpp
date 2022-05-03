@@ -103,35 +103,48 @@ string H5File::getStringAttr(const string& name) const {
     exit(1);
   }
   
-  // Create memtype for variable-length string of our character type
-  auto memtype = H5Tcopy(H5T_C_S1);
-  if (H5Tset_size(memtype, H5T_VARIABLE) < 0) {
+  // Create mem_type for variable-length string of our character type
+  auto mem_type = H5Tcopy(H5T_C_S1);
+  if (H5Tset_size(mem_type, H5T_VARIABLE) < 0) {
     cerr << "H5Tset_size failed\n";
     exit(1);
   }
-  if (H5Tset_strpad(memtype, H5T_STR_NULLTERM) < 0) {
+  if (H5Tset_strpad(mem_type, H5T_STR_NULLTERM) < 0) {
     cerr << "H5Tset_strpad failed\n";
     exit(1);
   }
-  if (H5Tset_cset(memtype, cset) < 0) {
+  if (H5Tset_cset(mem_type, cset) < 0) {
     cerr << "H5Tset_cset failed\n";
     exit(1);
   }
-  auto storage_size = H5Aget_storage_size(attr);
+
+  // We need to add one ourselves for a null
+  auto storage_size = H5Aget_storage_size(attr) + 1;
+  cout << "storage size is " << storage_size << "\n";
   char* buffer = (char*)malloc(storage_size * sizeof(char));
   memset(buffer, 0, storage_size);
-  
-  if (H5Aread(attr, memtype, &buffer) < 0) {
-    cerr << "H5Aread failed for string attr " << name << endl;
-    exit(1);
+
+  // The API for variable-length and fixed-length attributes is
+  // different, so first we determine which one we are reading
+  bool variable_length = H5Tequal(mem_type, attr_type);
+  if (variable_length) {
+    if (H5Aread(attr, mem_type, &buffer) < 0) {
+      cerr << "variable-length H5Aread failed for " << name << endl;
+      exit(1);
+    }
+  } else {
+    auto fixed_type = H5Tcopy(attr_type);
+    if (H5Aread(attr, fixed_type, buffer) < 0) {
+      cerr << "fixed-length H5Aread failed for " << name << endl;
+      exit(1);
+    }
+    H5Tclose(fixed_type);
   }
   
-  string output(buffer);
-
   free(buffer);
   H5Aclose(attr);
   H5Tclose(attr_type);
-  H5Tclose(memtype);
+  H5Tclose(mem_type);
 
   return output;
 }
