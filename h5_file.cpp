@@ -95,7 +95,15 @@ string H5File::getStringAttr(const string& name) const {
     exit(1);
   }
 
-  // Create memtype for variable-length UTF8
+  // Check the attribute's character type
+  auto attr_type = H5Aget_type(attr);
+  auto cset = H5Tget_cset(attr_type);
+  if (cset < 0) {
+    cerr << "H5Tget_cset failed\n";
+    exit(1);
+  }
+  
+  // Create memtype for variable-length string of our character type
   auto memtype = H5Tcopy(H5T_C_S1);
   if (H5Tset_size(memtype, H5T_VARIABLE) < 0) {
     cerr << "H5Tset_size failed\n";
@@ -105,7 +113,7 @@ string H5File::getStringAttr(const string& name) const {
     cerr << "H5Tset_strpad failed\n";
     exit(1);
   }
-  if (H5Tset_cset(memtype, H5T_CSET_UTF8) < 0) {
+  if (H5Tset_cset(memtype, cset) < 0) {
     cerr << "H5Tset_cset failed\n";
     exit(1);
   }
@@ -119,7 +127,12 @@ string H5File::getStringAttr(const string& name) const {
   }
   
   string output(buffer);
+
   free(buffer);
+  H5Aclose(attr);
+  H5Tclose(attr_type);
+  H5Tclose(memtype);
+
   return output;
 }
 
