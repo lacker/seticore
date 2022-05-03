@@ -241,11 +241,6 @@ void dedoppler(const string& input_filename, const string& output_filename,
   int min_drift_block = floor(-normalized_max_drift);
   int max_drift_block = floor(normalized_max_drift);
   
-  cout << fmt::format("diagonal_drift_rate: {:.8f}\n", diagonal_drift_rate);
-  cout << fmt::format("max_drift_block: {}\n", max_drift_block);
-  cout << fmt::format("max_drift: {}\n", max_drift);
-  cout << fmt::format("obs_length: {}\n", obs_length);
-  
   // For computing Taylor sums, we use three unified memory arrays,
   // each the size of one coarse channel. One array to read the source
   // data, and two buffers to use for Taylor tree calculations.
@@ -281,8 +276,6 @@ void dedoppler(const string& input_filename, const string& output_filename,
     memset(top_drift_blocks, 0, file.coarse_channel_size * sizeof(int));
     memset(top_path_offsets, 0, file.coarse_channel_size * sizeof(int));
     
-    cout << "loaded coarse channel " << coarse_channel << endl;
-
     // Calculate distribution statistics
     vector<float> column_sums(file.coarse_channel_size, 0);
     int mid = file.coarse_channel_size / 2;
@@ -301,7 +294,6 @@ void dedoppler(const string& input_filename, const string& output_filename,
     } else {
       median = (column_sums[mid - 1] + column_sums[mid]) / 2.0;
     }
-    cout << fmt::format("sample {} median: {:.3f}\n", coarse_channel, median);
 
     // Use the central 90% to calculate standard deviation
     int begin = ceil(0.05 * column_sums.size());
@@ -314,7 +306,6 @@ void dedoppler(const string& input_filename, const string& output_filename,
                     accum += (f - m) * (f - m);
                   });
     float std_dev = sqrt(accum / (end - begin));
-    cout << fmt::format("sample {} std_dev: {:.3f}\n", coarse_channel, std_dev);
 
     for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
     

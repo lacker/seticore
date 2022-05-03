@@ -1,7 +1,25 @@
 # seticore
-A high-performance implementation of some core SETI algorithms.
+A high-performance implementation of some core SETI algorithms, in particular turboSETI's
+dedoppler algorithm that creates .dat files from .h5 files.
 
-## Installation
+## Quickstart
+
+Git clone this repo, run the make script
+
+```
+./make.sh
+```
+
+then run on an h5 file:
+
+```
+./build/seticore /path/to/your.h5
+```
+
+It will behave roughly like turboseti. If something doesn't immediately work, try the more
+detailed instructions below.
+
+## More Detailed Installation Instructions
 
 The build is using CMake. I've been developing on Ubuntu 18. You need
 to install the CUDA dev kit, go follow Nvidia's instructions for that.
