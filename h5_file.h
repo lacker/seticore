@@ -13,14 +13,15 @@ class H5File {
   double getDoubleAttr(const string& name) const;
   string getStringAttr(const string& name) const;
   hid_t file, dataset, dataspace;
-
+  int hit_count;
+  
  public:
   H5File(const string& filename);
   ~H5File();
 
   const string filename;
   string source_name;
-  double tsamp, foff;
+  double fch1, foff, tstart, tsamp, src_dej, src_raj;
   int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
   
   void loadCoarseChannel(int i, float* output) const;

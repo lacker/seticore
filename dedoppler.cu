@@ -224,7 +224,7 @@ __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int n
 void dedoppler(const string& input_filename, const string& output_filename,
                double max_drift, double snr) {
   H5File file(input_filename);
-  DatFile output(output_filename, file);
+  DatFile output(output_filename, file, max_drift);
   
   // Whether we are calculating drift rates to be compatible with
   // turboseti, as opposed to the way I actually think is correct.
@@ -404,8 +404,8 @@ void dedoppler(const string& input_filename, const string& output_filename,
         double drift_rate = top_drift_blocks[candidate_freq] * diagonal_drift_rate +
                             top_path_offsets[candidate_freq] * drift_rate_resolution;
         float snr = (candidate_path_sum - median) / std_dev;
-        cout << fmt::format("hit: snr = {}; dr = {}; index = {}\n",
-                            snr, drift_rate, candidate_freq);
+
+        output.reportHit(coarse_channel, candidate_freq, drift_rate, snr);
       }
     }
   }

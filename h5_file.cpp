@@ -29,8 +29,12 @@ H5File::H5File(const string& filename) : filename(filename) {
     exit(1);
   }
     
-  tsamp = getDoubleAttr("tsamp");
+  fch1 = getDoubleAttr("fch1");
   foff = getDoubleAttr("foff");
+  tstart = getDoubleAttr("tstart");
+  tsamp = getDoubleAttr("tsamp");
+  src_dej = getDoubleAttr("src_dej");
+  src_raj = getDoubleAttr("src_raj");
   source_name = getStringAttr("source_name");
   
   dataspace = H5Dget_space(dataset);
