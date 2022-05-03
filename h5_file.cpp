@@ -28,8 +28,8 @@ H5File::H5File(const string& filename) : filename(filename) {
     exit(1);
   }
     
-  this->getDoubleAttr("tsamp", &tsamp);
-  this->getDoubleAttr("foff", &foff);
+  tsamp = getDoubleAttr("tsamp");
+  foff = getDoubleAttr("foff");
 
   dataspace = H5Dget_space(dataset);
   if (dataspace == H5I_INVALID_HID) {
@@ -60,17 +60,23 @@ H5File::H5File(const string& filename) : filename(filename) {
   num_coarse_channels = num_freqs / coarse_channel_size;
 }
 
-void H5File::getDoubleAttr(const string& name, double* output) const {
+double H5File::getDoubleAttr(const string& name) const {
+  double output;
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
     cerr << "could not access attr " << name << endl;
     exit(1);
   }
-  if (H5Aread(attr, H5T_NATIVE_DOUBLE, output) < 0) {
+  if (H5Aread(attr, H5T_NATIVE_DOUBLE, &output) < 0) {
     cerr << "attr " << name << " could not be read as double\n";
     exit(1);
   }
   H5Aclose(attr);
+  return output;
+}
+
+string H5File::getStringAttr(const string& name) const {
+  return string("TODO");
 }
 
 // Loads the data in row-major order.

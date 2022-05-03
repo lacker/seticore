@@ -10,7 +10,8 @@ using namespace std;
  */
 class H5File {
  private:
-  void getDoubleAttr(const string &name, double* output) const;
+  double getDoubleAttr(const string& name) const;
+  string getStringAttr(const string& name) const;
   hid_t file, dataset, dataspace;
 
  public:
@@ -18,6 +19,7 @@ class H5File {
   ~H5File();
 
   const string filename;
+  string source_name;
   double tsamp, foff;
   int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
   

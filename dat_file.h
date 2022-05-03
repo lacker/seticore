@@ -19,4 +19,6 @@ class DatFile {
  public:
   DatFile(const string& filename, const H5File& metadata);
   ~DatFile();
+
+  void reportHit();
 };
