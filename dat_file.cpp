@@ -19,6 +19,7 @@ DatFile::DatFile(const string& filename, const H5File& metadata) {
   file << "# -------------------------- o --------------------------\n";
   file << "# File ID: " << parts[parts.size() - 1] << " \n";
   file << "# -------------------------- o --------------------------\n";
+  file << "# Source:" << metadata.source_name << "\n";
   file << flush;
 }
 

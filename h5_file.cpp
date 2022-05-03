@@ -3,6 +3,7 @@ using namespace std;
 #include <cstdlib>
 #include "hdf5.h"
 #include <iostream>
+#include <string.h>
 
 #include "h5_file.h"
 
@@ -30,7 +31,8 @@ H5File::H5File(const string& filename) : filename(filename) {
     
   tsamp = getDoubleAttr("tsamp");
   foff = getDoubleAttr("foff");
-
+  source_name = getStringAttr("source_name");
+  
   dataspace = H5Dget_space(dataset);
   if (dataspace == H5I_INVALID_HID) {
     cerr << "could not open dataspace\n";
@@ -75,8 +77,46 @@ double H5File::getDoubleAttr(const string& name) const {
   return output;
 }
 
+/*
+  This assumes the string is stored as variable-length UTF8.
+  I'm not sure what if any type conversion the library will do, and
+  historically we do not store attributes with consistent string
+  subtypes, so when we run into attributes with different formats we
+  might have to improve this method.
+ */
 string H5File::getStringAttr(const string& name) const {
-  return string("TODO");
+  auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
+  if (attr == H5I_INVALID_HID) {
+    cerr << "could not access attr " << name << endl;
+    exit(1);
+  }
+
+  // Create memtype for variable-length UTF8
+  auto memtype = H5Tcopy(H5T_C_S1);
+  if (H5Tset_size(memtype, H5T_VARIABLE) < 0) {
+    cerr << "H5Tset_size failed\n";
+    exit(1);
+  }
+  if (H5Tset_strpad(memtype, H5T_STR_NULLTERM) < 0) {
+    cerr << "H5Tset_strpad failed\n";
+    exit(1);
+  }
+  if (H5Tset_cset(memtype, H5T_CSET_UTF8) < 0) {
+    cerr << "H5Tset_cset failed\n";
+    exit(1);
+  }
+  auto storage_size = H5Aget_storage_size(attr);
+  char* buffer = (char*)malloc(storage_size * sizeof(char));
+  memset(buffer, 0, storage_size);
+  
+  if (H5Aread(attr, memtype, &buffer) < 0) {
+    cerr << "H5Aread failed for string attr " << name << endl;
+    exit(1);
+  }
+  
+  string output(buffer);
+  free(buffer);
+  return output;
 }
 
 // Loads the data in row-major order.
