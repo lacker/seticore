@@ -120,7 +120,6 @@ string H5File::getStringAttr(const string& name) const {
 
   // We need to add one ourselves for a null
   auto storage_size = H5Aget_storage_size(attr) + 1;
-  cout << "storage size is " << storage_size << "\n";
   char* buffer = (char*)malloc(storage_size * sizeof(char));
   memset(buffer, 0, storage_size);
 

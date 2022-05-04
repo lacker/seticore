@@ -219,10 +219,10 @@ __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int n
   input_filename is assumed to be in the .h5 format
   output_filename is where a .dat file will be written with results
   max_drift is the maximum drift we are looking for, in Hz/sec
-  snr is the minimum SNR we require to report a signal
+  snr_threshold is the minimum SNR we require to report a signal
  */
 void dedoppler(const string& input_filename, const string& output_filename,
-               double max_drift, double snr) {
+               double max_drift, double snr_threshold) {
   H5File file(input_filename);
   DatFile output(output_filename, file, max_drift);
   
@@ -233,7 +233,6 @@ void dedoppler(const string& input_filename, const string& output_filename,
   int drift_timesteps = file.num_timesteps - (ts_compat ? 0 : 1);
   double obs_length = drift_timesteps * file.tsamp;
   double drift_rate_resolution = 1e6 * file.foff / obs_length;
-  double snr_threshold = 2.0;
   
   // Normalize the max drift in units of "horizontal steps per vertical step"
   double diagonal_drift_rate = drift_rate_resolution * drift_timesteps;
