@@ -4,7 +4,7 @@ dedoppler algorithm that creates .dat files from .h5 files.
 
 ## Quickstart
 
-You need g++, cmake 3.10 or above, a cuda toolkit, and hdf5 with the bitshuffle
+You need g++, cmake 3.10 or above, a CUDA toolkit, and hdf5 with the bitshuffle
 plugin installed. `nvcc` should be in your `$PATH`.
 
 Git clone this repo, then update submodules and run the make script:
@@ -28,6 +28,12 @@ detailed instructions below.
 
 The build is using CMake. I've been developing on Ubuntu 18. You need
 to install the CUDA dev kit, go follow Nvidia's instructions for that.
+
+You're probably better off deactivating any conda environment before installing. Conda sets
+up the environment to use its own copies of `hdf5` and CUDA, and it's simpler to just
+use the global ones. If you get errors around multiple copies of the `hdf5` library found, or
+notice paths from your conda installation sneaking into the output, this is likely to be
+the source.
 
 Then you need to install `hdf5` along with the `bitshuffle` plugin. Two
 paths you can take here - what I did, or what I recommend.
@@ -53,6 +59,7 @@ into a new directory in `/usr/local/hdf5/lib/plugin/`.
 conda create --name hdf5
 conda activate hdf5
 conda install -c conda-forge hdf5plugin
+conda deactivate
 ```
 
 This doesn't seem like a great way to install hdf5 but it's the first
