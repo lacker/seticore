@@ -4,6 +4,9 @@ dedoppler algorithm that creates .dat files from .h5 files.
 
 ## Quickstart
 
+You need g++, cmake 3.10 or above, a cuda toolkit, and hdf5 with the bitshuffle
+plugin installed.
+
 Git clone this repo, then update submodules and run the make script:
 
 ```
