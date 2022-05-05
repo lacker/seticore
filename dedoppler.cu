@@ -282,26 +282,28 @@ void dedoppler(const string& input_filename, const string& output_filename,
       // Remove the DC spike by making it the average of the adjacent columns
       row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
-    std::sort(column_sums.begin(), column_sums.end());
-    float median;
-    if (mid % 2 == 0) {
-      median = column_sums[mid];
-    } else {
-      median = (column_sums[mid - 1] + column_sums[mid]) / 2.0;
-    }
 
-    // Use the central 90% to calculate standard deviation
-    int begin = ceil(0.05 * column_sums.size());
-    int end = floor(0.95 * column_sums.size()) + 1;
-    float sum = std::accumulate(column_sums.begin() + begin, column_sums.begin() + end, 0.0);
-    float m = sum / (end - begin);
+    // Use the central 90% to calculate standard deviation.
+    // We don't need to do a full sort; we can just calculate the 5th,
+    // 50th, and 95th percentiles    
+    std::nth_element(column_sums.begin(), column_sums.begin() + mid, column_sums.end());
+    int first = ceil(0.05 * column_sums.size());
+    int last = floor(0.95 * column_sums.size());
+    std::nth_element(column_sums.begin(), column_sums.begin() + first,
+                     column_sums.begin() + (mid - 1));
+    std::nth_element(column_sums.begin() + (mid + 1), column_sums.begin() + last,
+                     column_sums.end());
+    float median = column_sums[mid];
+    
+    float sum = std::accumulate(column_sums.begin() + first, column_sums.begin() + (last + 1), 0.0);
+    float m = sum / (last + 1 - first);
     float accum = 0.0;
-    std::for_each(column_sums.begin() + begin, column_sums.begin() + end,
+    std::for_each(column_sums.begin() + first, column_sums.begin() + last + 1,
                   [&](const float f) {
                     accum += (f - m) * (f - m);
                   });
-    float std_dev = sqrt(accum / (end - begin));
-
+    float std_dev = sqrt(accum / (last + 1 - first));
+    
     for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
     
       // In the Taylor tree algorithm, the dataflow among the buffers looks like:
