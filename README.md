@@ -111,3 +111,13 @@ You can run on the sample data with:
 ```
 ./run.sh
 ```
+
+## Selecting a Specific GPU Device ID
+
+Reference: https://shawnliu.me/post/nvidia-gpu-id-enumeration-in-linux/
+
+When there is competition for GPU devices, it is often desirable to run CUDA programs like seticore on a specific device. This is a multi-step process to first select a specific device and then run seticore:
+* ```export CUDA_DEVICE_ORDER=PCI_BUS_ID``` so that the IDs are consistent with what you will see in ```nvidia-smi```.
+* Run ```nvidia-smi``` to view the current loading on the individual GPU devices.  
+* ```export CUDA_VISIBLE_DEVICES=<n>``` where ```<n>``` is the ID of the specific GPU device available for use with seticore.
+* Run seticore.
