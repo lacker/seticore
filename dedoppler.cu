@@ -226,13 +226,9 @@ void dedoppler(const string& input_filename, const string& output_filename,
   H5File file(input_filename);
   DatFile output(output_filename, file, max_drift);
   
-  // Whether we are calculating drift rates to be compatible with
-  // turboseti, as opposed to the way I actually think is correct.
-  bool ts_compat = true;
-  
-  int drift_timesteps = file.num_timesteps - (ts_compat ? 0 : 1);
-  double obs_length = drift_timesteps * file.tsamp;
-  double drift_rate_resolution = 1e6 * file.foff / obs_length;
+  int drift_timesteps = file.num_timesteps - 1;
+  double drift_rate_resolution = 1e6 * file.foff / (drift_timesteps * file.tsamp);
+  cout << "drift rate resolution: " << drift_rate_resolution << endl;
   
   // Normalize the max drift in units of "horizontal steps per vertical step"
   double diagonal_drift_rate = drift_rate_resolution * drift_timesteps;
@@ -391,11 +387,12 @@ void dedoppler(const string& input_filename, const string& output_filename,
       }
       if (!found_larger_path_sum) {
         // The candidate frequency is the best within its window
-        double drift_rate = top_drift_blocks[candidate_freq] * diagonal_drift_rate +
-                            top_path_offsets[candidate_freq] * drift_rate_resolution;
+        int drift_bins = top_drift_blocks[candidate_freq] * drift_timesteps +
+                         top_path_offsets[candidate_freq];
+        double drift_rate = drift_bins * drift_rate_resolution;
         float snr = (candidate_path_sum - median) / std_dev;
 
-        output.reportHit(coarse_channel, candidate_freq, drift_rate, snr);
+        output.reportHit(coarse_channel, candidate_freq, drift_bins, drift_rate, snr);
       }
     }
   }

@@ -21,5 +21,5 @@ class DatFile {
   DatFile(const string& filename, const H5File& metadata, double max_drift);
   ~DatFile();
 
-  void reportHit(int coarse_channel, int freq_index, double drift_rate, double snr);
+  void reportHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr);
 };

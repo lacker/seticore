@@ -52,12 +52,12 @@ DatFile::~DatFile() {
 }
 
 
-void DatFile::reportHit(int coarse_channel, int freq_index, double drift_rate, double snr) {
+void DatFile::reportHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr) {
   ++hit_count;
 
-  cout << fmt::format("hit: coarse channel = {}, snr = {:.6f}, "
-                      "drift rate = {:.6f}, index = {}\n",
-                      coarse_channel, snr, drift_rate, freq_index);
+  cout << fmt::format("hit: coarse channel = {}, index = {}, snr = {:.6f}, "
+                      "drift rate = {:.6f} ({} bins)\n",
+                      coarse_channel, freq_index, snr, drift_rate, drift_bins);
   
   int global_index = coarse_channel * metadata.coarse_channel_size + freq_index;
   double frequency = metadata.fch1 + global_index * metadata.foff;
