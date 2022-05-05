@@ -121,3 +121,24 @@ When there is competition for GPU devices, it is often desirable to run CUDA pro
 * Run ```nvidia-smi``` to view the current loading on the individual GPU devices.  
 * ```export CUDA_VISIBLE_DEVICES=<n>``` where ```<n>``` is the ID of the specific GPU device available for use with seticore.
 * Run seticore.
+
+## Profiling
+
+Install some dependencies:
+
+```
+sudo apt-get install perf
+pushd ~
+git clone git@github.com:brendangregg/FlameGraph.git
+popd
+```
+
+Then do a profiling run with your arguments of choice:
+
+```
+perf record -g ./build/seticore <arguments-for-seticore>
+perf script > perf.script
+~/FlameGraph/stackcollapse-perf.pl perf.script | ~/FlameGraph/flamegraph.pl > perf.svg
+```
+
+Then look at `perf.svg` in a browser.
