@@ -266,7 +266,12 @@ void dedoppler(const string& input_filename, const string& output_filename,
     file.loadCoarseChannel(coarse_channel, input);
 
     // If we padded timesteps to get to a power of two, we need to zero out that extra space
-    // TODO
+    if (rounded_num_timesteps > file.num_timesteps) {
+      int num_floats_loaded = file.num_timesteps * file.coarse_channel_size;
+      int num_zeros_needed = (rounded_num_timesteps - file.num_timesteps) *
+                             file.coarse_channel_size;
+      memset(input + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
+    }
     
     // For now all cuda operations use the same grid
     int grid_size = (file.coarse_channel_size + CUDA_BLOCK_SIZE - 1) / CUDA_BLOCK_SIZE;
