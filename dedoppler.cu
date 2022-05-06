@@ -225,8 +225,14 @@ void dedoppler(const string& input_filename, const string& output_filename,
                double max_drift, double snr_threshold) {
   H5File file(input_filename);
   DatFile output(output_filename, file, max_drift);
+
+  // Round up to the next power of two, for how many timesteps to model
+  int rounded_num_timesteps = 1;
+  while (rounded_num_timesteps < file.num_timesteps) {
+    rounded_num_timesteps *= 2;
+  }
   
-  int drift_timesteps = file.num_timesteps - 1;
+  int drift_timesteps = rounded_num_timesteps - 1;
   double drift_rate_resolution = 1e6 * file.foff / (drift_timesteps * file.tsamp);
   cout << "drift rate resolution: " << drift_rate_resolution << endl;
   
@@ -240,9 +246,9 @@ void dedoppler(const string& input_filename, const string& output_filename,
   // each the size of one coarse channel. One array to read the source
   // data, and two buffers to use for Taylor tree calculations.
   float *input, *buffer1, *buffer2;
-  cudaMallocManaged(&input, file.coarse_channel_size * file.num_timesteps * sizeof(float));
-  cudaMallocManaged(&buffer1, file.coarse_channel_size * file.num_timesteps * sizeof(float));
-  cudaMallocManaged(&buffer2, file.coarse_channel_size * file.num_timesteps * sizeof(float));
+  cudaMallocManaged(&input, file.coarse_channel_size * rounded_num_timesteps * sizeof(float));
+  cudaMallocManaged(&buffer1, file.coarse_channel_size * rounded_num_timesteps * sizeof(float));
+  cudaMallocManaged(&buffer2, file.coarse_channel_size * rounded_num_timesteps * sizeof(float));
 
   // For aggregating top hits, we use three arrays, each the size of
   // one row of the coarse channel. One array to store the largest
@@ -259,6 +265,9 @@ void dedoppler(const string& input_filename, const string& output_filename,
   for (int coarse_channel = 0; coarse_channel < file.num_coarse_channels; ++coarse_channel) {
     file.loadCoarseChannel(coarse_channel, input);
 
+    // If we padded timesteps to get to a power of two, we need to zero out that extra space
+    // TODO
+    
     // For now all cuda operations use the same grid
     int grid_size = (file.coarse_channel_size + CUDA_BLOCK_SIZE - 1) / CUDA_BLOCK_SIZE;
 
@@ -317,11 +326,11 @@ void dedoppler(const string& input_filename, const string& output_filename,
       // Each pass through the data calculates the sum of paths that are
       // twice as long as the previous path, until we reach our goal,
       // which is paths of length num_timesteps.
-      for (int path_length = 2; path_length <= file.num_timesteps; path_length *= 2) {
+      for (int path_length = 2; path_length <= rounded_num_timesteps; path_length *= 2) {
 
         // Invoke cuda kernel
         taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
-                                                   file.num_timesteps, file.coarse_channel_size,
+                                                   rounded_num_timesteps, file.coarse_channel_size,
                                                    path_length, drift_block);
 
         // Swap buffer aliases to make the old target the new source
@@ -339,7 +348,7 @@ void dedoppler(const string& input_filename, const string& output_filename,
 
       // Invoke cuda kernel
       // The final path sums are in source_buffer because we did one last alias-swap
-      findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, file.num_timesteps,
+      findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, rounded_num_timesteps,
                                                       file.coarse_channel_size, drift_block,
                                                       top_path_sums, top_drift_blocks,
                                                       top_path_offsets);
