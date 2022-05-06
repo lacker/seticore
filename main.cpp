@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
     ("input", po::value<string>(), "the input .h5 file")
     ("output", po::value<string>(), "the output .dat file")
     ("max_drift", po::value<double>()->default_value(10.0), "maximum drift in Hz/sec")
+    ("min_drift", po::value<double>()->default_value(0.0), "minimum drift in Hz/sec")
     ("snr", po::value<double>()->default_value(25.0), "minimum SNR to report a hit")
     ;
 
