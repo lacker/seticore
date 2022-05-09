@@ -1,5 +1,6 @@
 using namespace std;
 
+#include <assert.h>
 #include <cstdlib>
 #include "hdf5.h"
 #include <iostream>
@@ -56,9 +57,15 @@ H5File::H5File(const string& filename) : filename(filename) {
   num_freqs = dims[2];
 
   // Guess the coarse channel size
+  long telescope_id = getLongAttr("telescope_id");
   if (num_timesteps == 16 && num_freqs % 1048576 == 0) {
     // Looks like Green Bank data
+    assert(telescope_id == -1 || telescope_id == 6);
     coarse_channel_size = 1048576;
+  } else if (num_freqs == 50331648) {
+    // Looks like ATA data
+    assert(telescope_id == -1 || telescope_id == 9);
+    coarse_channel_size = 524288;
   } else {
     cerr << "unrecognized data dimensions: " << num_timesteps << " x " << num_freqs << endl;
     exit(1);
@@ -79,6 +86,21 @@ double H5File::getDoubleAttr(const string& name) const {
   }
   H5Aclose(attr);
   return output;
+}
+
+long H5File::getLongAttr(const string& name) const {
+  long output;
+  auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
+  if (attr == H5I_INVALID_HID) {
+    cerr << "could not access attr " << name << endl;
+    exit(1);
+  }
+  if (H5Aread(attr, H5T_NATIVE_LONG, &output) < 0) {
+    cerr << "attr " << name << " could not be read as long\n";
+    exit(1);
+  }
+  H5Aclose(attr);
+  return output;  
 }
 
 /*
