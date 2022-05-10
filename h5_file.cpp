@@ -65,7 +65,7 @@ H5File::H5File(const string& filename) : filename(filename) {
   } else if (num_freqs == 50331648) {
     // Looks like ATA data
     assert(telescope_id == -1 || telescope_id == 9);
-    coarse_channel_size = 524288;
+    coarse_channel_size = 262144;
   } else {
     cerr << "unrecognized data dimensions: " << num_timesteps << " x " << num_freqs << endl;
     exit(1);
