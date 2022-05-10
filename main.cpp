@@ -11,13 +11,16 @@ using namespace std;
 
 namespace po = boost::program_options;
 
+const string VERSION = "0.0.1";
+
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
 int main(int argc, char* argv[]) {
   po::options_description desc("seticore options");
   desc.add_options()
-    ("input", po::value<string>(), "the input .h5 file")
-    ("output", po::value<string>(), "the output .dat file")
+    ("help,h", "produce help message")
+    ("input", po::value<string>(), "alternate way of setting the input .h5 file")
+    ("output", po::value<string>(), "the output .dat file. if not provided, uses the input filename with s/h5/dat/")
     ("max_drift", po::value<double>()->default_value(10.0), "maximum drift in Hz/sec")
     ("min_drift", po::value<double>()->default_value(0.0001), "minimum drift in Hz/sec")
     ("snr", po::value<double>()->default_value(25.0), "minimum SNR to report a hit")
@@ -30,7 +33,9 @@ int main(int argc, char* argv[]) {
   po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
   po::notify(vm);
   
-  if (!vm.count("input")) {
+  if (!vm.count("input") || vm.count("help")) {
+    cerr << "usage: seticore [input]\n";
+    cerr << "seticore version: " << VERSION << endl;
     cerr << desc << "\n";
     return 1;
   }
@@ -56,7 +61,7 @@ int main(int argc, char* argv[]) {
   double max_drift = vm["max_drift"].as<double>();
   double snr = vm["snr"].as<double>();
   double min_drift = vm["min_drift"].as<double>();
-  
+
   cout << fmt::format("dedopplering {} with max_drift={:.2f} snr={:.2f}; output in {}\n",
                       input, max_drift, snr, output);
   dedoppler(input, output, max_drift, snr, min_drift);
