@@ -297,30 +297,10 @@ void dedoppler(const string& input_filename, const string& output_filename,
       row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
 
-    // Use the central 90% to calculate standard deviation.
-    // We don't need to do a full sort; we can just calculate the 5th,
-    // 50th, and 95th percentiles    
-    std::nth_element(column_sums.begin(), column_sums.begin() + mid, column_sums.end());
-    int first = ceil(0.05 * column_sums.size());
-    int last = floor(0.95 * column_sums.size());
-    std::nth_element(column_sums.begin(), column_sums.begin() + first,
-                     column_sums.begin() + (mid - 1));
-    std::nth_element(column_sums.begin() + (mid + 1), column_sums.begin() + last,
-                     column_sums.end());
-    float median = column_sums[mid];
-    
-    float sum = std::accumulate(column_sums.begin() + first, column_sums.begin() + (last + 1), 0.0);
-    float m = sum / (last + 1 - first);
-    float accum = 0.0;
-    std::for_each(column_sums.begin() + first, column_sums.begin() + last + 1,
-                  [&](const float f) {
-                    accum += (f - m) * (f - m);
-                  });
-    float std_dev = sqrt(accum / (last + 1 - first));
-    
+    // Do the Taylor tree algorithm
     for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
     
-      // In the Taylor tree algorithm, the dataflow among the buffers looks like:
+      // The dataflow among the buffers looks like:
       // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
       // We use the aliases source_buffer and target_buffer to make this simpler.
       // In each pass through the upcoming loop, we are reading from
@@ -359,10 +339,33 @@ void dedoppler(const string& input_filename, const string& output_filename,
                                                       top_path_offsets);
     }
 
-    // Now that we have done all the expensive processing for one coarse
-    // channel, we can copy the data back out of the GPU.
+    // Now that we have done all the GPU processing for one coarse
+    // channel, we can copy the data back to host memory.
     cudaDeviceSynchronize();
 
+    
+    // Use the central 90% of the column sums to calculate standard deviation.
+    // We don't need to do a full sort; we can just calculate the 5th,
+    // 50th, and 95th percentiles    
+    std::nth_element(column_sums.begin(), column_sums.begin() + mid, column_sums.end());
+    int first = ceil(0.05 * column_sums.size());
+    int last = floor(0.95 * column_sums.size());
+    std::nth_element(column_sums.begin(), column_sums.begin() + first,
+                     column_sums.begin() + (mid - 1));
+    std::nth_element(column_sums.begin() + (mid + 1), column_sums.begin() + last,
+                     column_sums.end());
+    float median = column_sums[mid];
+    
+    float sum = std::accumulate(column_sums.begin() + first, column_sums.begin() + (last + 1), 0.0);
+    float m = sum / (last + 1 - first);
+    float accum = 0.0;
+    std::for_each(column_sums.begin() + first, column_sums.begin() + last + 1,
+                  [&](const float f) {
+                    accum += (f - m) * (f - m);
+                  });
+    float std_dev = sqrt(accum / (last + 1 - first));
+
+    
     // We consider two hits to be duplicates if the distance in their
     // frequency indexes is less than window_size. We only want to
     // output the largest representative of any set of duplicates.
