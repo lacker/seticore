@@ -214,6 +214,23 @@ __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int n
 
 
 /*
+  Sum the columns of a two-dimensional array.
+  input is a (num_timesteps x num_freqs) array, stored in row-major order.
+  sums is an array of size num_freqs.
+ */
+__global__ void sumColumns(const float* input, float* sums, int num_timesteps, int num_freqs) {
+  int freq = blockIdx.x * blockDim.x + threadIdx.x;
+  if (freq < 0 || freq >= num_freqs) {
+    return;
+  }
+  sums[freq] = 0.0;
+  for (int i = freq; i < num_timesteps * num_freqs; i += num_freqs) {
+    sums[freq] += input[i];
+  }
+}
+
+
+/*
   Runs a dedoppler algorithm and writes the results to a .dat file.
 
   input_filename is assumed to be in the .h5 format
@@ -241,7 +258,7 @@ void dedoppler(const string& input_filename, const string& output_filename,
   double normalized_max_drift = max_drift / abs(diagonal_drift_rate);
   int min_drift_block = floor(-normalized_max_drift);
   int max_drift_block = floor(normalized_max_drift);
-  
+
   // For computing Taylor sums, we use three unified memory arrays,
   // each the size of one coarse channel. One array to read the source
   // data, and two buffers to use for Taylor tree calculations.
@@ -250,6 +267,10 @@ void dedoppler(const string& input_filename, const string& output_filename,
   cudaMallocManaged(&buffer1, file.coarse_channel_size * rounded_num_timesteps * sizeof(float));
   cudaMallocManaged(&buffer2, file.coarse_channel_size * rounded_num_timesteps * sizeof(float));
 
+  // For normalization, we sum each column.
+  float *column_sums;
+  cudaMallocManaged(&column_sums, file.coarse_channel_size * sizeof(float));
+  
   // For aggregating top hits, we use three arrays, each the size of
   // one row of the coarse channel. One array to store the largest
   // path sum, one to store which drift block it came from, and one to
@@ -273,7 +294,8 @@ void dedoppler(const string& input_filename, const string& output_filename,
       memset(input + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
     }
     
-    // For now all cuda operations use the same grid
+    // For now all cuda operations use the same grid.
+    // This will create one cuda thread per frequency bin
     int grid_size = (file.coarse_channel_size + CUDA_BLOCK_SIZE - 1) / CUDA_BLOCK_SIZE;
 
     // Zero out the path sums in between each coarse channel because
@@ -284,16 +306,14 @@ void dedoppler(const string& input_filename, const string& output_filename,
     // should be negligible and maybe it helps avoid bugs.
     memset(top_drift_blocks, 0, file.coarse_channel_size * sizeof(int));
     memset(top_path_offsets, 0, file.coarse_channel_size * sizeof(int));
+
+    sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input, column_sums,
+                                               rounded_num_timesteps, file.coarse_channel_size);
     
-    // Calculate distribution statistics
-    vector<float> column_sums(file.coarse_channel_size, 0);
+    // Remove the DC spike by making it the average of the adjacent columns
     int mid = file.coarse_channel_size / 2;
     for (int row_index = 0; row_index < file.num_timesteps; ++row_index) {
       float* row = input + row_index * file.coarse_channel_size;
-      std::transform(column_sums.begin(), column_sums.end(), row,
-                     column_sums.begin(), std::plus<float>());
-
-      // Remove the DC spike by making it the average of the adjacent columns
       row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
 
@@ -346,20 +366,21 @@ void dedoppler(const string& input_filename, const string& output_filename,
     
     // Use the central 90% of the column sums to calculate standard deviation.
     // We don't need to do a full sort; we can just calculate the 5th,
-    // 50th, and 95th percentiles    
-    std::nth_element(column_sums.begin(), column_sums.begin() + mid, column_sums.end());
-    int first = ceil(0.05 * column_sums.size());
-    int last = floor(0.95 * column_sums.size());
-    std::nth_element(column_sums.begin(), column_sums.begin() + first,
-                     column_sums.begin() + (mid - 1));
-    std::nth_element(column_sums.begin() + (mid + 1), column_sums.begin() + last,
-                     column_sums.end());
+    // 50th, and 95th percentiles
+    auto column_sums_end = column_sums + file.coarse_channel_size;
+    std::nth_element(column_sums, column_sums + mid, column_sums_end);
+    int first = ceil(0.05 * file.coarse_channel_size);
+    int last = floor(0.95 * file.coarse_channel_size);
+    std::nth_element(column_sums, column_sums + first,
+                     column_sums + mid - 1);
+    std::nth_element(column_sums + mid + 1, column_sums + last,
+                     column_sums_end);
     float median = column_sums[mid];
     
-    float sum = std::accumulate(column_sums.begin() + first, column_sums.begin() + (last + 1), 0.0);
+    float sum = std::accumulate(column_sums + first, column_sums + last + 1, 0.0);
     float m = sum / (last + 1 - first);
     float accum = 0.0;
-    std::for_each(column_sums.begin() + first, column_sums.begin() + last + 1,
+    std::for_each(column_sums + first, column_sums + last + 1,
                   [&](const float f) {
                     accum += (f - m) * (f - m);
                   });
