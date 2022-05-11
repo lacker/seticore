@@ -103,6 +103,15 @@ long H5File::getLongAttr(const string& name) const {
   return output;  
 }
 
+bool H5File::attrExists(const string& name) const {
+  auto answer = H5Aexists(dataset, name.c_str());
+  if (answer < 0) {
+    cerr << "existence check for attr " << name << " failed\n";
+    exit(1);
+  }
+  return answer > 0;
+}
+
 /*
   This assumes the string is stored as variable-length UTF8.
   I'm not sure what if any type conversion the library will do, and

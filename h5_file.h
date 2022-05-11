@@ -13,6 +13,7 @@ class H5File {
   double getDoubleAttr(const string& name) const;
   string getStringAttr(const string& name) const;
   long getLongAttr(const string& name) const;
+  bool attrExists(const string& name) const;
   hid_t file, dataset, dataspace;
   int hit_count;
   
