@@ -311,11 +311,13 @@ void dedoppler(const string& input_filename, const string& output_filename,
     sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input, column_sums,
                                                rounded_num_timesteps, file.coarse_channel_size);
     
-    // Remove the DC spike by making it the average of the adjacent columns
     int mid = file.coarse_channel_size / 2;
-    for (int row_index = 0; row_index < file.num_timesteps; ++row_index) {
-      float* row = input + row_index * file.coarse_channel_size;
-      row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
+    if (file.has_dc_spike) {
+      // Remove the DC spike by making it the average of the adjacent columns
+      for (int row_index = 0; row_index < file.num_timesteps; ++row_index) {
+        float* row = input + row_index * file.coarse_channel_size;
+        row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
+      }
     }
 
     // Do the Taylor tree algorithm

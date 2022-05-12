@@ -22,6 +22,7 @@ class H5File {
   ~H5File();
 
   const string filename;
+  bool has_dc_spike;
   string source_name;
   double fch1, foff, tstart, tsamp, src_dej, src_raj;
   int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
