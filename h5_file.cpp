@@ -71,6 +71,20 @@ H5File::H5File(const string& filename) : filename(filename) {
     exit(1);
   }
   num_coarse_channels = num_freqs / coarse_channel_size;
+
+  if (attrExists("nfpc")) {
+    // Double-check that our heuristics match the provided nfpc.
+    // If the nfpc attribute was always present, we could just use it rather than the
+    // heuristic. Since we do want the heuristics to work, for now I'd rather end up
+    // notified through user feedback when they are wrong, rather than quietly
+    // overriding the heuristics.
+    long nfpc = getLongAttr("nfpc");
+    if (nfpc != coarse_channel_size) {
+      cerr << "nfpc " << nfpc << " does not match inferred coarse channel size of "
+           << coarse_channel_size << endl;
+      exit(1);
+    }
+  }
 }
 
 double H5File::getDoubleAttr(const string& name) const {
