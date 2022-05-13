@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 using namespace std;
 
 /*
@@ -18,4 +20,4 @@ class FilterbankFile {
   virtual void loadCoarseChannel(int i, float* output) const = 0;
 };
 
-FilterbankFile* loadFilterbank(const string& filename);
+unique_ptr<FilterbankFile> loadFilterbank(const string& filename);

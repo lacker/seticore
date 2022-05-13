@@ -241,9 +241,9 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
  */
 void dedoppler(const string& input_filename, const string& output_filename,
                double max_drift, double snr_threshold, double min_drift) {
-  FilterbankFile* file = loadFilterbank(input_filename);
+  auto file = loadFilterbank(input_filename);
   
-  DatFile output(output_filename, *file, max_drift);
+  DatFile output(output_filename, *file.get(), max_drift);
 
   // Round up to the next power of two, for how many timesteps to model
   int rounded_num_timesteps = 1;
@@ -442,6 +442,4 @@ void dedoppler(const string& input_filename, const string& output_filename,
       }
     }
   }
-
-  delete file;
 }
