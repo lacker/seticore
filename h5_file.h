@@ -7,7 +7,9 @@ using namespace std;
 
 /*
   This class contains helper methods for processing .h5 files that are specific to the
-  astronomical data format we expect, like extracting particular data from headers.
+  astronomical data format we use for filterbanks, like extracting
+  particular data from headers.
+  Also known as the "FBH5" format.
  */
 class H5File: public FilterbankFile {
  private:
