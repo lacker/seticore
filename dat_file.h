@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "h5_file.h"
+#include "filterbank_file.h"
 
 using namespace std;
 
@@ -13,12 +13,12 @@ using namespace std;
 */
 class DatFile {
  private:
-  const H5File& metadata;
+  const FilterbankFile& metadata;
   ofstream file;
   int hit_count;
   
  public:
-  DatFile(const string& filename, const H5File& metadata, double max_drift);
+  DatFile(const string& filename, const FilterbankFile& metadata, double max_drift);
   ~DatFile();
 
   void reportHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr);

@@ -14,7 +14,7 @@ find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 
 add_subdirectory(fmt)
 
-add_executable(seticore main.cpp dedoppler.cu dat_file.cpp h5_file.cpp)
+add_executable(seticore main.cpp dedoppler.cu dat_file.cpp filterbank_file.cpp h5_file.cpp)
 set_property(TARGET seticore PROPERTY CUDA_STANDARD 11)
 
 target_link_libraries(seticore fmt ${HDF5_C_LIBRARIES} Boost::program_options)

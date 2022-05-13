@@ -12,7 +12,7 @@ using namespace std;
   Opens a dat file for writing, to log hits that we find.
   Some metadata for headers is copied out from the h5 file.
  */
-DatFile::DatFile(const string& filename, const H5File& metadata, double max_drift) : metadata(metadata) {
+DatFile::DatFile(const string& filename, const FilterbankFile& metadata, double max_drift) : metadata(metadata) {
   hit_count = 0;
   file.open(filename);
 
