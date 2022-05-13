@@ -112,6 +112,14 @@ You can run on the sample data with:
 ./run.sh
 ```
 
+To enable regression testing, run
+
+```
+cp data/output.txt data/golden.txt
+```
+
+and then subsequent calls to `run.sh` will show any variations from the golden output.
+
 ## Selecting a Specific GPU Device ID
 
 Reference: https://shawnliu.me/post/nvidia-gpu-id-enumeration-in-linux/
