@@ -41,15 +41,15 @@ int main(int argc, char* argv[]) {
   }
 
   string input = vm["input"].as<string>();
-  if (!boost::algorithm::ends_with(input, ".h5")) {
-    cerr << "the input " << input << " is expected to be a .h5 file\n";
-    return 1;
-  }
-     
   string output;
   if (!vm.count("output")) {
-    // By default, output to a .dat file in the same location as the input .h5 file
-    output = input.substr(0, input.size() - 3) + ".dat";
+    // By default, output to a .dat file in the same location as the input file
+    auto index = input.find_last_of(".");
+    if (index >= input.size()) {
+      cerr << "unrecognized input filename: " << input << endl;
+      return 1;
+    }
+    output = input.substr(0, index) + ".dat";
   } else {
     output = vm["output"].as<string>();
     if (!boost::algorithm::ends_with(output, ".dat")) {
