@@ -15,9 +15,12 @@ class FilterbankFile {
   bool has_dc_spike;
   string source_name;
   double fch1, foff, tstart, tsamp, src_dej, src_raj;
-  int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels;
+  int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels, telescope_id;
   
   virtual void loadCoarseChannel(int i, float* output) const = 0;
+
+ protected:
+  void inferMetadata();
 };
 
 unique_ptr<FilterbankFile> loadFilterbank(const string& filename);

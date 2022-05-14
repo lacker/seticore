@@ -56,25 +56,9 @@ H5File::H5File(const string& filename) : FilterbankFile(filename) {
   num_timesteps = dims[0];
   num_freqs = dims[2];
 
-  // Guess the properties of the data - whether it has a DC spike, the coarse channel size -
-  // that are not provided in a standardized way
-  long telescope_id = getLongAttr("telescope_id");
-  if (num_timesteps == 16 && num_freqs % 1048576 == 0) {
-    // Looks like Green Bank data
-    assert(telescope_id == -1 || telescope_id == 6);
-    coarse_channel_size = 1048576;
-    has_dc_spike = true;
-  } else if (num_freqs == 50331648) {
-    // Looks like ATA data
-    assert(telescope_id == -1 || telescope_id == 9);
-    coarse_channel_size = 262144;
-    has_dc_spike = false;
-  } else {
-    cerr << "unrecognized data dimensions: " << num_timesteps << " x " << num_freqs << endl;
-    exit(1);
-  }
-  num_coarse_channels = num_freqs / coarse_channel_size;
-
+  telescope_id = getLongAttr("telescope_id");
+  inferMetadata();
+  
   if (attrExists("nfpc")) {
     // Double-check that our heuristics match the provided nfpc.
     // If the nfpc attribute was always present, we could just use it rather than the

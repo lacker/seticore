@@ -22,6 +22,37 @@ FilFile::FilFile(const string& filename) : FilterbankFile(filename),
          << "Is it really a .fil file?\n";
     exit(1);
   }
+
+  while (true) {
+    string attr_name = readString();
+    cerr << "attr name: " << attr_name << endl;
+    if (attr_name == "telescope_id") {
+      readBasic<int>();
+    } else if (attr_name == "machine_id") {
+      readBasic<int>();
+    } else if (attr_name == "data_type") {
+      readBasic<int>();
+    } else if (attr_name == "barycentric") {
+      readBasic<int>();
+    } else if (attr_name == "pulsarcentric") {
+      readBasic<int>();
+    } else if (attr_name == "nbits") {
+      readBasic<int>();
+    } else if (attr_name == "nsamples") {
+      num_timesteps = readBasic<int>();
+    } else if (attr_name == "nchans") {
+      readBasic<int>();
+    } else if (attr_name == "nifs") {
+      readBasic<int>();
+    } else if (attr_name == "nbeams") {
+      readBasic<int>();
+    } else if (attr_name == "ibeam") {
+      readBasic<int>();
+    } else {
+      cerr << "unhandled attr name: " << attr_name << endl;
+      exit(1);
+    }
+  }
   
   cerr << "TODO: finish implementing FilFile constructor\n";
   exit(1);
