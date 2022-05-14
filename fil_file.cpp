@@ -10,10 +10,15 @@ using namespace std;
 */
 FilFile::FilFile(const string& filename) : FilterbankFile(filename),
                                            file(filename, ifstream::binary) {
-  for (int i = 0; i < 4; ++i) {
-    char c = file.get();
-    printf("%d\n", c);
+  // Read the headers
+  bool seen_header_start = false;
+  while (true) {
+    uint32_t num_bytes;
+    file.read((char*)&num_bytes, sizeof(num_bytes));
+    cerr << num_bytes << endl;
+    break;
   }
+  
   cerr << "TODO: finish implementing FilFile constructor\n";
   exit(1);
 }
