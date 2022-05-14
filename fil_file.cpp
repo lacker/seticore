@@ -27,7 +27,7 @@ FilFile::FilFile(const string& filename) : FilterbankFile(filename),
     string attr_name = readString();
     cerr << "attr name: " << attr_name << endl;
     if (attr_name == "telescope_id") {
-      readBasic<int>();
+      telescope_id = readBasic<int>();
     } else if (attr_name == "machine_id") {
       readBasic<int>();
     } else if (attr_name == "data_type") {
@@ -48,6 +48,32 @@ FilFile::FilFile(const string& filename) : FilterbankFile(filename),
       readBasic<int>();
     } else if (attr_name == "ibeam") {
       readBasic<int>();
+    } else if (attr_name == "rawdatafile") {
+      readString();
+    } else if (attr_name == "source_name") {
+      source_name = readString();
+    } else if (attr_name == "az_start") {
+      readBasic<double>();
+    } else if (attr_name == "za_start") {
+      readBasic<double>();
+    } else if (attr_name == "tstart") {
+      tstart = readBasic<double>();
+    } else if (attr_name == "tsamp") {
+      tsamp = readBasic<double>();
+    } else if (attr_name == "fch1") {
+      fch1 = readBasic<double>();
+    } else if (attr_name == "foff") {
+      foff = readBasic<double>();
+    } else if (attr_name == "refdm") {
+      readBasic<double>();
+    } else if (attr_name == "period") {
+      readBasic<double>();
+    } else if (attr_name == "src_raj") {
+      src_raj = readBasic<double>();
+    } else if (attr_name == "src_dej") {
+      src_dej = readBasic<double>();
+    } else if (attr_name == "HEADER_END") {
+      break;
     } else {
       cerr << "unhandled attr name: " << attr_name << endl;
       exit(1);
