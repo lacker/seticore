@@ -15,6 +15,8 @@ class FilFile: public FilterbankFile {
  private:
   ifstream file;
 
+  streampos data_start;
+  
   template <class T> T readBasic();
   string readString();
   

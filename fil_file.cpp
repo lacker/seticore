@@ -9,6 +9,7 @@ using namespace std;
 
 /*
   Opens a sigproc filterbank file for reading.
+  This class is not threadsafe.
 */
 FilFile::FilFile(const string& filename) : FilterbankFile(filename),
                                            file(filename, ifstream::binary) {
@@ -37,11 +38,13 @@ FilFile::FilFile(const string& filename) : FilterbankFile(filename),
     } else if (attr_name == "pulsarcentric") {
       readBasic<int>();
     } else if (attr_name == "nbits") {
-      readBasic<int>();
+      int nbits = readBasic<int>();
+      // We only handle 32-bit float data
+      assert(nbits == 32);
     } else if (attr_name == "nsamples") {
       num_timesteps = readBasic<int>();
     } else if (attr_name == "nchans") {
-      readBasic<int>();
+      num_freqs = readBasic<int>();
     } else if (attr_name == "nifs") {
       readBasic<int>();
     } else if (attr_name == "nbeams") {
@@ -79,9 +82,35 @@ FilFile::FilFile(const string& filename) : FilterbankFile(filename),
       exit(1);
     }
   }
+
+  // We have finally figured out where the actual data starts.
+  data_start = file.tellg();
   
-  cerr << "TODO: finish implementing FilFile constructor\n";
-  exit(1);
+  // Sometimes the number of timesteps isn't in the header, because the process writing
+  // the file didn't know how long it was going to be when it wrote the headers.
+  // So figure out the amount of data based on file size.
+  file.seekg(0, file.end);
+  long num_data_bytes = file.tellg() - data_start;
+  if (num_data_bytes % sizeof(float) != 0) {
+    cerr << "indivisible amount of data is " << num_data_bytes << " bytes\n";
+    exit(1);
+  }
+  long num_floats = num_data_bytes / sizeof(float);
+  if (num_floats % num_freqs != 0) {
+    cerr << "we have " << num_floats << " which does not divide into " << num_freqs
+         << " frequencies\n";
+    exit(1);
+  }
+  long inferred_num_timesteps = num_floats / num_freqs;
+  if (num_timesteps == 0) {
+    num_timesteps = inferred_num_timesteps;
+  } else if (num_timesteps != inferred_num_timesteps) {
+    cerr << "header num timesteps is " << num_timesteps << " but inferred num timesteps is "
+         << inferred_num_timesteps << endl;
+    exit(1);
+  }
+  
+  inferMetadata();
 }
 
 template <class T> T FilFile::readBasic() {
@@ -107,6 +136,4 @@ void FilFile::loadCoarseChannel(int i, float* output) const {
   exit(1);
 }
 
-FilFile::~FilFile() {
-  // TODO: clean up file handle
-}
+FilFile::~FilFile() {}
