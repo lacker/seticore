@@ -14,6 +14,9 @@ using namespace std;
 class FilFile: public FilterbankFile {
  private:
   ifstream file;
+
+  template <class T> T readBasic();
+  string readString();
   
  public:
   FilFile(const string& filename);
