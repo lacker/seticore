@@ -8,6 +8,12 @@
 
 CMAKE_BIN=~/cmake/bin/cmake
 
+if [ -f "$CMAKE_BIN" ]; then
+    echo "this script expects you to put your own version of cmake in $CMAKE_BIN"
+    echo "read bl_make.sh for more details"
+    exit 1
+fi
+
 cd build
 
 # Configure

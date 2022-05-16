@@ -86,9 +86,9 @@ that means the plugin directory should be `/usr/local/hdf5/lib/plugin`.
 On Ubuntu 20 there's a `bitshuffle` package that may just work if you
 install it along with the `libhdf5-dev` package.
 
-## Checking that it works on your machine
+## Compiling on your machine
 
-To check if your installation is okay:
+If you are installing on your own machine, try:
 
 ```
 ./make.sh
@@ -98,27 +98,22 @@ You may need to set `CUDACXX` to be the path to your `nvcc` binary.
 
 The plugin installation won't be validated until runtime.
 
-Then grab a Green Bank data file from
+If you are using a BL machine with an Ubuntu 16 environment, try the script
 
 ```
-https://bldata.berkeley.edu/pipeline/AGBT21B_999_31/blc17_blp17/blc17_guppi_59544_62191_HIP99317_0059.rawspec.0000.h5
+./bl_make.sh
 ```
 
-and put it in the `data` directory. It's about a 3 GB file.
+## Testing on your machine
 
-You can run on the sample data with:
-
-```
-./run.sh
-```
-
-To enable regression testing, run
+You can run the regression tests with:
 
 ```
-cp data/output.txt data/golden.txt
+./test.sh
 ```
 
-and then subsequent calls to `run.sh` will show any variations from the golden output.
+This will automatically download a few gigabytes of test data from Berkeley and ensure
+you get the expected output.
 
 ## Selecting a Specific GPU Device ID
 
