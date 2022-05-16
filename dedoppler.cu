@@ -400,7 +400,7 @@ void dedoppler(const string& input_filename, const string& output_filename,
     // windows. Any candidate hit must be the largest within this
     // window.
     float path_sum_threshold = snr_threshold * std_dev + median;
-    int window_size = ceil(normalized_max_drift * drift_timesteps);
+    int window_size = 2 * ceil(normalized_max_drift * drift_timesteps);
     for (int i = 0; i * window_size < file->coarse_channel_size; ++i) {
       int candidate_freq = -1;
       float candidate_path_sum = path_sum_threshold;
