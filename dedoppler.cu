@@ -236,11 +236,11 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
   input_filename is assumed to be in the .h5 format
   output_filename is where a .dat file will be written with results
   max_drift is the maximum drift we are looking for, in Hz/sec
-  snr_threshold is the minimum SNR we require to report a signal
   min_drift is the minimum drift we are looking for. Set to 0 if zero-drift signals are okay
+  snr_threshold is the minimum SNR we require to report a signal
  */
 void dedoppler(const string& input_filename, const string& output_filename,
-               double max_drift, double snr_threshold, double min_drift) {
+               double max_drift, double min_drift, double snr_threshold) {
   auto file = loadFilterbank(input_filename);
   
   DatFile output(output_filename, *file.get(), max_drift);

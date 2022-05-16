@@ -11,7 +11,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.0.1";
+const string VERSION = "0.0.2";
 
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
@@ -62,8 +62,11 @@ int main(int argc, char* argv[]) {
   double snr = vm["snr"].as<double>();
   double min_drift = vm["min_drift"].as<double>();
 
-  cout << fmt::format("dedopplering {} with max_drift={:.2f} snr={:.2f}; output in {}\n",
-                      input, max_drift, snr, output);
-  dedoppler(input, output, max_drift, snr, min_drift);
+  cout << "welcome to seticore, version " << VERSION << endl;
+  cout << "loading input from " << input << endl;
+  cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} snr={:.2f}\n",
+                      max_drift, min_drift, snr);
+  cout << "writing output to " << output << endl;
+  dedoppler(input, output, max_drift, min_drift, snr);
 }
 
