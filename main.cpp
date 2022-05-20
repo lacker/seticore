@@ -4,6 +4,7 @@
 #include <fmt/core.h>
 #include <iostream>
 #include <string>
+#include <time.h>
 
 #include "dedoppler.h"
 
@@ -11,7 +12,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.0.3";
+const string VERSION = "0.0.4";
 
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
@@ -21,9 +22,9 @@ int main(int argc, char* argv[]) {
     ("help,h", "produce help message")
     ("input", po::value<string>(), "alternate way of setting the input .h5 file")
     ("output", po::value<string>(), "the output .dat file. if not provided, uses the input filename but replaces its suffix with .dat")
-    ("max_drift", po::value<double>()->default_value(10.0), "maximum drift in Hz/sec")
-    ("min_drift", po::value<double>()->default_value(0.0001), "minimum drift in Hz/sec")
-    ("snr", po::value<double>()->default_value(25.0), "minimum SNR to report a hit")
+    ("max_drift,M", po::value<double>()->default_value(10.0), "maximum drift in Hz/sec")
+    ("min_drift,m", po::value<double>()->default_value(0.0001), "minimum drift in Hz/sec")
+    ("snr,s", po::value<double>()->default_value(25.0), "minimum SNR to report a hit")
     ;
 
   po::positional_options_description p;
@@ -67,6 +68,9 @@ int main(int argc, char* argv[]) {
   cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} snr={:.2f}\n",
                       max_drift, min_drift, snr);
   cout << "writing output to " << output << endl;
+  int tstart = time(NULL);
   dedoppler(input, output, max_drift, min_drift, snr);
+  int tstop = time(NULL);
+  cout << fmt::format("dedoppler elapsed time {:d}s\n", tstop - tstart);
 }
 
