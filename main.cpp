@@ -12,7 +12,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.0.3";
+const string VERSION = "0.0.4";
 
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
@@ -68,9 +68,9 @@ int main(int argc, char* argv[]) {
   cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} snr={:.2f}\n",
                       max_drift, min_drift, snr);
   cout << "writing output to " << output << endl;
-  tstart = time(NULL);
+  int tstart = time(NULL);
   dedoppler(input, output, max_drift, min_drift, snr);
-  tstop = time(NULL);
-  cout << fmt::format("dedoppler elapsed time {:.2f}s\n", tstop - tstart);
+  int tstop = time(NULL);
+  cout << fmt::format("dedoppler elapsed time {:d}s\n", tstop - tstart);
 }
 
