@@ -229,6 +229,69 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
   }
 }
 
+/*
+  The Dedopplerer encapsulates the logic of dedoppler search. In particular it manages
+  the needed GPU memory so that we can reuse the same memory allocation for different searches.
+ */
+class Dedopplerer {
+public:
+  // How many timesteps of data are processed by the engine.
+  // They may be stored in a larger array.
+  int num_timesteps;
+
+  // How many frequency channels of data are processed by the engine.
+  int num_channels;
+
+  // The size of the larger array that contains the number of timesteps,
+  // typically rounded up to the nearest power of two.
+  int rounded_num_timesteps;
+
+  // For computing Taylor sums, we use three unified memory arrays,
+  // each the size of one coarse channel. One array to read the source
+  // data, and two buffers to use for Taylor tree calculations.
+  float *input, *buffer1, *buffer2;
+
+  // For normalization, we sum each column.
+  float *column_sums;
+
+  // For aggregating top hits, we use three arrays, each the size of
+  // one row of the coarse channel. One array to store the largest
+  // path sum, one to store which drift block it came from, and one to
+  // store its path offset.
+  float *top_path_sums;
+  int *top_drift_blocks, *top_path_offsets;
+  
+
+  Dedopplerer(int _num_timesteps, int _num_channels)
+    : num_timesteps(_num_timesteps), num_channels(_num_channels) {
+
+    // Round up to the next power of two, for how many timesteps to model
+    rounded_num_timesteps = 1;
+    while (rounded_num_timesteps < num_timesteps) {
+      rounded_num_timesteps *= 2;
+    }
+
+    // Allocate everything we need for GPU processing
+    cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float));
+    cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float));
+    cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float));
+    cudaMallocManaged(&column_sums, num_channels * sizeof(float));
+    cudaMallocManaged(&top_path_sums, num_channels * sizeof(float));
+    cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int));
+    cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int));
+  }
+
+  ~Dedopplerer() {
+    cudaFree(input);
+    cudaFree(buffer1);
+    cudaFree(buffer2);
+    cudaFree(column_sums);
+    cudaFree(top_path_sums);
+    cudaFree(top_drift_blocks);
+    cudaFree(top_path_offsets);
+  }
+};
+
 
 /*
   Runs a dedoppler algorithm and writes the results to a .dat file.
@@ -245,13 +308,9 @@ void dedoppler(const string& input_filename, const string& output_filename,
   
   DatFile output(output_filename, *file.get(), max_drift);
 
-  // Round up to the next power of two, for how many timesteps to model
-  int rounded_num_timesteps = 1;
-  while (rounded_num_timesteps < file->num_timesteps) {
-    rounded_num_timesteps *= 2;
-  }
+  Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size);
   
-  int drift_timesteps = rounded_num_timesteps - 1;
+  int drift_timesteps = dedopplerer.rounded_num_timesteps - 1;
   double drift_rate_resolution = 1e6 * file->foff / (drift_timesteps * file->tsamp);
   cout << "drift rate resolution: " << drift_rate_resolution << endl;
   
@@ -261,39 +320,16 @@ void dedoppler(const string& input_filename, const string& output_filename,
   int min_drift_block = floor(-normalized_max_drift);
   int max_drift_block = floor(normalized_max_drift);
 
-  // For computing Taylor sums, we use three unified memory arrays,
-  // each the size of one coarse channel. One array to read the source
-  // data, and two buffers to use for Taylor tree calculations.
-  float *input, *buffer1, *buffer2;
-  cudaMallocManaged(&input, file->coarse_channel_size * rounded_num_timesteps * sizeof(float));
-  cudaMallocManaged(&buffer1, file->coarse_channel_size * rounded_num_timesteps * sizeof(float));
-  cudaMallocManaged(&buffer2, file->coarse_channel_size * rounded_num_timesteps * sizeof(float));
-
-  // For normalization, we sum each column.
-  float *column_sums;
-  cudaMallocManaged(&column_sums, file->coarse_channel_size * sizeof(float));
-  
-  // For aggregating top hits, we use three arrays, each the size of
-  // one row of the coarse channel. One array to store the largest
-  // path sum, one to store which drift block it came from, and one to
-  // store its path offset.
-  float *top_path_sums;
-  int *top_drift_blocks, *top_path_offsets;
-  cudaMallocManaged(&top_path_sums, file->coarse_channel_size * sizeof(float));
-  cudaMallocManaged(&top_drift_blocks, file->coarse_channel_size * sizeof(int));
-  cudaMallocManaged(&top_path_offsets, file->coarse_channel_size * sizeof(int));
-
-  
   // Load and process one coarse channel at a time from the hdf5  
   for (int coarse_channel = 0; coarse_channel < file->num_coarse_channels; ++coarse_channel) {
-    file->loadCoarseChannel(coarse_channel, input);
+    file->loadCoarseChannel(coarse_channel, dedopplerer.input);
 
     // If we padded timesteps to get to a power of two, we need to zero out that extra space
-    if (rounded_num_timesteps > file->num_timesteps) {
+    if (dedopplerer.rounded_num_timesteps > file->num_timesteps) {
       int num_floats_loaded = file->num_timesteps * file->coarse_channel_size;
-      int num_zeros_needed = (rounded_num_timesteps - file->num_timesteps) *
+      int num_zeros_needed = (dedopplerer.rounded_num_timesteps - file->num_timesteps) *
                              file->coarse_channel_size;
-      memset(input + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
+      memset(dedopplerer.input + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
     }
     
     // For now all cuda operations use the same grid.
@@ -302,21 +338,21 @@ void dedoppler(const string& input_filename, const string& output_filename,
 
     // Zero out the path sums in between each coarse channel because
     // we pick the top hits separately for each coarse channel
-    memset(top_path_sums, 0, file->coarse_channel_size * sizeof(float));
+    memset(dedopplerer.top_path_sums, 0, file->coarse_channel_size * sizeof(float));
 
     // We shouldn't need to zero out the index trackers, but the time
     // should be negligible and maybe it helps avoid bugs.
-    memset(top_drift_blocks, 0, file->coarse_channel_size * sizeof(int));
-    memset(top_path_offsets, 0, file->coarse_channel_size * sizeof(int));
+    memset(dedopplerer.top_drift_blocks, 0, file->coarse_channel_size * sizeof(int));
+    memset(dedopplerer.top_path_offsets, 0, file->coarse_channel_size * sizeof(int));
 
-    sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input, column_sums,
-                                               rounded_num_timesteps, file->coarse_channel_size);
+    sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(dedopplerer.input, dedopplerer.column_sums,
+                                               dedopplerer.rounded_num_timesteps, file->coarse_channel_size);
     
     int mid = file->coarse_channel_size / 2;
     if (file->has_dc_spike) {
       // Remove the DC spike by making it the average of the adjacent columns
       for (int row_index = 0; row_index < file->num_timesteps; ++row_index) {
-        float* row = input + row_index * file->coarse_channel_size;
+        float* row = dedopplerer.input + row_index * file->coarse_channel_size;
         row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
       }
     }
@@ -329,26 +365,26 @@ void dedoppler(const string& input_filename, const string& output_filename,
       // We use the aliases source_buffer and target_buffer to make this simpler.
       // In each pass through the upcoming loop, we are reading from
       // source_buffer and writing to target_buffer.
-      float* source_buffer = input;
-      float* target_buffer = buffer1;
+      float* source_buffer = dedopplerer.input;
+      float* target_buffer = dedopplerer.buffer1;
 
       // Each pass through the data calculates the sum of paths that are
       // twice as long as the previous path, until we reach our goal,
       // which is paths of length num_timesteps.
-      for (int path_length = 2; path_length <= rounded_num_timesteps; path_length *= 2) {
+      for (int path_length = 2; path_length <= dedopplerer.rounded_num_timesteps; path_length *= 2) {
 
         // Invoke cuda kernel
         taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
-                                                   rounded_num_timesteps, file->coarse_channel_size,
+                                                   dedopplerer.rounded_num_timesteps, file->coarse_channel_size,
                                                    path_length, drift_block);
 
         // Swap buffer aliases to make the old target the new source
-        if (target_buffer == buffer1) {
-          source_buffer = buffer1;
-          target_buffer = buffer2;
-        } else if (target_buffer == buffer2) {
-          source_buffer = buffer2;
-          target_buffer = buffer1;
+        if (target_buffer == dedopplerer.buffer1) {
+          source_buffer = dedopplerer.buffer1;
+          target_buffer = dedopplerer.buffer2;
+        } else if (target_buffer == dedopplerer.buffer2) {
+          source_buffer = dedopplerer.buffer2;
+          target_buffer = dedopplerer.buffer1;
         } else {
           cerr << "programmer error; control flow should not reach here\n";
           exit(1);
@@ -357,10 +393,10 @@ void dedoppler(const string& input_filename, const string& output_filename,
 
       // Invoke cuda kernel
       // The final path sums are in source_buffer because we did one last alias-swap
-      findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, rounded_num_timesteps,
+      findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, dedopplerer.rounded_num_timesteps,
                                                       file->coarse_channel_size, drift_block,
-                                                      top_path_sums, top_drift_blocks,
-                                                      top_path_offsets);
+                                                      dedopplerer.top_path_sums, dedopplerer.top_drift_blocks,
+                                                      dedopplerer.top_path_offsets);
     }
 
     // Now that we have done all the GPU processing for one coarse
@@ -371,20 +407,20 @@ void dedoppler(const string& input_filename, const string& output_filename,
     // Use the central 90% of the column sums to calculate standard deviation.
     // We don't need to do a full sort; we can just calculate the 5th,
     // 50th, and 95th percentiles
-    auto column_sums_end = column_sums + file->coarse_channel_size;
-    std::nth_element(column_sums, column_sums + mid, column_sums_end);
+    auto column_sums_end = dedopplerer.column_sums + file->coarse_channel_size;
+    std::nth_element(dedopplerer.column_sums, dedopplerer.column_sums + mid, column_sums_end);
     int first = ceil(0.05 * file->coarse_channel_size);
     int last = floor(0.95 * file->coarse_channel_size);
-    std::nth_element(column_sums, column_sums + first,
-                     column_sums + mid - 1);
-    std::nth_element(column_sums + mid + 1, column_sums + last,
+    std::nth_element(dedopplerer.column_sums, dedopplerer.column_sums + first,
+                     dedopplerer.column_sums + mid - 1);
+    std::nth_element(dedopplerer.column_sums + mid + 1, dedopplerer.column_sums + last,
                      column_sums_end);
-    float median = column_sums[mid];
+    float median = dedopplerer.column_sums[mid];
     
-    float sum = std::accumulate(column_sums + first, column_sums + last + 1, 0.0);
+    float sum = std::accumulate(dedopplerer.column_sums + first, dedopplerer.column_sums + last + 1, 0.0);
     float m = sum / (last + 1 - first);
     float accum = 0.0;
-    std::for_each(column_sums + first, column_sums + last + 1,
+    std::for_each(dedopplerer.column_sums + first, dedopplerer.column_sums + last + 1,
                   [&](const float f) {
                     accum += (f - m) * (f - m);
                   });
@@ -410,10 +446,10 @@ void dedoppler(const string& input_filename, const string& output_filename,
         if (freq >= file->coarse_channel_size) {
           break;
         }
-        if (top_path_sums[freq] > candidate_path_sum) {
+        if (dedopplerer.top_path_sums[freq] > candidate_path_sum) {
           // This is the new best candidate of the window
           candidate_freq = freq;
-          candidate_path_sum = top_path_sums[freq];
+          candidate_path_sum = dedopplerer.top_path_sums[freq];
         }
       }
       if (candidate_freq < 0) {
@@ -424,15 +460,15 @@ void dedoppler(const string& input_filename, const string& output_filename,
       int window_end = min(file->coarse_channel_size, candidate_freq + window_size);
       bool found_larger_path_sum = false;
       for (int freq = max(0, candidate_freq - window_size + 1); freq < window_end; ++freq) {
-        if (top_path_sums[freq] > candidate_path_sum) {
+        if (dedopplerer.top_path_sums[freq] > candidate_path_sum) {
           found_larger_path_sum = true;
           break;
         }
       }
       if (!found_larger_path_sum) {
         // The candidate frequency is the best within its window
-        int drift_bins = top_drift_blocks[candidate_freq] * drift_timesteps +
-                         top_path_offsets[candidate_freq];
+        int drift_bins = dedopplerer.top_drift_blocks[candidate_freq] * drift_timesteps +
+                         dedopplerer.top_path_offsets[candidate_freq];
         double drift_rate = drift_bins * drift_rate_resolution;
         float snr = (candidate_path_sum - median) / std_dev;
 

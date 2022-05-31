@@ -1,4 +1,4 @@
-welcome to seticore, version 0.0.2
+welcome to seticore, version 0.0.4
 loading input from data/blc17_guppi_59544_62191_HIP99317_0059.rawspec.0000.h5
 dedoppler parameters: max_drift=0.40 min_drift=0.0000 snr=10.00
 writing output to data/blc17_guppi_59544_62191_HIP99317_0059.rawspec.0000.dat
@@ -10,3 +10,4 @@ hit: coarse channel = 60, index = 418095, snr = 37.858383, drift rate = 0.081634
 hit: coarse channel = 60, index = 436060, snr = 16.085958, drift rate = 0.020409 (-2 bins)
 hit: coarse channel = 60, index = 438649, snr = 10.715086, drift rate = -0.051021 (5 bins)
 hit: coarse channel = 60, index = 440394, snr = 23.783800, drift rate = -0.214289 (21 bins)
+dedoppler elapsed time 10s
