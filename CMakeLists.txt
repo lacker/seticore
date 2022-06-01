@@ -14,16 +14,22 @@ find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 
 add_subdirectory(fmt)
 
-add_executable(seticore
-               dedoppler.cu
-               dat_file.cpp
-               filterbank_file.cpp
-               fil_file.cpp
-               h5_file.cpp
-               main.cpp
-               run_dedoppler.cpp
-               )
+set(SOURCES
+    dedoppler.cu
+    dat_file.cpp
+    filterbank_file.cpp
+    fil_file.cpp
+    h5_file.cpp
+    recipe_file.cpp
+    run_dedoppler.cpp
+    )
+               
+add_executable(seticore ${SOURCES} main.cpp)
+add_executable(test_beamforming ${SOURCES} test_beamforming.cpp)
+
 set_property(TARGET seticore PROPERTY CUDA_STANDARD 11)
+set_property(TARGET test_beamforming PROPERTY CUDA_STANDARD 11)
 
 target_link_libraries(seticore fmt ${HDF5_C_LIBRARIES} Boost::program_options)
+target_link_libraries(test_beamforming fmt ${HDF5_C_LIBRARIES} Boost::program_options)
 

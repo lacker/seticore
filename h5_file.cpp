@@ -1,5 +1,3 @@
-using namespace std;
-
 #include <assert.h>
 #include <cstdlib>
 #include "hdf5.h"
@@ -7,6 +5,8 @@ using namespace std;
 #include <string.h>
 
 #include "h5_file.h"
+
+using namespace std;
 
 
 /*
