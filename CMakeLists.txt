@@ -20,7 +20,9 @@ add_executable(seticore
                filterbank_file.cpp
                fil_file.cpp
                h5_file.cpp
-               main.cpp)
+               main.cpp
+               run_dedoppler.cpp
+               )
 set_property(TARGET seticore PROPERTY CUDA_STANDARD 11)
 
 target_link_libraries(seticore fmt ${HDF5_C_LIBRARIES} Boost::program_options)

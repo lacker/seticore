@@ -6,7 +6,7 @@
 #include <string>
 #include <time.h>
 
-#include "dedoppler.h"
+#include "run_dedoppler.h"
 
 using namespace std;
 
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
                       max_drift, min_drift, snr);
   cout << "writing output to " << output << endl;
   int tstart = time(NULL);
-  dedoppler(input, output, max_drift, min_drift, snr);
+  runDedoppler(input, output, max_drift, min_drift, snr);
   int tstop = time(NULL);
   cout << fmt::format("dedoppler elapsed time {:d}s\n", tstop - tstart);
 }
