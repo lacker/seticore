@@ -2,6 +2,7 @@
 
 #include "hdf5.h"
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -16,6 +17,7 @@ class RecipeFile {
   hid_t file;
 
   string getStringData(const string& name) const;
+  void getStringVectorData(const string& name, vector<string>* output) const;
   
  public:
   RecipeFile(const string& filename);

@@ -33,8 +33,23 @@ string RecipeFile::getStringData(const string& name) const {
     cerr << "dataset " << name << " could not be read as string\n";
     exit(1);
   }
-  H5Dclose(dataset);
 
+  H5Tclose(native_type);
+  H5Tclose(data_type);
+  H5Dclose(dataset);
+  
   string answer(buffer.begin(), buffer.end());
   return answer;
+}
+
+/*
+  This is supposed to work for either UTF8 of ASCII.
+  Reads a list of strings into the provided output vector.
+*/
+void RecipeFile::getStringVectorData(const string& name, vector<string>* output) const {
+  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+
+  // TODO: do stuff in here
+  
+  H5Dclose(dataset);
 }
