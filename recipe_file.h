@@ -18,7 +18,7 @@ class RecipeFile {
 
   string getStringData(const string& name) const;
   vector<string> getStringVectorData(const string& name) const;
-  vector<double> getDoubleVectorData(const string& name) const;
+  template <class T> vector<T> getVectorData(const string& name, hid_t hdf5_type) const;
   long getLongScalarData(const string& name) const;
   
  public:

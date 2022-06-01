@@ -20,10 +20,10 @@ RecipeFile::RecipeFile(const string& filename) :
   file(openFile(filename)),
   obsid(getStringData("/obsinfo/obsid")),
   src_names(getStringVectorData("/beaminfo/src_names")),
-  delays(getDoubleVectorData("/delayinfo/delays")),
-  time_array(getDoubleVectorData("/delayinfo/time_array")),
-  ras(getDoubleVectorData("/beaminfo/ras")),
-  decs(getDoubleVectorData("/beaminfo/decs")),
+  delays(getVectorData<double>("/delayinfo/delays", H5T_IEEE_F64LE)),
+  time_array(getVectorData<double>("/delayinfo/time_array", H5T_IEEE_F64LE)),
+  ras(getVectorData<double>("/beaminfo/ras", H5T_IEEE_F64LE)),
+  decs(getVectorData<double>("/beaminfo/decs", H5T_IEEE_F64LE)),
   npol(getLongScalarData("/diminfo/npol")),
   nbeams(getLongScalarData("/diminfo/nbeams")) {
 }
@@ -88,15 +88,19 @@ vector<string> RecipeFile::getStringVectorData(const string& name) const {
 }
 
 /*
-  Reads a variable-length array of doubles into a vector.
+  Reads a variable-length array into a vector.
+  You need to provide two types to call this - T is the type that C++ uses, hdf5_type
+  is the type that the HDF5 library is using.
+  This doesn't work for strings; call getStringVectorData for that.
 */
-vector<double> RecipeFile::getDoubleVectorData(const string& name) const {
+template <class T>
+vector<T> RecipeFile::getVectorData(const string& name, hid_t hdf5_type) const {
   auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
   auto dataspace = H5Dget_space(dataset);
   int npoints = H5Sget_simple_extent_npoints(dataspace);
-  vector<double> output(npoints);
-  if (H5Dread(dataset, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output[0]) < 0) {
-    cerr << "dataset " << name << " could not be read with getDoubleVectorData\n";
+  vector<T> output(npoints);
+  if (H5Dread(dataset, hdf5_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output[0]) < 0) {
+    cerr << "dataset " << name << " could not be read with getVectorData\n";
     exit(1);
   }
   
