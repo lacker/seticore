@@ -15,6 +15,8 @@ class RecipeFile {
  private:
   hid_t file;
 
+  string getStringData(const string& name) const;
+  
  public:
   RecipeFile(const string& filename);
   ~RecipeFile();
