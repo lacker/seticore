@@ -20,6 +20,9 @@ class RecipeFile {
   void getStringVectorData(const string& name, vector<string>* output) const;
   
  public:
+  string obsid;
+  vector<string> src_names;
+  
   RecipeFile(const string& filename);
   ~RecipeFile();
 };

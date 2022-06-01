@@ -13,7 +13,10 @@ RecipeFile::RecipeFile(const string& filename) {
     exit(1);
   }
 
-  cout << "obs id is: " << getStringData("/obsinfo/obsid") << endl;
+  obsid = getStringData("/obsinfo/obsid");
+  getStringVectorData("/beaminfo/src_names", &src_names);
+
+
 }
 
 RecipeFile::~RecipeFile() {
@@ -43,13 +46,31 @@ string RecipeFile::getStringData(const string& name) const {
 }
 
 /*
-  This is supposed to work for either UTF8 of ASCII.
   Reads a list of strings into the provided output vector.
+  We expect them to have variable length.
+  The data is converted to the native character type when we read it.
 */
 void RecipeFile::getStringVectorData(const string& name, vector<string>* output) const {
   auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+  auto dataspace = H5Dget_space(dataset);
+  int npoints = H5Sget_simple_extent_npoints(dataspace);
+  auto native_type = H5Tvlen_create(H5T_NATIVE_CHAR);
 
-  // TODO: do stuff in here
-  
+  // Intermediately store data as the HDF5-provided "variable length sequence" object
+  vector<hvl_t> sequences(npoints);
+
+  if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &sequences[0]) < 0) {
+    cerr << "dataset " << name << " could not be read as string vector\n";
+    exit(1);
+  }
+
+  output->clear();
+  for (hvl_t sequence : sequences) {
+    char* p = (char*)sequence.p;
+    output->push_back(string(p, p + sequence.len));
+  }
+
+  H5Tclose(native_type);
+  H5Sclose(dataspace);
   H5Dclose(dataset);
 }
