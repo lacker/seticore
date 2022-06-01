@@ -25,7 +25,8 @@ RecipeFile::RecipeFile(const string& filename) :
   ras(getVectorData<double>("/beaminfo/ras", H5T_IEEE_F64LE)),
   decs(getVectorData<double>("/beaminfo/decs", H5T_IEEE_F64LE)),
   npol(getLongScalarData("/diminfo/npol")),
-  nbeams(getLongScalarData("/diminfo/nbeams")) {
+  nbeams(getLongScalarData("/diminfo/nbeams")),
+  cal_all(getComplexVectorData("/calinfo/cal_all")) {
 }
 
 RecipeFile::~RecipeFile() {
@@ -106,6 +107,19 @@ vector<T> RecipeFile::getVectorData(const string& name, hid_t hdf5_type) const {
   
   H5Sclose(dataspace);
   H5Dclose(dataset);
+
+  return output;
+}
+
+vector<thrust::complex<float> > RecipeFile::getComplexVectorData(const string& name) const {
+  hid_t complex_type = H5Tcreate(H5T_COMPOUND, 8);
+  H5Tinsert(complex_type, "r", 0, H5T_IEEE_F32LE);
+  H5Tinsert(complex_type, "i", 4, H5T_IEEE_F32LE);
+
+  vector<thrust::complex<float> > output =
+    getVectorData<thrust::complex<float> >(name, complex_type);
+ 
+  H5Tclose(complex_type);
 
   return output;
 }

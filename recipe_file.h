@@ -1,5 +1,6 @@
 #pragma once
 
+#include <thrust/complex.h>
 #include "hdf5.h"
 #include <string>
 #include <vector>
@@ -20,6 +21,7 @@ class RecipeFile {
   vector<string> getStringVectorData(const string& name) const;
   template <class T> vector<T> getVectorData(const string& name, hid_t hdf5_type) const;
   long getLongScalarData(const string& name) const;
+  vector<thrust::complex<float> > getComplexVectorData(const string& name) const;
   
  public:
   const string obsid;
@@ -28,6 +30,7 @@ class RecipeFile {
   const vector<double> time_array;
   const vector<double> ras;
   const vector<double> decs;
+  const vector<thrust::complex<float> > cal_all;
   const long npol;
   const long nbeams;
   
