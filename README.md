@@ -109,7 +109,7 @@ If you are using a BL machine with an Ubuntu 16 environment, try the script
 You can run the regression tests with:
 
 ```
-./test.sh
+./test_dedoppler.sh
 ```
 
 This will automatically download a few gigabytes of test data from Berkeley and ensure
