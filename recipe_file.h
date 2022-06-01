@@ -14,14 +14,22 @@ using namespace std;
  */
 class RecipeFile {
  private:
-  hid_t file;
+  const hid_t file;
 
   string getStringData(const string& name) const;
-  void getStringVectorData(const string& name, vector<string>* output) const;
+  vector<string> getStringVectorData(const string& name) const;
+  vector<double> getDoubleVectorData(const string& name) const;
+  long getLongScalarData(const string& name) const;
   
  public:
-  string obsid;
-  vector<string> src_names;
+  const string obsid;
+  const vector<string> src_names;
+  const vector<double> delays;
+  const vector<double> time_array;
+  const vector<double> ras;
+  const vector<double> decs;
+  const long npol;
+  const long nbeams;
   
   RecipeFile(const string& filename);
   ~RecipeFile();

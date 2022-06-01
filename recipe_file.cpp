@@ -6,20 +6,30 @@
 
 using namespace std;
 
-RecipeFile::RecipeFile(const string& filename) {
-  file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+// The caller is responsible for closing it
+hid_t openFile(const string& filename) {
+  auto file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file == H5I_INVALID_HID) {
     cerr << "could not open file: " << filename << endl;
     exit(1);
   }
+  return file;
+}
 
-  obsid = getStringData("/obsinfo/obsid");
-  getStringVectorData("/beaminfo/src_names", &src_names);
-
-
+RecipeFile::RecipeFile(const string& filename) :
+  file(openFile(filename)),
+  obsid(getStringData("/obsinfo/obsid")),
+  src_names(getStringVectorData("/beaminfo/src_names")),
+  delays(getDoubleVectorData("/delayinfo/delays")),
+  time_array(getDoubleVectorData("/delayinfo/time_array")),
+  ras(getDoubleVectorData("/beaminfo/ras")),
+  decs(getDoubleVectorData("/beaminfo/decs")),
+  npol(getLongScalarData("/diminfo/npol")),
+  nbeams(getLongScalarData("/diminfo/nbeams")) {
 }
 
 RecipeFile::~RecipeFile() {
+  H5Fclose(file);
 }
 
 /*
@@ -50,7 +60,7 @@ string RecipeFile::getStringData(const string& name) const {
   We expect them to have variable length.
   The data is converted to the native character type when we read it.
 */
-void RecipeFile::getStringVectorData(const string& name, vector<string>* output) const {
+vector<string> RecipeFile::getStringVectorData(const string& name) const {
   auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
   auto dataspace = H5Dget_space(dataset);
   int npoints = H5Sget_simple_extent_npoints(dataspace);
@@ -64,13 +74,56 @@ void RecipeFile::getStringVectorData(const string& name, vector<string>* output)
     exit(1);
   }
 
-  output->clear();
+  vector<string> output;
   for (hvl_t sequence : sequences) {
     char* p = (char*)sequence.p;
-    output->push_back(string(p, p + sequence.len));
+    output.push_back(string(p, p + sequence.len));
   }
 
   H5Tclose(native_type);
   H5Sclose(dataspace);
   H5Dclose(dataset);
+
+  return output;
+}
+
+/*
+  Reads a variable-length array of doubles into a vector.
+*/
+vector<double> RecipeFile::getDoubleVectorData(const string& name) const {
+  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+  auto dataspace = H5Dget_space(dataset);
+  int npoints = H5Sget_simple_extent_npoints(dataspace);
+  vector<double> output(npoints);
+  if (H5Dread(dataset, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output[0]) < 0) {
+    cerr << "dataset " << name << " could not be read with getDoubleVectorData\n";
+    exit(1);
+  }
+  
+  H5Sclose(dataspace);
+  H5Dclose(dataset);
+
+  return output;
+}
+
+// Reads a single long integer.
+long RecipeFile::getLongScalarData(const string& name) const {
+  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+  auto dataspace = H5Dget_space(dataset);
+  int npoints = H5Sget_simple_extent_npoints(dataspace);
+  if (npoints != 1) {
+    cerr << "expected scalar at " << name << " but got " << npoints << " data values\n";
+    exit(1);
+  }
+
+  long output;
+  if (H5Dread(dataset, H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output) < 0) {
+    cerr << "dataset " << name << " could not be read with getLongScalarData\n";
+    exit(1);
+  }
+  
+  H5Sclose(dataspace);
+  H5Dclose(dataset);
+
+  return output;  
 }
