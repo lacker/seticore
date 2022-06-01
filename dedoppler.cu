@@ -273,8 +273,12 @@ public:
   // The difference in adjacent drift rates that we look for, in Hz/s
   double drift_rate_resolution;
 
-  Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp)
-    : num_timesteps(num_timesteps), num_channels(num_channels), foff(foff), tsamp(tsamp) {
+  // Whether the data we receive has a DC spike
+  bool has_dc_spike;
+  
+  Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike)
+    : num_timesteps(num_timesteps), num_channels(num_channels), foff(foff), tsamp(tsamp),
+      has_dc_spike(has_dc_spike) {
 
     // Round up to the next power of two, for how many timesteps to model
     rounded_num_timesteps = 1;
@@ -333,7 +337,8 @@ void dedoppler(const string& input_filename, const string& output_filename,
   
   DatFile output(output_filename, *file.get(), max_drift);
 
-  Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff, file->tsamp);
+  Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff,
+                          file->tsamp, file->has_dc_spike);
   
   // Load and process one coarse channel at a time from the hdf5  
   for (int coarse_channel = 0; coarse_channel < file->num_coarse_channels; ++coarse_channel) {
@@ -370,7 +375,7 @@ void dedoppler(const string& input_filename, const string& output_filename,
                                                dedopplerer.rounded_num_timesteps, dedopplerer.num_channels);
     
     int mid = dedopplerer.num_channels / 2;
-    if (file->has_dc_spike) {
+    if (dedopplerer.has_dc_spike) {
       // Remove the DC spike by making it the average of the adjacent columns
       for (int row_index = 0; row_index < dedopplerer.num_timesteps; ++row_index) {
         float* row = dedopplerer.input + row_index * dedopplerer.num_channels;
