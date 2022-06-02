@@ -53,7 +53,8 @@ DatFileWriter::~DatFileWriter() {
 }
 
 
-void DatFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr) {
+void DatFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins,
+                              double drift_rate, double snr, const float* input) {
   ++hit_count;
 
   cout << fmt::format("hit: coarse channel = {}, index = {}, snr = {:.6f}, "

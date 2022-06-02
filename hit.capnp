@@ -35,7 +35,7 @@ struct Filterbank {
   tsamp @4 :Float64;
   ra @5 :Float64;
   dec @6 :Float64;
-  telescope @7 :Int32;
+  telescopeId @7 :Int32;
   numTimesteps @8 :Int32;
   numChannels @9 :Int32;
 

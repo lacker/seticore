@@ -22,5 +22,5 @@ class HitFileWriter: public HitRecorder {
   ~HitFileWriter();
 
   void recordHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate,
-                 double snr);
+                 double snr, const float* input);
 };

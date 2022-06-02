@@ -199,7 +199,7 @@ public:
 
   inline double getDec() const;
 
-  inline  ::int32_t getTelescope() const;
+  inline  ::int32_t getTelescopeId() const;
 
   inline  ::int32_t getNumTimesteps() const;
 
@@ -261,8 +261,8 @@ public:
   inline double getDec();
   inline void setDec(double value);
 
-  inline  ::int32_t getTelescope();
-  inline void setTelescope( ::int32_t value);
+  inline  ::int32_t getTelescopeId();
+  inline void setTelescopeId( ::int32_t value);
 
   inline  ::int32_t getNumTimesteps();
   inline void setNumTimesteps( ::int32_t value);
@@ -587,16 +587,16 @@ inline void Filterbank::Builder::setDec(double value) {
       ::capnp::bounded<5>() * ::capnp::ELEMENTS, value);
 }
 
-inline  ::int32_t Filterbank::Reader::getTelescope() const {
+inline  ::int32_t Filterbank::Reader::getTelescopeId() const {
   return _reader.getDataField< ::int32_t>(
       ::capnp::bounded<12>() * ::capnp::ELEMENTS);
 }
 
-inline  ::int32_t Filterbank::Builder::getTelescope() {
+inline  ::int32_t Filterbank::Builder::getTelescopeId() {
   return _builder.getDataField< ::int32_t>(
       ::capnp::bounded<12>() * ::capnp::ELEMENTS);
 }
-inline void Filterbank::Builder::setTelescope( ::int32_t value) {
+inline void Filterbank::Builder::setTelescopeId( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<12>() * ::capnp::ELEMENTS, value);
 }

@@ -53,10 +53,6 @@ int main(int argc, char* argv[]) {
     output = input.substr(0, index) + ".dat";
   } else {
     output = vm["output"].as<string>();
-    if (!boost::algorithm::ends_with(output, ".dat")) {
-      cerr << "the output " << output << " is expected to be a .dat file\n";
-      return 1;
-    }
   }
 
   double max_drift = vm["max_drift"].as<double>();
