@@ -32,7 +32,7 @@ void FilterbankFile::inferMetadata() {
   num_coarse_channels = num_freqs / coarse_channel_size;
 }
 
-unique_ptr<FilterbankFile> loadFilterbank(const string& filename) {
+unique_ptr<FilterbankFile> loadFilterbankFile(const string& filename) {
   if (boost::algorithm::ends_with(filename, ".h5")) {
     return unique_ptr<FilterbankFile>(new H5File(filename));
   }

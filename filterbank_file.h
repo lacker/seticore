@@ -23,4 +23,4 @@ class FilterbankFile {
   void inferMetadata();
 };
 
-unique_ptr<FilterbankFile> loadFilterbank(const string& filename);
+unique_ptr<FilterbankFile> loadFilterbankFile(const string& filename);

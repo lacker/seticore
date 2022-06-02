@@ -18,7 +18,7 @@ using namespace std;
  */
 void runDedoppler(const string& input_filename, const string& output_filename,
                   double max_drift, double min_drift, double snr_threshold) {
-  auto file = loadFilterbank(input_filename);
+  auto file = loadFilterbankFile(input_filename);
   
   DatFile output(output_filename, *file.get(), max_drift);
 
