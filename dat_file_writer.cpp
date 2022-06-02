@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "dat_file.h"
+#include "dat_file_writer.h"
 #include "h5_file.h"
 
 using namespace std;

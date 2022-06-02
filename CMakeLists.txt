@@ -18,7 +18,7 @@ add_subdirectory(fmt)
 
 set(SOURCES
     dedoppler.cu
-    dat_file.cpp
+    dat_file_writer.cpp
     filterbank_file.cpp
     fil_file.cpp
     h5_file.cpp

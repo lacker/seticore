@@ -1,6 +1,6 @@
 #include <vector>
 
-#include "dat_file.h"
+#include "dat_file_writer.h"
 #include "dedoppler.h"
 #include "filterbank_file.h"
 #include "run_dedoppler.h"
