@@ -14,6 +14,8 @@ set(_hdf5_libs hdf5 hdf5_cpp)
 
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 
+find_package(CapnProto CONFIG REQUIRED)
+
 add_subdirectory(fmt)
 
 set(SOURCES
@@ -22,6 +24,7 @@ set(SOURCES
     filterbank_file.cpp
     fil_file.cpp
     h5_file.cpp
+    hit.capnp.c++
     hit_file_writer.cpp
     hit_recorder.cpp
     recipe_file.cpp
@@ -34,6 +37,6 @@ add_executable(test_beamforming ${SOURCES} test_beamforming.cpp)
 set_property(TARGET seticore PROPERTY CUDA_STANDARD 14)
 set_property(TARGET test_beamforming PROPERTY CUDA_STANDARD 14)
 
-target_link_libraries(seticore fmt ${HDF5_C_LIBRARIES} Boost::program_options)
-target_link_libraries(test_beamforming fmt ${HDF5_C_LIBRARIES} Boost::program_options)
+target_link_libraries(seticore fmt ${HDF5_C_LIBRARIES} Boost::program_options ${CAPNP_LIBRARIES})
+target_link_libraries(test_beamforming fmt ${HDF5_C_LIBRARIES} Boost::program_options ${CAPNP_LIBRARIES})
 

@@ -4,8 +4,8 @@ dedoppler algorithm that creates .dat files from .h5 files.
 
 ## Quickstart
 
-You need g++, cmake 3.10 or above, a CUDA toolkit, and hdf5 with the bitshuffle
-plugin installed. `nvcc` should be in your `$PATH`.
+You need g++, cmake (developed with 3.23.2), a CUDA toolkit, capnproto, and hdf5 with
+the bitshuffle plugin installed. `nvcc` should be in your `$PATH`.
 
 Git clone this repo, then update submodules and run the make script:
 
@@ -38,7 +38,7 @@ the source.
 Then you need to install `hdf5` along with the `bitshuffle` plugin. Two
 paths you can take here - what I did, or what I recommend.
 
-## What I did
+## What I did for hdf5
 
 I manually installed the `hdf5` library:
 
@@ -65,7 +65,7 @@ conda deactivate
 This doesn't seem like a great way to install hdf5 but it's the first
 way I got it working.
 
-## What I recommend
+## What I recommend for hdf5
 
 If I were doing it again on Ubuntu 18, I'd try installing the `libhdf5-dev` Ubuntu package,
 and then finding wherever it put the `.so` files, and then doing the
@@ -85,6 +85,20 @@ that means the plugin directory should be `/usr/local/hdf5/lib/plugin`.
 
 On Ubuntu 20 there's a `bitshuffle` package that may just work if you
 install it along with the `libhdf5-dev` package.
+
+## Installing capnproto
+
+The version that Ubuntu 18 provides is not set up for CMake to autodetect it, so
+install from github.
+
+```
+git clone https://github.com/capnproto/capnproto.git
+cd capnproto/c++
+autoreconf -i
+./configure
+make -j6 check
+sudo make install
+```
 
 ## Compiling on your machine
 

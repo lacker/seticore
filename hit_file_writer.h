@@ -15,7 +15,7 @@ using namespace std;
 class HitFileWriter: public HitRecorder {
  private:
   const FilterbankFile& metadata;
-  ofstream file;
+  int fd;
 
  public:
   HitFileWriter(const string& filename, const FilterbankFile& metadata);
