@@ -1,3 +1,5 @@
+#include <fmt/core.h>
+#include <iostream>
 #include <vector>
 
 #include "dedoppler.h"
@@ -31,6 +33,11 @@ void runDedoppler(const string& input_filename, const string& output_filename,
     hits.clear();
     dedopplerer.processInput(max_drift, min_drift, snr_threshold, &hits);
     for (DedopplerHit hit : hits) {
+
+      cout << fmt::format("hit: coarse channel = {}, index = {}, snr = {:.6f}, "
+                          "drift rate = {:.6f} ({} bins)\n",
+                          coarse_channel, hit.index, hit.snr, hit.drift_rate, hit.drift_steps);
+        
       recorder->recordHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate,
                           hit.snr, dedopplerer.input);
     }
