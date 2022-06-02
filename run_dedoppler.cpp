@@ -1,8 +1,8 @@
 #include <vector>
 
-#include "dat_file_writer.h"
 #include "dedoppler.h"
 #include "filterbank_file.h"
+#include "hit_recorder.h"
 #include "run_dedoppler.h"
 
 using namespace std;
@@ -19,8 +19,7 @@ using namespace std;
 void runDedoppler(const string& input_filename, const string& output_filename,
                   double max_drift, double min_drift, double snr_threshold) {
   auto file = loadFilterbankFile(input_filename);
-  
-  DatFileWriter output(output_filename, *file.get(), max_drift);
+  auto recorder = makeHitRecorder(output_filename, *file.get(), max_drift);
 
   Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff,
                           file->tsamp, file->has_dc_spike);
@@ -32,7 +31,7 @@ void runDedoppler(const string& input_filename, const string& output_filename,
     hits.clear();
     dedopplerer.processInput(max_drift, min_drift, snr_threshold, &hits);
     for (DedopplerHit hit : hits) {
-      output.recordHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate, hit.snr);
+      recorder->recordHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate, hit.snr);
     }
   }
 }

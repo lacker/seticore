@@ -23,6 +23,7 @@ set(SOURCES
     fil_file.cpp
     h5_file.cpp
     hit_file_writer.cpp
+    hit_recorder.cpp
     recipe_file.cpp
     run_dedoppler.cpp
     )
