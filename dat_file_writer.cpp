@@ -12,7 +12,8 @@ using namespace std;
   Opens a dat file for writing, to log hits that we find.
   Some metadata for headers is copied out from the h5 file.
  */
-DatFile::DatFile(const string& filename, const FilterbankFile& metadata, double max_drift) : metadata(metadata) {
+DatFileWriter::DatFileWriter(const string& filename, const FilterbankFile& metadata,
+                             double max_drift) : metadata(metadata) {
   hit_count = 0;
   file.open(filename);
 
@@ -47,12 +48,12 @@ DatFile::DatFile(const string& filename, const FilterbankFile& metadata, double 
 }
 
 
-DatFile::~DatFile() {
+DatFileWriter::~DatFileWriter() {
   file.close();
 }
 
 
-void DatFile::recordHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr) {
+void DatFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr) {
   ++hit_count;
 
   cout << fmt::format("hit: coarse channel = {}, index = {}, snr = {:.6f}, "

@@ -22,6 +22,7 @@ set(SOURCES
     filterbank_file.cpp
     fil_file.cpp
     h5_file.cpp
+    hit_file_writer.cpp
     recipe_file.cpp
     run_dedoppler.cpp
     )

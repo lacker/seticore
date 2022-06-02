@@ -20,7 +20,7 @@ void runDedoppler(const string& input_filename, const string& output_filename,
                   double max_drift, double min_drift, double snr_threshold) {
   auto file = loadFilterbankFile(input_filename);
   
-  DatFile output(output_filename, *file.get(), max_drift);
+  DatFileWriter output(output_filename, *file.get(), max_drift);
 
   Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff,
                           file->tsamp, file->has_dc_spike);

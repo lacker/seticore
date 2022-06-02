@@ -12,15 +12,15 @@ using namespace std;
   This class contains helper methods for the .dat file format, to maintain
   output consistency with turboseti.
 */
-class DatFile: public HitRecorder {
+class DatFileWriter: public HitRecorder {
  private:
   const FilterbankFile& metadata;
   ofstream file;
   int hit_count;
   
  public:
-  DatFile(const string& filename, const FilterbankFile& metadata, double max_drift);
-  ~DatFile();
+  DatFileWriter(const string& filename, const FilterbankFile& metadata, double max_drift);
+  ~DatFileWriter();
 
   void recordHit(int coarse_channel, int freq_index, int drift_bins, double drift_rate, double snr);
 };
