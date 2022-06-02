@@ -159,3 +159,13 @@ perf script > perf.script
 ```
 
 Then look at `perf.svg` in a browser.
+
+## Viewer
+
+An Python notebook is provided to show how to analyze the outputs.
+Set up Python 3.9 in whichever way you prefer (such as a fresh conda env) and then:
+
+```
+pip install -r requirements.txt
+jupyter notebook example.ipynb
+```

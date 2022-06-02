@@ -1,0 +1,4 @@
+notebook
+jupyterlab
+pycapnp
+matplotlib

@@ -1,7 +1,7 @@
 welcome to seticore, version 0.0.4
 loading input from data/blc17_guppi_59544_62191_HIP99317_0059.rawspec.0000.h5
 dedoppler parameters: max_drift=0.40 min_drift=0.0000 snr=10.00
-writing output to data/blc17_guppi_59544_62191_HIP99317_0059.rawspec.0000.dat
+writing output to data/testout.hits
 drift rate resolution: -0.0102043
 hit: coarse channel = 23, index = 566231, snr = 10.069617, drift rate = -0.000000 (0 bins)
 hit: coarse channel = 30, index = 384478, snr = 215.748932, drift rate = -0.000000 (0 bins)

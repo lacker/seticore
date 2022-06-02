@@ -8,7 +8,8 @@ if [ ! -f "data/$H5" ]; then
     wget $DATA_URL -P data/
 fi
 
-./build/seticore data/$H5 --max_drift=0.4 --snr=10 --min_drift=0 | tee data/output.txt
+./build/seticore data/$H5 --max_drift=0.4 --snr=10 --min_drift=0 --output=data/testout.hits \
+    | tee data/output.txt
 echo diffing against expected output.
 diff data/output.txt data/golden.txt | tee data/diff.txt
 
