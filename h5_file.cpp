@@ -202,8 +202,8 @@ void H5File::loadCoarseChannel(int i, float* output) const {
   }
     
   // Copy from dataspace to memspace
-  if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, output) < 0) {
-    cerr << "h5 read failed\n";
+  if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, output) < 0) {    
+    cerr << "h5 read failed. check plugins in " << H5_DEFAULT_PLUGINDIR << "\n";
     exit(1);
   }
     

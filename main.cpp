@@ -71,6 +71,6 @@ int main(int argc, char* argv[]) {
   int tstart = time(NULL);
   runDedoppler(input, output, max_drift, min_drift, snr);
   int tstop = time(NULL);
-  cout << fmt::format("dedoppler elapsed time {:d}s\n", tstop - tstart);
+  cerr << fmt::format("dedoppler elapsed time {:d}s\n", tstop - tstart);
 }
 

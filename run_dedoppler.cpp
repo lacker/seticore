@@ -32,8 +32,7 @@ void runDedoppler(const string& input_filename, const string& output_filename,
     hits.clear();
     dedopplerer.processInput(max_drift, min_drift, snr_threshold, &hits);
     for (DedopplerHit hit : hits) {
-      output.reportHit(coarse_channel, hit.candidate_freq, hit.drift_bins, hit.drift_rate,
-                       hit.snr);
+      output.reportHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate, hit.snr);
     }
   }
 }
