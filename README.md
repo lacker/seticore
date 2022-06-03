@@ -162,7 +162,7 @@ Then look at `perf.svg` in a browser.
 
 ## Viewer
 
-An Python notebook is provided to show how to analyze the outputs.
+A Python notebook is provided to show how to analyze the outputs.
 Set up Python 3.9 in whichever way you prefer (such as a fresh conda env) and then:
 
 ```
@@ -170,4 +170,6 @@ pip install -r requirements.txt
 jupyter notebook example.ipynb
 ```
 
-The notebook should show you how to display the hit file for voyager data.
+The notebook demonstrates how to display the hits for voyager data.
+
+You can also read the [Cap'n Proto schema](hit.capnp) for the hit output.
