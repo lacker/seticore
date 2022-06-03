@@ -12,7 +12,10 @@ Git clone this repo, then update submodules, then run the make scripts:
 ```
 git submodule init
 git submodule update
+
+# This will ask for sudo to do a make install. Not ideal, I'm working on it
 ./make_capnproto.sh
+
 ./make.sh
 ```
 
@@ -158,8 +161,5 @@ jupyter notebook example.ipynb
 ```
 
 The notebook demonstrates how to display the hits for voyager data.
-
-You might need to `sudo make install` from the capnp/c++ directory? TODO(lacker) see if this
-step is necessary, and if so, try to get rid of it.
 
 You can also read the [Cap'n Proto schema](hit.capnp) for the hit output.
