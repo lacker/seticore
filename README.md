@@ -87,20 +87,6 @@ that means the plugin directory should be `/usr/local/hdf5/lib/plugin`.
 On Ubuntu 20 there's a `bitshuffle` package that may just work if you
 install it along with the `libhdf5-dev` package.
 
-## Installing capnproto
-
-The version that Ubuntu 18 provides is not set up for CMake to autodetect it, so
-install from github.
-
-```
-git clone https://github.com/capnproto/capnproto.git
-cd capnproto/c++
-autoreconf -i
-./configure
-make -j6 check
-sudo make install
-```
-
 ## Compiling on your machine
 
 If you are installing on your own machine, try:
