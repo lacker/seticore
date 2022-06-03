@@ -79,5 +79,5 @@ void HitFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins
     }
   }
 
-  writePackedMessageToFd(fd, message);
+  writeMessageToFd(fd, message);
 }

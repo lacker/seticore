@@ -9,7 +9,7 @@ import hit_capnp
 
 def main():
     f = open("data/testout.hits")
-    hits = hit_capnp.Hit.read_multiple_packed(f)
+    hits = hit_capnp.Hit.read_multiple(f)
     for hit in hits:
         print(hit)
     
