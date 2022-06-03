@@ -4,14 +4,15 @@ dedoppler algorithm that creates .dat files from .h5 files.
 
 ## Quickstart
 
-You need g++, cmake (developed with 3.23.2), a CUDA toolkit, capnproto, and hdf5 with
+You need g++, cmake (developed with 3.23.2), a CUDA toolkit, and hdf5 with
 the bitshuffle plugin installed. `nvcc` should be in your `$PATH`.
 
-Git clone this repo, then update submodules and run the make script:
+Git clone this repo, then update submodules, then run the make scripts:
 
 ```
 git submodule init
 git submodule update
+./make_capnproto.sh
 ./make.sh
 ```
 
@@ -171,5 +172,8 @@ jupyter notebook example.ipynb
 ```
 
 The notebook demonstrates how to display the hits for voyager data.
+
+You might need to `sudo make install` from the capnp/c++ directory? TODO(lacker) see if this
+step is necessary, and if so, try to get rid of it.
 
 You can also read the [Cap'n Proto schema](hit.capnp) for the hit output.

@@ -1,3 +1,6 @@
 [submodule "fmt"]
 	path = fmt
 	url = https://github.com/fmtlib/fmt
+[submodule "capnproto"]
+	path = capnproto
+	url = https://github.com/capnproto/capnproto.git
