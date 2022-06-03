@@ -169,3 +169,5 @@ Set up Python 3.9 in whichever way you prefer (such as a fresh conda env) and th
 pip install -r requirements.txt
 jupyter notebook example.ipynb
 ```
+
+The notebook should show you how to display the hit file for voyager data.

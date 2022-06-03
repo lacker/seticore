@@ -75,7 +75,8 @@ void HitFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins
   // Copy out the subset which would be data[:][begin_index:end_index] in numpy
   for (int tstep = 0; tstep < metadata.num_timesteps; ++tstep) {
     for (int chan = 0; chan < num_channels; ++chan) {
-      data.set(tstep * num_channels + chan, input[tstep * metadata.coarse_channel_size + chan]);
+      data.set(tstep * num_channels + chan,
+               input[tstep * metadata.coarse_channel_size + begin_index + chan]);
     }
   }
 
