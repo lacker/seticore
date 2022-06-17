@@ -250,13 +250,13 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
   cout << "drift rate resolution: " << drift_rate_resolution << endl;
     
   // Allocate everything we need for GPU processing
-  assert(cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float)));
-  assert(cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float)));
-  assert(cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float)));
-  assert(cudaMallocManaged(&column_sums, num_channels * sizeof(float)));
-  assert(cudaMallocManaged(&top_path_sums, num_channels * sizeof(float)));
-  assert(cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int)));
-  assert(cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int)));
+  assert(0 == cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float)));
+  assert(0 == cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float)));
+  assert(0 == cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float)));
+  assert(0 == cudaMallocManaged(&column_sums, num_channels * sizeof(float)));
+  assert(0 == cudaMallocManaged(&top_path_sums, num_channels * sizeof(float)));
+  assert(0 == cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int)));
+  assert(0 == cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int)));
 }
 
 Dedopplerer::~Dedopplerer() {
