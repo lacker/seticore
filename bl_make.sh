@@ -1,4 +1,7 @@
 #!/bin/bash -e
+
+# NOTE: this hasn't been updated for meson, so it won't work.
+
 # This script builds seticore in the "Breakthrough Listen" environment, where
 # cmake and nvcc are not on the system path, so we explicitly locate them.
 

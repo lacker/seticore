@@ -4,34 +4,36 @@ dedoppler algorithm that creates .dat files from .h5 files.
 
 ## Quickstart
 
-You need g++, cmake (developed with 3.23.2), a CUDA toolkit, and hdf5 with
-the bitshuffle plugin installed. `nvcc` should be in your `$PATH`.
+You need:
+
+* g++
+* cmake
+* a CUDA toolkit
+* hdf5 with the bitshuffle plugin installed
+* meson (`pip install meson`)
+* ninja (`sudo apt-get install ninja-build`)
 
 Git clone this repo, then update submodules, then run the make scripts:
 
 ```
 git submodule init
 git submodule update
-
-# This will ask for sudo to do a make install. Not ideal, I'm working on it
-./make_capnproto.sh
-
-./make.sh
+cd build
+meson compile
 ```
 
 then run on an h5 file:
 
 ```
-./build/seticore /path/to/your.h5
+./seticore /path/to/your.h5
 ```
 
 It will behave roughly like turboseti. If something doesn't immediately work, try the more
 detailed instructions below.
 
-## More Detailed Installation Instructions
+## Notes on installing hdf5
 
-The build is using CMake. I've been developing on Ubuntu 18. You need
-to install the CUDA dev kit, go follow Nvidia's instructions for that.
+hdf5 is currently the most common source of installation problems.
 
 You're probably better off deactivating any conda environment before installing. Conda sets
 up the environment to use its own copies of `hdf5` and CUDA, and it's simpler to just
@@ -89,24 +91,6 @@ that means the plugin directory should be `/usr/local/hdf5/lib/plugin`.
 
 On Ubuntu 20 there's a `bitshuffle` package that may just work if you
 install it along with the `libhdf5-dev` package.
-
-## Compiling on your machine
-
-If you are installing on your own machine, try:
-
-```
-./make.sh
-```
-
-You may need to set `CUDACXX` to be the path to your `nvcc` binary.
-
-The plugin installation won't be validated until runtime.
-
-If you are using a BL machine with an Ubuntu 16 environment, try the script
-
-```
-./bl_make.sh
-```
 
 ## Testing on your machine
 

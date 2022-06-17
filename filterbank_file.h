@@ -19,6 +19,8 @@ class FilterbankFile {
   
   virtual void loadCoarseChannel(int i, float* output) const = 0;
 
+  virtual ~FilterbankFile() {}
+  
  protected:
   void inferMetadata();
 };
