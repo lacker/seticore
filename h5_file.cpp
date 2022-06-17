@@ -57,21 +57,12 @@ H5File::H5File(const string& filename) : FilterbankFile(filename) {
   num_freqs = dims[2];
 
   telescope_id = getLongAttr("telescope_id");
-  inferMetadata();
-  
+
   if (attrExists("nfpc")) {
-    // Double-check that our heuristics match the provided nfpc.
-    // If the nfpc attribute was always present, we could just use it rather than the
-    // heuristic. Since we do want the heuristics to work, for now I'd rather end up
-    // notified through user feedback when they are wrong, rather than quietly
-    // overriding the heuristics.
-    long nfpc = getLongAttr("nfpc");
-    if (nfpc != coarse_channel_size) {
-      cerr << "nfpc " << nfpc << " does not match inferred coarse channel size of "
-           << coarse_channel_size << endl;
-      exit(1);
-    }
+    coarse_channel_size = getLongAttr("nfpc");
   }
+
+  inferMetadata();
 }
 
 double H5File::getDoubleAttr(const string& name) const {
