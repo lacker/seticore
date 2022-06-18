@@ -8,16 +8,17 @@ You need:
 
 * g++
 * cmake
-* a CUDA toolkit
+* the CUDA toolkit
 * hdf5 with the bitshuffle plugin installed
-* meson (`pip install meson`)
 * ninja (`sudo apt-get install ninja-build`)
+* meson (`pip install meson`)
 
 Git clone this repo, then update submodules, then run the make scripts:
 
 ```
 git submodule init
 git submodule update
+meson setup build
 cd build
 meson compile
 ```

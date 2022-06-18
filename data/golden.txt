@@ -1,4 +1,4 @@
-welcome to seticore, version 0.0.5
+welcome to seticore, version 0.0.6
 loading input from data/blc17_guppi_59544_62191_HIP99317_0059.rawspec.0000.h5
 dedoppler parameters: max_drift=0.40 min_drift=0.0000 snr=10.00
 writing output to data/testout.hits
