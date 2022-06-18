@@ -228,7 +228,15 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
   }
 }
 
-  
+
+// Helper to nicely display cuda errors
+void checkCuda(cudaError_t err) {
+  if (err != 0) {
+    cerr << "cuda error " << err << ": " << cudaGetErrorString(err) << endl;
+    exit(1);
+  }
+}
+
 /*
   The Dedopplerer encapsulates the logic of dedoppler search. In particular it manages
   the needed GPU memory so that we can reuse the same memory allocation for different searches.
@@ -250,13 +258,13 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
   cout << "drift rate resolution: " << drift_rate_resolution << endl;
     
   // Allocate everything we need for GPU processing
-  assert(0 == cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float)));
-  assert(0 == cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float)));
-  assert(0 == cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float)));
-  assert(0 == cudaMallocManaged(&column_sums, num_channels * sizeof(float)));
-  assert(0 == cudaMallocManaged(&top_path_sums, num_channels * sizeof(float)));
-  assert(0 == cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int)));
-  assert(0 == cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int)));
+  checkCuda(cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float)));
+  checkCuda(cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float)));
+  checkCuda(cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float)));
+  checkCuda(cudaMallocManaged(&column_sums, num_channels * sizeof(float)));
+  checkCuda(cudaMallocManaged(&top_path_sums, num_channels * sizeof(float)));
+  checkCuda(cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int)));
+  checkCuda(cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int)));
 }
 
 Dedopplerer::~Dedopplerer() {
