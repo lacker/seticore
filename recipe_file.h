@@ -30,9 +30,9 @@ class RecipeFile {
   const vector<double> time_array;
   const vector<double> ras;
   const vector<double> decs;
-  const vector<thrust::complex<float> > cal_all;
   const long npol;
   const long nbeams;
+  const vector<thrust::complex<float> > cal_all;
   
   RecipeFile(const string& filename);
   ~RecipeFile();

@@ -2,6 +2,7 @@ project('seticore', ['cpp', 'c', 'cuda'],
         default_options: [
             'buildtype=release',
             'cpp_std=c++14',
+            'werror=true',
         ])
 
 cmake = import('cmake')
@@ -15,7 +16,9 @@ hdf5_dep = dependency('hdf5', language: 'c')
 
 cuda_dep = dependency('cuda')
 
-capnp_subproj = cmake.subproject('capnproto')
+capnp_opt = cmake.subproject_options()
+capnp_opt.set_override_option('warning_level', '0')
+capnp_subproj = cmake.subproject('capnproto', options: capnp_opt)
 kj_dep = capnp_subproj.dependency('kj')
 capnp_dep = capnp_subproj.dependency('capnp')
 
