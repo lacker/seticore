@@ -156,6 +156,30 @@ long RecipeFile::getLongScalarData(const string& name) const {
 }
 
 /*
+  Figures out what time array index to use for beamforming, for the given time.
+  This is the index for which time_array[index] is closest to the provided time.
+ */
+int RecipeFile::getTimeArrayIndex(double time) const {  
+  // The two candidates are the ones to either side of time
+  auto right_iter = lower_bound(time_array.begin(), time_array.end(), time);
+  if (time_array.begin() == right_iter) {
+    return 0;
+  }
+  auto left_iter = right_iter - 1;
+
+  // Check which one is closer
+  double right_dist = *right_iter - time;
+  assert(right_dist >= 0);
+  double left_dist = time - *left_iter;
+  assert(left_dist >= 0);
+
+  if (right_dist < left_dist) {
+    return right_iter - time_array.begin();
+  }
+  return left_iter - time_array.begin();
+}
+
+/*
   Accessor to delays.
   Delays are row-major organized by:
     delays[time_array_index][beam][antenna]
