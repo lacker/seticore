@@ -38,3 +38,4 @@ srcs = [
 ]
 
 executable('seticore', srcs + ['main.cpp'], dependencies: deps)
+executable('test_beamforming', srcs + ['test_beamforming.cpp'], dependencies: deps)
