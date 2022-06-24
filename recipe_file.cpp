@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "hdf5.h"
 #include <iostream>
 #include <vector>
@@ -16,6 +17,11 @@ hid_t openFile(const string& filename) {
   return file;
 }
 
+long evenlyDivide(long a, long b) {
+  assert(0 == a % b);
+  return a / b;
+}
+
 RecipeFile::RecipeFile(const string& filename) :
   file(openFile(filename)),
   obsid(getStringData("/obsinfo/obsid")),
@@ -26,8 +32,10 @@ RecipeFile::RecipeFile(const string& filename) :
   decs(getVectorData<double>("/beaminfo/decs", H5T_IEEE_F64LE)),
   npol(getLongScalarData("/diminfo/npol")),
   nbeams(getLongScalarData("/diminfo/nbeams")),
-  cal_all(getComplexVectorData("/calinfo/cal_all")) {
-}
+  cal_all(getComplexVectorData("/calinfo/cal_all")),
+  nants(evenlyDivide(delays.size(), nbeams * time_array.size())),
+  nchans(evenlyDivide(cal_all.size(), nants * npol))
+{ }
 
 RecipeFile::~RecipeFile() {
   H5Fclose(file);

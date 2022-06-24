@@ -33,6 +33,10 @@ class RecipeFile {
   const long npol;
   const long nbeams;
   const vector<thrust::complex<float> > cal_all;
+
+  // This data isn't provided in the recipe file, but we can infer it
+  const long nants;
+  const long nchans;
   
   RecipeFile(const string& filename);
   ~RecipeFile();
