@@ -35,9 +35,14 @@ class RecipeFile {
   const vector<thrust::complex<float> > cal_all;
 
   // This data isn't provided in the recipe file, but we can infer it
-  const long nants;
-  const long nchans;
+  const int nants;
+  const int nchans;
   
   RecipeFile(const string& filename);
   ~RecipeFile();
+
+  double getDelay(int time_delay_index, int beam, int antenna) const;
+  thrust::complex<float> getCal(int frequency, int polarity, int antenna) const;
+  vector<float> generateCoefficients(int time_array_index, int frequency_offset,
+                                     const vector<float>& center_frequencies) const;
 };

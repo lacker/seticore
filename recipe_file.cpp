@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "hdf5.h"
 #include <iostream>
+#include <math.h>
 #include <vector>
 
 #include "recipe_file.h"
@@ -152,4 +153,62 @@ long RecipeFile::getLongScalarData(const string& name) const {
   H5Dclose(dataset);
 
   return output;  
+}
+
+/*
+  Accessor to delays.
+  Delays are row-major organized by:
+    delays[time_array_index][beam][antenna]
+*/
+double RecipeFile::getDelay(int time_array_index, int beam, int antenna) const {
+  return delays[((time_array_index * nbeams) + beam) * nants + antenna];
+}
+
+/*
+  Accessor to cal_all.
+  cal_all is row-major organized by:
+    cal_all[frequency][polarity][antenna]
+  TODO: figure out what this should actually be named.
+ */
+thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int antenna) const {
+  return cal_all[((frequency * npol) + polarity) * nants + antenna];
+}
+
+/*
+  Generate the beamforming coefficients for the given parameters.
+  time_array_index corresponds to which entry in time_array to use
+  frequency_offset defines the start of the region of bandwidth we are beamforming in
+  center_frequencies is the center frequencies for each coarse channel.
+  TODO: describe these parameters more specifically.
+
+  The output coefficients are row-major organized by:
+    coefficients[frequency][beam][polarity][antenna]
+ */
+vector<float> RecipeFile::generateCoefficients(int time_array_index, int frequency_offset,
+                                               const vector<float>& center_frequencies) const {
+  assert((int) center_frequencies.size() == nchans);
+  
+  vector<float> coefficients;
+  for (int freq = 0; freq < nchans; ++freq) {
+    for (int beam = 0; beam < nbeams; ++beam) {
+      for (int polarity = 0; polarity < npol; ++polarity) {
+        for (int antenna = 0; antenna < nants; ++antenna) {
+          float tau = getDelay(time_array_index, beam, antenna);
+          int global_freq = freq + frequency_offset;
+          auto cal = getCal(global_freq, polarity, antenna);
+
+          // Figure out how much to rotate
+          float angle = 2 * M_PI * center_frequencies[freq] * tau;
+          float cos_val = cos(angle);
+          float sin_val = sin(angle);
+
+          // Rotate to get the coefficients
+          coefficients.push_back(cal.real() * cos_val - cal.imag() * sin_val);
+          coefficients.push_back(cal.real() * sin_val + cal.imag() * cos_val);
+        }
+      }
+    }
+  }
+
+  return coefficients;
 }
