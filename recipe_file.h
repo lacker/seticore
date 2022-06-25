@@ -47,6 +47,7 @@ class RecipeFile {
 
   thrust::complex<float> getCal(int frequency, int polarity, int antenna) const;
 
-  vector<float> generateCoefficients(int time_array_index, int frequency_offset,
-                                     const vector<float>& center_frequencies) const;
+  void generateCoefficients(int time_array_index, int frequency_offset,
+                            const vector<float>& center_frequencies,
+                            float* coefficients) const;
 };

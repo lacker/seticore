@@ -25,6 +25,8 @@ capnp_dep = capnp_subproj.dependency('capnp')
 deps = [fmt_dep, boost_dep, hdf5_dep, cuda_dep, kj_dep, capnp_dep]
 
 srcs = [
+    'beamformer.cu',
+    'cuda_util.cu',
     'dedoppler.cu',
     'dat_file_writer.cpp',
     'filterbank_file.cpp',

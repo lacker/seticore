@@ -208,11 +208,12 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   The output coefficients are row-major organized by:
     coefficients[frequency][beam][polarity][antenna]
  */
-vector<float> RecipeFile::generateCoefficients(int time_array_index, int frequency_offset,
-                                               const vector<float>& center_frequencies) const {
+void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset,
+                                      const vector<float>& center_frequencies,
+                                      float* coefficients) const {
   assert((int) center_frequencies.size() == nchans);
   
-  vector<float> coefficients;
+  int output_index = 0;
   for (int freq = 0; freq < nchans; ++freq) {
     for (int beam = 0; beam < nbeams; ++beam) {
       for (int polarity = 0; polarity < npol; ++polarity) {
@@ -227,12 +228,10 @@ vector<float> RecipeFile::generateCoefficients(int time_array_index, int frequen
           float sin_val = sin(angle);
 
           // Rotate to get the coefficients
-          coefficients.push_back(cal.real() * cos_val - cal.imag() * sin_val);
-          coefficients.push_back(cal.real() * sin_val + cal.imag() * cos_val);
+          coefficients[output_index++] = cal.real() * cos_val - cal.imag() * sin_val;
+          coefficients[output_index++] = cal.real() * sin_val + cal.imag() * cos_val;
         }
       }
     }
   }
-
-  return coefficients;
 }

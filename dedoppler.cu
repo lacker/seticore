@@ -8,14 +8,10 @@
 #include <numeric>
 #include <vector>
 
+#include "cuda_util.h"
 #include "dedoppler.h"
 
 using namespace std;
-
-static_assert(sizeof(float) == 4, "require 32-bit floats");
-
-const int CUDA_BLOCK_SIZE = 1024;
-
 
 /*
   Kernel to runs one round of the Taylor tree algorithm, calculating the sums
@@ -228,14 +224,6 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
   }
 }
 
-
-// Helper to nicely display cuda errors
-void checkCuda(cudaError_t err) {
-  if (err != 0) {
-    cerr << "cuda error " << err << ": " << cudaGetErrorString(err) << endl;
-    exit(1);
-  }
-}
 
 /*
   The Dedopplerer encapsulates the logic of dedoppler search. In particular it manages
