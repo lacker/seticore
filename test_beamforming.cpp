@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "raw/raw.h"
 #include "recipe_file.h"
 
 using namespace std;
