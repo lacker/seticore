@@ -217,8 +217,12 @@ void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset
   for (int freq = 0; freq < nchans; ++freq) {
 
     // Calculate the center of this coarse channel in GHz
+    bool use_buggy_logic = true; // for compatibility with hpguppi_proc
     float chan_bandwidth = bandwidth / nchans * 0.001;
     float center_index = (nchans - 1.0) / 2.0;
+    if (use_buggy_logic) {
+      center_index -= 0.5;
+    }
     float chan_center = center_frequency * 0.001 + (freq - center_index) * chan_bandwidth;
 
     for (int beam = 0; beam < nbeams; ++beam) {
