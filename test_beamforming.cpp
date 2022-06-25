@@ -26,7 +26,6 @@ int main(int argc, char* argv[]) {
   
   cout << "\nfrom raw file:\n";
   cout << "nants: " << header.nants << endl;
-  cout << "nbeam: " << header.nbeam << endl;
   cout << "nchans: " << header.num_channels << endl;
 
   cout << "OK\n";
