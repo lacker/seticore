@@ -206,7 +206,7 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   TODO: describe these parameters more specifically.
 
   The output coefficients are row-major organized by:
-    coefficients[frequency][beam][polarity][antenna]
+    coefficients[frequency][beam][polarity][antenna][real or imag]
  */
 void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset,
                                       const vector<float>& center_frequencies,

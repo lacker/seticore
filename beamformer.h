@@ -33,7 +33,7 @@ class Beamformer {
   signed char *input;
 
   // Beamforming coefficients, formatted by row-major:
-  //   coefficients[frequency][beam][polarity][antenna]
+  //   coefficients[frequency][beam][polarity][antenna][real or imag]
   float *coefficients;
   
  private:

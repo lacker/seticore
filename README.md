@@ -65,6 +65,17 @@ You can run the regression tests with:
 This will automatically download a few gigabytes of test data from Berkeley and ensure
 you get the expected output.
 
+The main supported target environment is defined by [this
+Dockerfile](https://github.com/lacker/seticore/blob/master/Dockerfile). If
+you have the [Nvidia container
+toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+set up to let Docker access the GPU, you can test the code
+using this Docker environment with:
+
+```
+./test_docker.sh
+```
+
 ## Selecting a Specific GPU Device ID
 
 Reference: https://shawnliu.me/post/nvidia-gpu-id-enumeration-in-linux/
