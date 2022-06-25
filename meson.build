@@ -5,6 +5,8 @@ project('seticore', ['cpp', 'c', 'cuda'],
             'werror=true',
         ])
 
+cuda_args = [ '--std=c++14' ]
+
 cmake = import('cmake')
 
 fmt_subproj = cmake.subproject('fmt')
@@ -39,5 +41,8 @@ srcs = [
     'run_dedoppler.cpp',
 ]
 
-executable('seticore', srcs + ['main.cpp'], dependencies: deps)
-executable('test_beamforming', srcs + ['test_beamforming.cpp'], dependencies: deps)
+executable('seticore', srcs + ['main.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
+
+executable('test_beamforming', srcs + ['test_beamforming.cpp'],
+           dependencies: deps, cuda_args: cuda_args)

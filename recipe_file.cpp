@@ -202,19 +202,25 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   Generate the beamforming coefficients for the given parameters.
   time_array_index corresponds to which entry in time_array to use
   frequency_offset defines the start of the region of bandwidth we are beamforming in
-  center_frequencies is the center frequencies for each coarse channel.
-  TODO: describe these parameters more specifically.
+  center_frequency is the center of the input range in MHz. (the OBSFREQ header)
+  bandwidth is the width of the input range in MHz, negative for reversed. (the OBSBW header)
+
+  TODO: don't make the caller know how to calculate time_array_index or frequency_offset
 
   The output coefficients are row-major organized by:
     coefficients[frequency][beam][polarity][antenna][real or imag]
  */
 void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset,
-                                      const vector<float>& center_frequencies,
+                                      float center_frequency, float bandwidth,
                                       float* coefficients) const {
-  assert((int) center_frequencies.size() == nchans);
-  
   int output_index = 0;
   for (int freq = 0; freq < nchans; ++freq) {
+
+    // Calculate the center of this coarse channel in GHz
+    float chan_bandwidth = bandwidth / nchans * 0.001;
+    float center_index = (nchans - 1.0) / 2.0;
+    float chan_center = center_frequency * 0.001 + (freq - center_index) * chan_bandwidth;
+
     for (int beam = 0; beam < nbeams; ++beam) {
       for (int polarity = 0; polarity < npol; ++polarity) {
         for (int antenna = 0; antenna < nants; ++antenna) {
@@ -223,7 +229,7 @@ void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset
           auto cal = getCal(global_freq, polarity, antenna);
 
           // Figure out how much to rotate
-          float angle = 2 * M_PI * center_frequencies[freq] * tau;
+          float angle = 2 * M_PI * chan_center * tau;
           float cos_val = cos(angle);
           float sin_val = sin(angle);
 
