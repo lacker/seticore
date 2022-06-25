@@ -1,9 +1,29 @@
 #include <cuda.h>
+#include <thrust/complex.h>
 
 #include "beamformer.h"
 #include "cuda_util.h"
 
 using namespace std;
+
+/*
+  The input encodes each value as two bytes, so it has size (2*num_values).
+  You can think of it as row-major:
+    input[index][0 for real, 1 for imag]
+
+  We convert from signed char to float, treating the signed char as a signed 8-bit int.
+
+  TODO: see if we can use thrust::complex<int8> instead of signed char, for input
+ */
+__global__ void convertToFloat(const signed char* input, thrust::complex<float>* output,
+                               int num_values) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < 0 || i >= num_values) {
+    return;
+  }
+  output[i].real(input[2*i] * 1.0f);
+  output[i].imag(input[2*i+1] * 1.0f);
+}
 
 /*
   The Beamformer encapsulates the GPU memory allocations we use for beamforming.
@@ -19,4 +39,11 @@ Beamformer::Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp)
 Beamformer::~Beamformer() {
   cudaFree(input);
   cudaFree(coefficients);
+}
+
+/*
+  The caller should first set *input and *coefficients.
+ */
+void Beamformer::beamform() {
+  // TODO: implement
 }

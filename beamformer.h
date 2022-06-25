@@ -23,13 +23,13 @@ class Beamformer {
   Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp);
   ~Beamformer();
 
+  void beamform();
+  
   // The input array is unified to the GPU, used to accept data from the previous step
   // in the data processing pipeline.
   //
   // Its format is row-major:
-  //   input[antenna][frequency][time][polarity]
-  //
-  // TODO: explain what each signed char of input actually is. Some weird raw-file-format thing
+  //   input[antenna][frequency][time][polarity][real or imag]
   signed char *input;
 
   // Beamforming coefficients, formatted by row-major:
