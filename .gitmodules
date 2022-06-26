@@ -4,6 +4,3 @@
 [submodule "capnproto"]
 	path = subprojects/capnproto
 	url = https://github.com/capnproto/capnproto.git
-[submodule "raw"]
-	path = raw
-	url = git@github.com:lacker/raw.git
