@@ -28,6 +28,19 @@ int main(int argc, char* argv[]) {
   cout << "nants: " << header.nants << endl;
   cout << "nchans: " << header.num_channels << endl;
 
+  double mid_time = header.getMidTime();
+  int time_array_index = recipe.getTimeArrayIndex(mid_time);
+  int schan = header.getInt("SCHAN", 0);
+  vector<float> coefficients(header.num_channels * recipe.nbeams * recipe.npol * recipe.nants * 2);
+  
+  recipe.generateCoefficients(time_array_index, schan, header.num_channels,
+                              header.obsfreq, header.obsbw, coefficients.data());
+  
+  cout << "mid_time: " << mid_time << endl;
+  cout << "tai: " << time_array_index << endl;
+  cout << "schan: " << schan << endl;
+  cout << "generated " << coefficients.size() << " coefficients\n";
+  
   cout << "OK\n";
   return 0;
 }

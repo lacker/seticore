@@ -200,26 +200,35 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
 
 /*
   Generate the beamforming coefficients for the given parameters.
-  time_array_index corresponds to which entry in time_array to use
-  frequency_offset defines the start of the region of bandwidth we are beamforming in
-  center_frequency is the center of the input range in MHz. (the OBSFREQ header)
-  bandwidth is the width of the input range in MHz, negative for reversed. (the OBSBW header)
 
-  TODO: don't make the caller know how to calculate time_array_index or frequency_offset
+  There are two ways parameters give us different coefficients. They specify the time, and
+  the frequency range we are interested in.
+
+  time_array_index corresponds to which entry in time_array to use.
+
+  For the frequency range we need more data to describe the subband we are beamforming for.
+  A subband corresponds to a subset of the channels that the recipe file has data for.
+  start_channel and num_channels define what subset of the channels in the recipe to use.
+  start_channel is the first one of the range, num_channels is the size of the range.
+  center_frequency is the center of the subband in MHz. (the OBSFREQ header)
+  bandwidth is the width of the subband in MHz, negative for reversed. (the OBSBW header)
 
   The output coefficients are row-major organized by:
     coefficients[frequency][beam][polarity][antenna][real or imag]
  */
-void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset,
+void RecipeFile::generateCoefficients(int time_array_index,
+                                      int start_channel, int num_channels,
                                       float center_frequency, float bandwidth,
                                       float* coefficients) const {
+  assert(start_channel + num_channels <= nchans);
+  
   int output_index = 0;
-  for (int freq = 0; freq < nchans; ++freq) {
+  for (int freq = 0; freq < num_channels; ++freq) {
 
     // Calculate the center of this coarse channel in GHz
     bool use_buggy_logic = true; // for compatibility with hpguppi_proc
-    float chan_bandwidth = bandwidth / nchans * 0.001;
-    float center_index = (nchans - 1.0) / 2.0;
+    float chan_bandwidth = bandwidth / num_channels * 0.001;
+    float center_index = (num_channels - 1.0) / 2.0;
     if (use_buggy_logic) {
       center_index -= 0.5;
     }
@@ -229,8 +238,8 @@ void RecipeFile::generateCoefficients(int time_array_index, int frequency_offset
       for (int polarity = 0; polarity < npol; ++polarity) {
         for (int antenna = 0; antenna < nants; ++antenna) {
           float tau = getDelay(time_array_index, beam, antenna);
-          int global_freq = freq + frequency_offset;
-          auto cal = getCal(global_freq, polarity, antenna);
+          int global_channel_index = freq + start_channel;
+          auto cal = getCal(global_channel_index, polarity, antenna);
 
           // Figure out how much to rotate
           float angle = 2 * M_PI * chan_center * tau;
