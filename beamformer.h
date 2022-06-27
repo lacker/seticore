@@ -30,12 +30,16 @@ class Beamformer {
   //
   // Its format is row-major:
   //   input[antenna][frequency][time][polarity][real or imag]
+  //
+  // The signed chars should be interpreted as int8.
   signed char *input;
 
   // Beamforming coefficients, formatted by row-major:
   //   coefficients[frequency][beam][polarity][antenna][real or imag]
   float *coefficients;
-  
+
+  void debugCoefficients(int antenna, int pol, int beam, int freq) const;
+
  private:
   // TODO: put more buffers here
 };

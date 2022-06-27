@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <iostream>
 
+#include "beamformer.h"
 #include "raw/raw.h"
 #include "recipe_file.h"
 
@@ -21,8 +22,11 @@ int main(int argc, char* argv[]) {
     cout << "raw error: " << reader.errorMessage() << endl;
     return 1;
   }
-  vector<char> data(header.blocsize);
-  reader.readData(data.data());
+
+  Beamformer beamformer(header.nants, recipe.nbeams, header.num_channels,
+                        recipe.npol, header.num_timesteps);
+
+  reader.readData((char*) beamformer.input);
   
   cout << "\nfrom raw file:\n";
   cout << "nants: " << header.nants << endl;
@@ -31,16 +35,19 @@ int main(int argc, char* argv[]) {
   double mid_time = header.getMidTime();
   int time_array_index = recipe.getTimeArrayIndex(mid_time);
   int schan = header.getInt("SCHAN", 0);
-  vector<float> coefficients(header.num_channels * recipe.nbeams * recipe.npol * recipe.nants * 2);
-  
   recipe.generateCoefficients(time_array_index, schan, header.num_channels,
-                              header.obsfreq, header.obsbw, coefficients.data());
+                              header.obsfreq, header.obsbw, beamformer.coefficients);
   
   cout << "mid_time: " << mid_time << endl;
   cout << "tai: " << time_array_index << endl;
   cout << "schan: " << schan << endl;
-  cout << "generated " << coefficients.size() << " coefficients\n";
-  
+
+  beamformer.debugCoefficients(0, 0, 0, 0);
+  beamformer.debugCoefficients(1, 1, 1, 1);
+  beamformer.debugCoefficients(9, 0, 9, 9);
+  beamformer.debugCoefficients(32, 0, 32, 256);
+  beamformer.debugCoefficients(48, 1, 48, 384);
+    
   cout << "OK\n";
   return 0;
 }

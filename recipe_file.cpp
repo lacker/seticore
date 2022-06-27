@@ -213,8 +213,6 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   center_frequency is the center of the subband in MHz. (the OBSFREQ header)
   bandwidth is the width of the subband in MHz, negative for reversed. (the OBSBW header)
 
-  The output coefficients are row-major organized by:
-    coefficients[frequency][beam][polarity][antenna][real or imag]
  */
 void RecipeFile::generateCoefficients(int time_array_index,
                                       int start_channel, int num_channels,

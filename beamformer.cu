@@ -1,4 +1,5 @@
 #include <cuda.h>
+#include <iostream>
 #include <thrust/complex.h>
 
 #include "beamformer.h"
@@ -29,11 +30,14 @@ __global__ void convertToFloat(const signed char* input, thrust::complex<float>*
   The Beamformer encapsulates the GPU memory allocations we use for beamforming.
   The workflow is to create a beamformer for a particular set of dimensions,
   use it to form many beams, and then destruct it when we want to free the memory.
+
+  TODO: nants and npol are specified twice, one by the recipe file and one by the raw input.
+  We should really check to ensure they are the same and handle it cleanly if they aren't.
  */
 Beamformer::Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp)
   : nants(nants), nbeams(nbeams), nchans(nchans), npol(npol), nsamp(nsamp) {
   checkCuda(cudaMallocManaged(&input, nants * nchans * npol * nsamp * sizeof(signed char)));
-  checkCuda(cudaMallocManaged(&coefficients, nants * nbeams * nchans * npol * sizeof(float)));
+  checkCuda(cudaMallocManaged(&coefficients, 2 * nants * nbeams * nchans * npol * sizeof(float)));
 }
 
 Beamformer::~Beamformer() {
@@ -46,4 +50,10 @@ Beamformer::~Beamformer() {
  */
 void Beamformer::beamform() {
   // TODO: implement
+}
+
+void Beamformer::debugCoefficients(int antenna, int pol, int beam, int freq) const {
+  int i = (((freq * nbeams) + beam) * npol + pol) * nants + antenna;
+  cout << "coefficient[" << antenna << "][" << pol << "][" << beam << "][" << freq << "] = "
+       << coefficients[2*i] << " + " << coefficients[2*i+1] << "i\n";
 }
