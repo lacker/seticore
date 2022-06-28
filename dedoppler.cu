@@ -369,7 +369,8 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
   // Now that we have done all the GPU processing for one coarse
   // channel, we can copy the data back to host memory.
   cudaDeviceSynchronize();
-    
+  checkCuda("dedoppler synchronize");
+  
   // Use the central 90% of the column sums to calculate standard deviation.
   // We don't need to do a full sort; we can just calculate the 5th,
   // 50th, and 95th percentiles
