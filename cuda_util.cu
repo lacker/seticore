@@ -4,10 +4,13 @@
 
 using namespace std;
 
-void checkCuda(cudaError_t err) {
-  if (err != 0) {
-    cerr << "cuda error " << err << ": " << cudaGetErrorString(err) << endl;
+void checkCuda(const string& tag) {
+  auto err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    cerr << tag << ": cuda error " << err << ": " << cudaGetErrorString(err) << endl;
     exit(1);
   }
 }
 
+
+ 

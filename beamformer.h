@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thrust/complex.h>
+
 using namespace std;
 
 class Beamformer {
@@ -38,8 +40,16 @@ class Beamformer {
   //   coefficients[frequency][beam][polarity][antenna][real or imag]
   float *coefficients;
 
-  void debugCoefficients(int antenna, int pol, int beam, int freq) const;
+  // The input data transposed and converted to complex.
+  //
+  // Its format is row-major:
+  //   transposed[time][frequency][polarity][antenna]
+  thrust::complex<float>* transposed;
 
+  // These cause a cuda sync so they are slow, only useful for debugging or testing
+  thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int freq) const;
+  thrust::complex<float> getTransposed(int time, int chan, int pol, int antenna) const;
+  
  private:
   // TODO: put more buffers here
 };

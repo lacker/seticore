@@ -7,6 +7,17 @@
 
 using namespace std;
 
+void assertComplexEq(thrust::complex<float> c, float real, float imag) {
+  if (abs(c.real() - real) > 0.001) {
+    cerr << "c.real() = " << c.real() << " but real = " << real << endl;
+    exit(1);
+  }
+  if (abs(c.imag() - imag) > 0.001) {
+    cerr << "c.imag() = " << c.imag() << " but imag = " << imag << endl;
+    exit(1);
+  }
+}
+
 int main(int argc, char* argv[]) {
   RecipeFile recipe("/d/minput/guppi_59599_76288_000062_J03323-28075_0001.bfr5");
   cout << "from recipe file:\n";
@@ -26,6 +37,7 @@ int main(int argc, char* argv[]) {
   Beamformer beamformer(header.nants, recipe.nbeams, header.num_channels,
                         recipe.npol, header.num_timesteps);
 
+  cout << "reading " << header.blocsize << " bytes\n";
   reader.readData((char*) beamformer.input);
   
   cout << "\nfrom raw file:\n";
@@ -42,12 +54,16 @@ int main(int argc, char* argv[]) {
   cout << "tai: " << time_array_index << endl;
   cout << "schan: " << schan << endl;
 
-  beamformer.debugCoefficients(0, 0, 0, 0);
-  beamformer.debugCoefficients(1, 1, 1, 1);
-  beamformer.debugCoefficients(9, 0, 9, 9);
-  beamformer.debugCoefficients(32, 0, 32, 256);
-  beamformer.debugCoefficients(48, 1, 48, 384);
-    
+  assertComplexEq(beamformer.getCoefficient(0, 0, 0, 0), 20.0037, -94.5755);
+  assertComplexEq(beamformer.getCoefficient(1, 1, 1, 1), -41.4678, -83.6412);
+  assertComplexEq(beamformer.getCoefficient(9, 0, 9, 9), -91.5771, 1.49745);
+  assertComplexEq(beamformer.getCoefficient(32, 0, 32, 256), -35.1951, -102.186);
+  assertComplexEq(beamformer.getCoefficient(48, 1, 48, 384), 97.9193, -3.7384);
+
+  beamformer.beamform();
+
+  assertComplexEq(beamformer.getTransposed(9, 7, 1, 3), 8.0, 7.0);
+  
   cout << "OK\n";
   return 0;
 }

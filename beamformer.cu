@@ -1,29 +1,37 @@
+#include <assert.h>
 #include <cuda.h>
 #include <iostream>
-#include <thrust/complex.h>
 
 #include "beamformer.h"
 #include "cuda_util.h"
 
 using namespace std;
 
+// Helper to calculate a 4d row-major index, ie for:
+//   arr[a][b][c][d]
+__host__ __device__ int index4d(int a, int b, int b_end, int c, int c_end, int d, int d_end) {
+  return ((((a * b_end) + b) * c_end) + c) * d_end + d;
+}
+
 /*
-  The input encodes each value as two bytes, so it has size (2*num_values).
-  You can think of it as row-major:
-    input[index][0 for real, 1 for imag]
+  We convert from int8 input with format:
+    input[antenna][frequency][time][polarity][real or imag]
 
-  We convert from signed char to float, treating the signed char as a signed 8-bit int.
-
-  TODO: see if we can use thrust::complex<int8> instead of signed char, for input
+  to complex-float output with format:
+    transposed[time][frequency][polarity][antenna]
  */
-__global__ void convertToFloat(const signed char* input, thrust::complex<float>* output,
-                               int num_values) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < 0 || i >= num_values) {
-    return;
-  }
-  output[i].real(input[2*i] * 1.0f);
-  output[i].imag(input[2*i+1] * 1.0f);
+__global__ void transpose(const signed char* input, thrust::complex<float>* transposed,
+                          int nants, int nchans, int npol, int nsamp) {
+  int antenna = threadIdx.x;
+  int pol = threadIdx.y;
+  int chan = blockIdx.y;
+  int time = blockIdx.x;
+
+  int input_index = 2 * index4d(antenna, chan, nchans, time, nsamp, pol, npol);
+  int transposed_index = index4d(time, chan, nchans, pol, npol, antenna, nants);
+
+  transposed[transposed_index] = thrust::complex<float>
+    (input[input_index] * 1.0, input[input_index + 1] * 1.0);
 }
 
 /*
@@ -36,24 +44,50 @@ __global__ void convertToFloat(const signed char* input, thrust::complex<float>*
  */
 Beamformer::Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp)
   : nants(nants), nbeams(nbeams), nchans(nchans), npol(npol), nsamp(nsamp) {
-  checkCuda(cudaMallocManaged(&input, nants * nchans * npol * nsamp * sizeof(signed char)));
-  checkCuda(cudaMallocManaged(&coefficients, 2 * nants * nbeams * nchans * npol * sizeof(float)));
+  cudaMallocManaged(&input, 2 * nants * nchans * npol * nsamp * sizeof(signed char));
+  checkCuda("beamformer input malloc");
+  
+  cudaMallocManaged(&coefficients, 2 * nants * nbeams * nchans * npol * sizeof(float));
+  checkCuda("beamformer coefficients malloc");
+
+  cudaMallocManaged(&transposed, 2 * nants * nchans * npol * nsamp * sizeof(float));
+  checkCuda("beamformer transposed malloc");
 }
 
 Beamformer::~Beamformer() {
   cudaFree(input);
   cudaFree(coefficients);
+  cudaFree(transposed);
 }
 
 /*
-  The caller should first set *input and *coefficients.
+  The caller should first put the data into *input and *coefficients.
  */
 void Beamformer::beamform() {
-  // TODO: implement
+  dim3 transpose_block(nants, npol, 1);
+  dim3 transpose_grid(nsamp, nchans, 1);
+  transpose<<<transpose_grid, transpose_block>>>(input, transposed, nants, nchans, npol, nsamp);
+  checkCuda("transpose cuda kernel");
 }
 
-void Beamformer::debugCoefficients(int antenna, int pol, int beam, int freq) const {
-  int i = (((freq * nbeams) + beam) * npol + pol) * nants + antenna;
-  cout << "coefficient[" << antenna << "][" << pol << "][" << beam << "][" << freq << "] = "
-       << coefficients[2*i] << " + " << coefficients[2*i+1] << "i\n";
+thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam, int freq) const {
+  cudaDeviceSynchronize();
+  checkCuda("getCoefficient");
+  assert(antenna < nants);
+  assert(pol < npol);
+  assert(beam < nbeams);
+  assert(freq < nchans);
+  int i = index4d(freq, beam, nbeams, pol, npol, antenna, nants);
+  return thrust::complex<float>(coefficients[2*i], coefficients[2*i+1]);
+}
+
+thrust::complex<float> Beamformer::getTransposed(int time, int chan, int pol, int antenna) const {
+  cudaDeviceSynchronize();
+  checkCuda("getTransposed");
+  assert(time < nsamp);
+  assert(chan < nchans);
+  assert(pol < npol);
+  assert(antenna < nants);
+  int i = index4d(time, chan, nchans, pol, npol, antenna, nants);
+  return transposed[i];
 }
