@@ -7,6 +7,12 @@
 
 using namespace std;
 
+// Helper to calculate a 3d row-major index, ie for:
+//   arr[a][b][c]
+__host__ __device__ int index3d(int a, int b, int b_end, int c, int c_end) {
+  return ((a * b_end) + b) * c_end + c;
+}
+
 // Helper to calculate a 4d row-major index, ie for:
 //   arr[a][b][c][d]
 __host__ __device__ int index4d(int a, int b, int b_end, int c, int c_end, int d, int d_end) {
@@ -95,11 +101,46 @@ __global__ void beamform(const thrust::complex<float>* transposed,
   and the outpower power has format:
     power[beam][time][frequency]
 
-  where the time dimension has shrunk by a factor of STI.
+  where the time dimension has shrunk by a factor of STI, now indexed by [0, nwin).
+
+  TODO: this also seems equivalent to a batch matrix multiplication. could we do this
+  with a cublas routine?
  */
 __global__ void calculatePower(const thrust::complex<float>* voltage,
-                               float* power, int npol, int nbeam, int nchan) {
-  // TODO: implement
+                               float* power,
+                               int nbeams, int nchans, int npol, int nwindows) {
+  int chan = blockIdx.z;
+  int beam = blockIdx.y;
+  int window = blockIdx.x;
+
+  int subtime = threadIdx.x;
+  assert(subtime < STI);
+  int time = window * STI + subtime;
+
+  assert(2 == npol);
+  int pol0_index = index4d(time, chan, nchans, beam, nbeams, 0, npol);
+  int pol1_index = index4d(time, chan, nchans, beam, nbeams, 1, npol);
+  int power_index = index3d(beam, window, nwindows, chan, nchans);
+
+  __shared__ float reduced[STI];
+  float real0 = voltage[pol0_index].real();
+  float imag0 = voltage[pol0_index].imag();
+  float real1 = voltage[pol1_index].real();
+  float imag1 = voltage[pol1_index].imag();
+  reduced[subtime] = real0 * real0 + imag0 * imag0 + real1 * real1 + imag1 * imag1;
+
+  __syncthreads();
+
+  for (int k = STI / 2; k > 0; k >>= 1) {
+    if (subtime < k) {
+      reduced[subtime] += reduced[subtime + k];
+    }
+    __syncthreads();
+  }
+
+  if (subtime == 0) {
+    power[power_index] = reduced[0];
+  }
 }
 
 /*
@@ -152,6 +193,13 @@ void Beamformer::processInput() {
   beamform<<<beamform_grid, beamform_block>>>(transposed, coefficients, voltage,
                                               nants, nbeams, nchans, npol);
   checkCuda("beamform cuda kernel");
+
+  assert(0 == nsamp % STI);
+  int nwindows = nsamp / STI;
+  dim3 power_block(STI, 1, 1);
+  dim3 power_grid(nwindows, nbeams, nchans);
+  calculatePower<<<power_grid, power_block>>>(voltage, power, nbeams, nchans, npol, nwindows);
+  checkCuda("power cuda kernel");
 }
 
 thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam, int freq) const {
