@@ -18,6 +18,17 @@ void assertComplexEq(thrust::complex<float> c, float real, float imag) {
   }
 }
 
+void assertFloatEq(float a, float b) {
+  while (a > 100) {
+    a /= 2.0;
+    b /= 2.0;
+  }
+  if (abs(a - b) > 0.001) {
+    cerr << a << " != " << b << endl;
+    exit(1);
+  }
+}
+
 int main(int argc, char* argv[]) {
   RecipeFile recipe("/d/minput/guppi_59599_76288_000062_J03323-28075_0001.bfr5");
   cout << "from recipe file:\n";
@@ -66,6 +77,8 @@ int main(int argc, char* argv[]) {
 
   assertComplexEq(beamformer.getVoltage(0, 0, 0, 0), -4715.979492, 2549.703125);
   assertComplexEq(beamformer.getVoltage(4, 3, 2, 1), 562.406616, -10480.619141);
+
+  assertFloatEq(beamformer.getPower(9, 8, 7), 820444800.0);
   
   cout << "OK\n";
   return 0;

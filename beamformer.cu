@@ -234,3 +234,13 @@ thrust::complex<float> Beamformer::getVoltage(int time, int chan, int beam, int 
   int i = index4d(time, chan, nchans, beam, nbeams, pol, npol);
   return voltage[i];
 }
+
+float Beamformer::getPower(int beam, int time, int chan) const {
+  cudaDeviceSynchronize();
+  checkCuda("getPower");
+  assert(beam < nbeams);
+  assert(time < nsamp / STI);
+  assert(chan < nchans);
+  int i = index3d(beam, time, nsamp / STI, chan, nchans);
+  return power[i];
+}

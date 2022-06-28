@@ -67,6 +67,7 @@ class Beamformer {
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int freq) const;
   thrust::complex<float> getTransposed(int time, int chan, int pol, int antenna) const;
   thrust::complex<float> getVoltage(int time, int chan, int beam, int pol) const;
+  float getPower(int beam, int time, int chan) const;
   
  private:
   // TODO: put some buffers here
