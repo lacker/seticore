@@ -60,9 +60,12 @@ int main(int argc, char* argv[]) {
   assertComplexEq(beamformer.getCoefficient(32, 0, 32, 256), -35.1951, -102.186);
   assertComplexEq(beamformer.getCoefficient(48, 1, 48, 384), 97.9193, -3.7384);
 
-  beamformer.beamform();
+  beamformer.processInput();
 
   assertComplexEq(beamformer.getTransposed(9, 7, 1, 3), 8.0, 7.0);
+
+  assertComplexEq(beamformer.getVoltage(0, 0, 0, 0), -4715.979492, 2549.703125);
+  assertComplexEq(beamformer.getVoltage(4, 3, 2, 1), 562.406616, -10480.619141);
   
   cout << "OK\n";
   return 0;
