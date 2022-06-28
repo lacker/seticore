@@ -314,7 +314,8 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
 
   sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input, column_sums,
                                              rounded_num_timesteps, num_channels);
-    
+  checkCuda("sumColumns");
+  
   int mid = num_channels / 2;
   if (has_dc_spike) {
     // Remove the DC spike by making it the average of the adjacent columns
@@ -344,7 +345,8 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
       taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
                                                  rounded_num_timesteps, num_channels,
                                                  path_length, drift_block);
-
+      checkCuda("taylorTree");
+      
       // Swap buffer aliases to make the old target the new source
       if (target_buffer == buffer1) {
         source_buffer = buffer1;
@@ -364,6 +366,7 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
                                                     num_channels, drift_block,
                                                     top_path_sums, top_drift_blocks,
                                                     top_path_offsets);
+    checkCuda("findTopPathSums");
   }
 
   // Now that we have done all the GPU processing for one coarse
