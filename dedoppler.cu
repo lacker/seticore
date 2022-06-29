@@ -274,9 +274,10 @@ Dedopplerer::~Dedopplerer() {
 /*
   Runs dedoppler search on the input buffer.
   Output is appended to the output vector.
-
-  This works when input data was populated on the CPU.
-  TODO: see if this can be pipelined with GPU data population.
+  
+  All processing of the input buffer happens on the GPU, so it doesn't need to
+  start off with host and device synchronized when search is called, it can still
+  have GPU processing pending.
 */
 void Dedopplerer::search(const FilterbankBuffer& input,
                          double max_drift, double min_drift, double snr_threshold,
