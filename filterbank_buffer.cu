@@ -2,6 +2,8 @@
 
 #include "cuda_util.h"
 
+#include <iostream>
+
 using namespace std;
 
 FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels)

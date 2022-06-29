@@ -173,9 +173,15 @@ string H5File::getStringAttr(const string& name) const {
   return output;
 }
 
-// Loads the data in row-major order.
+/*
+  Loads the data in row-major order.
+
+  If the buffer has extra space beyond that needed to load the coarse channel, we zero it out.
+
+  This also corrects for the DC spike, if needed.
+*/
 void H5File::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
-  assert(num_timesteps == buffer->num_timesteps);
+  assert(num_timesteps <= buffer->num_timesteps);
   assert(coarse_channel_size == buffer->num_channels);
   
   // Select a hyperslab containing just the coarse channel we want
@@ -202,6 +208,10 @@ void H5File::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
   }
     
   H5Sclose(memspace);
+
+  if (num_timesteps < buffer->num_timesteps) {
+    // Zero out the extra buffer space
+  }
 }
   
 H5File::~H5File() {

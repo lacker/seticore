@@ -10,6 +10,7 @@
 
 #include "cuda_util.h"
 #include "dedoppler.h"
+#include "util.h"
 
 using namespace std;
 
@@ -234,12 +235,7 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
     : num_timesteps(num_timesteps), num_channels(num_channels), foff(foff), tsamp(tsamp),
       has_dc_spike(has_dc_spike) {
 
-  // Round up to the next power of two, for how many timesteps to model
-  rounded_num_timesteps = 1;
-  while (rounded_num_timesteps < num_timesteps) {
-    rounded_num_timesteps *= 2;
-  }
-
+  rounded_num_timesteps = roundUpToPowerOfTwo(num_timesteps);
   drift_timesteps = rounded_num_timesteps - 1;
 
   drift_rate_resolution = 1e6 * foff / (drift_timesteps * tsamp);

@@ -6,6 +6,7 @@
 #include "filterbank_file.h"
 #include "hit_recorder.h"
 #include "run_dedoppler.h"
+#include "util.h"
 
 using namespace std;
 
@@ -31,7 +32,7 @@ void runDedoppler(const string& input_filename, const string& output_filename,
 
   Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff,
                           file->tsamp, file->has_dc_spike);
-  FilterbankBuffer buffer(file->num_timesteps, file->coarse_channel_size);
+  FilterbankBuffer buffer(roundUpToPowerOfTwo(file->num_timesteps), file->coarse_channel_size);
   
   // Load and process one coarse channel at a time from the filterbank file
   vector<DedopplerHit> hits;

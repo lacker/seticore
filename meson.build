@@ -40,6 +40,7 @@ srcs = [
     'hit_recorder.cpp',
     'recipe_file.cpp',
     'run_dedoppler.cpp',
+    'util.cpp',
 ]
 
 executable('seticore', srcs + ['main.cpp'],
