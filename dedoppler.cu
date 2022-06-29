@@ -247,25 +247,25 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
     
   // Allocate everything we need for GPU processing
   cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float));
-  checkCuda("dedoppler input malloc");
+  checkCuda("Dedopplerer input malloc");
 
   cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float));
-  checkCuda("dedoppler buffer1 malloc");
+  checkCuda("Dedopplerer buffer1 malloc");
 
   cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float));
-  checkCuda("dedoppler buffer2 malloc");
+  checkCuda("Dedopplerer buffer2 malloc");
   
   cudaMallocManaged(&column_sums, num_channels * sizeof(float));
-  checkCuda("dedoppler column_sums malloc");
+  checkCuda("Dedopplerer column_sums malloc");
   
   cudaMallocManaged(&top_path_sums, num_channels * sizeof(float));
-  checkCuda("dedoppler top_path_sums malloc");
+  checkCuda("Dedopplerer top_path_sums malloc");
    
   cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int));
-  checkCuda("dedoppler top_drift_blocks malloc");
+  checkCuda("Dedopplerer top_drift_blocks malloc");
   
   cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int));
-  checkCuda("dedoppler top_path_offsets malloc");
+  checkCuda("Dedopplerer top_path_offsets malloc");
 }
 
 Dedopplerer::~Dedopplerer() {
@@ -280,8 +280,11 @@ Dedopplerer::~Dedopplerer() {
 
 /*
   The caller should write into input and then call processInput.
-  Output is written to the provided dat file.
-  You don't need to do a cuda sync before calling processInput.
+  Output is appended to the output vector.
+
+  TODO: describe how to set input so as to play nicely with host/device parallelism.
+  I *think* it's okay to kick off an on-device process to populate input and then call
+  processInput, but I want to be more sure.
 */
 void Dedopplerer::processInput(double max_drift, double min_drift, double snr_threshold,
                                vector<DedopplerHit>* output) {

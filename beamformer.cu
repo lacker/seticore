@@ -156,19 +156,19 @@ Beamformer::Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp)
   assert(0 == nchans % STI);
 
   cudaMallocManaged(&input, 2 * nants * nchans * npol * nsamp * sizeof(signed char));
-  checkCuda("beamformer input malloc");
+  checkCuda("Beamformer input malloc");
   
   cudaMallocManaged(&coefficients, 2 * nants * nbeams * nchans * npol * sizeof(float));
-  checkCuda("beamformer coefficients malloc");
+  checkCuda("Beamformer coefficients malloc");
 
   cudaMallocManaged(&transposed, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
-  checkCuda("beamformer transposed malloc");
+  checkCuda("Beamformer transposed malloc");
 
   cudaMallocManaged(&voltage, nbeams * nchans * npol * nsamp * sizeof(thrust::complex<float>));
-  checkCuda("beamformer voltage malloc");
+  checkCuda("Beamformer voltage malloc");
 
   cudaMallocManaged(&power, nbeams * nchans * nsamp * sizeof(float) / STI);
-  checkCuda("beamformer power malloc");
+  checkCuda("Beamformer power malloc");
 }
 
 Beamformer::~Beamformer() {
@@ -204,7 +204,7 @@ void Beamformer::processInput() {
 
 thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam, int freq) const {
   cudaDeviceSynchronize();
-  checkCuda("getCoefficient");
+  checkCuda("Beamformer getCoefficient");
   assert(antenna < nants);
   assert(pol < npol);
   assert(beam < nbeams);
@@ -215,7 +215,7 @@ thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam
 
 thrust::complex<float> Beamformer::getTransposed(int time, int chan, int pol, int antenna) const {
   cudaDeviceSynchronize();
-  checkCuda("getTransposed");
+  checkCuda("Beamformer getTransposed");
   assert(time < nsamp);
   assert(chan < nchans);
   assert(pol < npol);
@@ -226,7 +226,7 @@ thrust::complex<float> Beamformer::getTransposed(int time, int chan, int pol, in
 
 thrust::complex<float> Beamformer::getVoltage(int time, int chan, int beam, int pol) const {
   cudaDeviceSynchronize();
-  checkCuda("getVoltage");
+  checkCuda("Beamformer getVoltage");
   assert(time < nsamp);
   assert(chan < nchans);
   assert(beam < nbeams);
@@ -237,7 +237,7 @@ thrust::complex<float> Beamformer::getVoltage(int time, int chan, int beam, int 
 
 float Beamformer::getPower(int beam, int time, int chan) const {
   cudaDeviceSynchronize();
-  checkCuda("getPower");
+  checkCuda("Beamformer getPower");
   assert(beam < nbeams);
   assert(time < nsamp / STI);
   assert(chan < nchans);

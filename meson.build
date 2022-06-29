@@ -31,6 +31,7 @@ srcs = [
     'cuda_util.cu',
     'dedoppler.cu',
     'dat_file_writer.cpp',
+    'filterbank_buffer.cu',
     'filterbank_file.cpp',
     'fil_file.cpp',
     'h5_file.cpp',
