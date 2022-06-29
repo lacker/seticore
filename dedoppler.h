@@ -45,7 +45,7 @@ public:
   Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
   ~Dedopplerer();
 
-  void search(FilterbankBuffer& input,
+  void search(const FilterbankBuffer& input,
               double max_drift, double min_drift, double snr_threshold,
               vector<DedopplerHit>* output);
   

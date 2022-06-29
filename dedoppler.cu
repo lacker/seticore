@@ -278,7 +278,7 @@ Dedopplerer::~Dedopplerer() {
   This works when input data was populated on the CPU.
   TODO: see if this can be pipelined with GPU data population.
 */
-void Dedopplerer::search(FilterbankBuffer& input,
+void Dedopplerer::search(const FilterbankBuffer& input,
                          double max_drift, double min_drift, double snr_threshold,
                          vector<DedopplerHit>* output) {
   assert(input.num_timesteps == rounded_num_timesteps);
@@ -289,15 +289,7 @@ void Dedopplerer::search(FilterbankBuffer& input,
   double normalized_max_drift = max_drift / abs(diagonal_drift_rate);
   int min_drift_block = floor(-normalized_max_drift);
   int max_drift_block = floor(normalized_max_drift);
-    
-  // If we padded timesteps to get to a power of two, we need to zero out that extra space
-  if (rounded_num_timesteps > num_timesteps) {
-    int num_floats_loaded = num_timesteps * num_channels;
-    int num_zeros_needed = (rounded_num_timesteps - num_timesteps) *
-      num_channels;
-    memset(input.data + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
-  }
-    
+
   // For now all cuda operations use the same grid.
   // This will create one cuda thread per frequency bin
   int grid_size = (num_channels + CUDA_BLOCK_SIZE - 1) / CUDA_BLOCK_SIZE;
@@ -316,13 +308,6 @@ void Dedopplerer::search(FilterbankBuffer& input,
   checkCuda("sumColumns");
   
   int mid = num_channels / 2;
-  if (has_dc_spike) {
-    // Remove the DC spike by making it the average of the adjacent columns
-    for (int row_index = 0; row_index < num_timesteps; ++row_index) {
-      float* row = input.data + row_index * num_channels;
-      row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
-    }
-  }
 
   // Do the Taylor tree algorithm
   for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {

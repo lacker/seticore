@@ -211,6 +211,18 @@ void H5File::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
 
   if (num_timesteps < buffer->num_timesteps) {
     // Zero out the extra buffer space
+    int num_floats_loaded = num_timesteps * coarse_channel_size;
+    int num_zeros_needed = (buffer->num_timesteps - num_timesteps) * coarse_channel_size;
+    memset(buffer->data + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
+  }
+
+  if (has_dc_spike) {
+    // Remove the DC spike by making it the average of the adjacent columns
+    int mid = coarse_channel_size / 2;
+    for (int row_index = 0; row_index < num_timesteps; ++row_index) {
+      float* row = buffer->data + row_index * coarse_channel_size;
+      row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
+    }
   }
 }
   
