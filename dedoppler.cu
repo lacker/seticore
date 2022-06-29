@@ -246,8 +246,6 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
   cout << "drift rate resolution: " << drift_rate_resolution << endl;
     
   // Allocate everything we need for GPU processing
-  cudaMallocManaged(&input, num_channels * rounded_num_timesteps * sizeof(float));
-  checkCuda("Dedopplerer input malloc");
 
   cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float));
   checkCuda("Dedopplerer buffer1 malloc");
@@ -269,7 +267,6 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
 }
 
 Dedopplerer::~Dedopplerer() {
-  cudaFree(input);
   cudaFree(buffer1);
   cudaFree(buffer2);
   cudaFree(column_sums);
@@ -279,15 +276,18 @@ Dedopplerer::~Dedopplerer() {
 }
 
 /*
-  The caller should write into input and then call processInput.
+  Runs dedoppler search on the input buffer.
   Output is appended to the output vector.
 
-  TODO: describe how to set input so as to play nicely with host/device parallelism.
-  I *think* it's okay to kick off an on-device process to populate input and then call
-  processInput, but I want to be more sure.
+  This works when input data was populated on the CPU.
+  TODO: see if this can be pipelined with GPU data population.
 */
-void Dedopplerer::processInput(double max_drift, double min_drift, double snr_threshold,
-                               vector<DedopplerHit>* output) {
+void Dedopplerer::search(FilterbankBuffer& input,
+                         double max_drift, double min_drift, double snr_threshold,
+                         vector<DedopplerHit>* output) {
+  assert(input.num_timesteps == rounded_num_timesteps);
+  assert(input.num_channels == num_channels);
+
   // Normalize the max drift in units of "horizontal steps per vertical step"
   double diagonal_drift_rate = drift_rate_resolution * drift_timesteps;
   double normalized_max_drift = max_drift / abs(diagonal_drift_rate);
@@ -299,7 +299,7 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
     int num_floats_loaded = num_timesteps * num_channels;
     int num_zeros_needed = (rounded_num_timesteps - num_timesteps) *
       num_channels;
-    memset(input + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
+    memset(input.data + num_floats_loaded, 0, num_zeros_needed * sizeof(float));
   }
     
   // For now all cuda operations use the same grid.
@@ -315,7 +315,7 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
   memset(top_drift_blocks, 0, num_channels * sizeof(int));
   memset(top_path_offsets, 0, num_channels * sizeof(int));
 
-  sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input, column_sums,
+  sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input.data, column_sums,
                                              rounded_num_timesteps, num_channels);
   checkCuda("sumColumns");
   
@@ -323,7 +323,7 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
   if (has_dc_spike) {
     // Remove the DC spike by making it the average of the adjacent columns
     for (int row_index = 0; row_index < num_timesteps; ++row_index) {
-      float* row = input + row_index * num_channels;
+      float* row = input.data + row_index * num_channels;
       row[mid] = (row[mid - 1] + row[mid + 1]) / 2.0;
     }
   }
@@ -336,7 +336,7 @@ void Dedopplerer::processInput(double max_drift, double min_drift, double snr_th
     // We use the aliases source_buffer and target_buffer to make this simpler.
     // In each pass through the upcoming loop, we are reading from
     // source_buffer and writing to target_buffer.
-    float* source_buffer = input;
+    float* source_buffer = input.data;
     float* target_buffer = buffer1;
 
     // Each pass through the data calculates the sum of paths that are

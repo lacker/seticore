@@ -24,5 +24,5 @@ class FilFile: public FilterbankFile {
   FilFile(const string& filename);
   ~FilFile();
 
-  void loadCoarseChannel(int i, float* output) const;
+  void loadCoarseChannel(int i, FilterbankBuffer* buffer) const;
 };

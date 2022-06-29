@@ -174,7 +174,10 @@ string H5File::getStringAttr(const string& name) const {
 }
 
 // Loads the data in row-major order.
-void H5File::loadCoarseChannel(int i, float* output) const {
+void H5File::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
+  assert(num_timesteps == buffer->num_timesteps);
+  assert(coarse_channel_size == buffer->num_channels);
+  
   // Select a hyperslab containing just the coarse channel we want
   const hsize_t offset[3] = {0, 0, unsigned(i * coarse_channel_size)};
   const hsize_t coarse_channel_dim[3] = {unsigned(num_timesteps), 1,
@@ -193,7 +196,7 @@ void H5File::loadCoarseChannel(int i, float* output) const {
   }
     
   // Copy from dataspace to memspace
-  if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, output) < 0) {    
+  if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, buffer->data) < 0) {    
     cerr << "h5 read failed. make sure that plugin files are in the plugin directory: " << H5_DEFAULT_PLUGINDIR << "\n";
     exit(1);
   }

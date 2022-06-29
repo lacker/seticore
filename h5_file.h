@@ -24,5 +24,5 @@ class H5File: public FilterbankFile {
   H5File(const string& filename);
   ~H5File();
 
-  void loadCoarseChannel(int i, float* output) const;
+  void loadCoarseChannel(int i, FilterbankBuffer* buffer) const;
 };

@@ -31,13 +31,14 @@ void runDedoppler(const string& input_filename, const string& output_filename,
 
   Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff,
                           file->tsamp, file->has_dc_spike);
+  FilterbankBuffer buffer(file->num_timesteps, file->coarse_channel_size);
   
   // Load and process one coarse channel at a time from the filterbank file
   vector<DedopplerHit> hits;
   for (int coarse_channel = 0; coarse_channel < file->num_coarse_channels; ++coarse_channel) {
-    file->loadCoarseChannel(coarse_channel, dedopplerer.input);
+    file->loadCoarseChannel(coarse_channel, &buffer);
     hits.clear();
-    dedopplerer.processInput(max_drift, min_drift, snr_threshold, &hits);
+    dedopplerer.search(buffer, max_drift, min_drift, snr_threshold, &hits);
     for (DedopplerHit hit : hits) {
 
       cout << fmt::format("hit: coarse channel = {}, index = {}, snr = {:.6f}, "
@@ -45,7 +46,7 @@ void runDedoppler(const string& input_filename, const string& output_filename,
                           coarse_channel, hit.index, hit.snr, hit.drift_rate, hit.drift_steps);
         
       recorder->recordHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate,
-                          hit.snr, dedopplerer.input);
+                          hit.snr, buffer.data);
     }
   }
 }

@@ -131,8 +131,8 @@ string FilFile::readString() {
 }
 
 // Loads the data in row-major order.
-void FilFile::loadCoarseChannel(int i, float* output) const {
-  cerr << "TODO: implement loadCoarseChannel\n";
+void FilFile::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
+  cerr << "TODO: implement FilFile::loadCoarseChannel\n";
   exit(1);
 }
 

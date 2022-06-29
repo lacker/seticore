@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "filterbank_buffer.h"
+
 using namespace std;
 
 
@@ -40,15 +42,12 @@ public:
   // Whether the data we receive has a DC spike
   const bool has_dc_spike;
   
-  // The input array is on the GPU, used to accept data from the previous step in
-  // the data processing pipeline.
-  float *input;
-
   Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
   ~Dedopplerer();
 
-  void processInput(double max_drift, double min_drift, double snr_threshold,
-                    vector<DedopplerHit>* output);
+  void search(FilterbankBuffer& input,
+              double max_drift, double min_drift, double snr_threshold,
+              vector<DedopplerHit>* output);
   
 private:
   // For computing Taylor sums, we use three unified memory arrays,
