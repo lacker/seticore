@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <cuda.h>
+#include <cufft.h>
 #include <iostream>
 
 #include "beamformer.h"
@@ -16,45 +17,60 @@ __host__ __device__ int index3d(int a, int b, int b_end, int c, int c_end) {
 // Helper to calculate a 4d row-major index, ie for:
 //   arr[a][b][c][d]
 __host__ __device__ int index4d(int a, int b, int b_end, int c, int c_end, int d, int d_end) {
-  return ((((a * b_end) + b) * c_end) + c) * d_end + d;
+  return index3d(a, b, b_end, c, c_end) * d_end + d;
 }
+
+// Helper to calculate a 5d row-major index, ie for:
+//   arr[a][b][c][d][e]
+__host__ __device__ int index5d(int a, int b, int b_end, int c, int c_end, int d, int d_end,
+                                int e, int e_end) {
+  return index4d(a, b, b_end, c, c_end, d, d_end) * e_end + e;
+}
+
 
 /*
   We convert from int8 input with format:
-    input[antenna][frequency][time][polarity][real or imag]
+    input[block][antenna][frequency][time-within-block][polarity][real or imag]
 
   to complex-float output with format:
-    transposed[time][frequency][polarity][antenna]
+    fft_buffer[polarity][antenna][frequency][time]
+
+  block and time-within-block combine to form a single time index.
  */
-__global__ void transpose(const signed char* input, thrust::complex<float>* transposed,
-                          int nants, int nchans, int npol, int nsamp) {
-  int antenna = threadIdx.x;
-  int pol = threadIdx.y;
-  int chan = blockIdx.y;
-  int time = blockIdx.x;
+__global__ void convertRaw(const signed char* input, thrust::complex<float>* fft_buffer,
+                           int nants, int nblocks, int nchans, int npol, int nsamp,
+                           int time_per_block) {
+  int time_within_block = threadIdx.x;
+  int block = blockIdx.x;
+  int antenna = blockIdx.y;
+  int chan = blockIdx.z;
+  int time = block * time_per_block + time_within_block;
 
-  int input_index = 2 * index4d(antenna, chan, nchans, time, nsamp, pol, npol);
-  int transposed_index = index4d(time, chan, nchans, pol, npol, antenna, nants);
+  for (int pol = 0; pol < npol; ++pol) {
+    int input_index = 2 * index5d(block, antenna, nants, chan, nchans,
+                                  time_within_block, time_per_block, pol, npol);
+    int converted_index = index4d(pol, antenna, nants, chan, nchans, time, nsamp);
 
-  transposed[transposed_index] = thrust::complex<float>
-    (input[input_index] * 1.0, input[input_index + 1] * 1.0);
+    fft_buffer[converted_index] = thrust::complex<float>
+      (input[input_index] * 1.0, input[input_index + 1] * 1.0);
+  }
 }
 
 /*
-  Beamforming combines the transposed data with format:
-    transposed[time][frequency][polarity][antenna]
+  Beamforming combines the channelized data with format:
+    channelized[time][frequency][polarity][antenna]
   with the coefficient data, format:
     coefficients[frequency][beam][polarity][antenna][real or imag]
   to generate output beams with format:
     voltage[time][frequency][beam][polarity]
 
-  We combine transposed with coefficients according to the indices they have in common,
+  We combine channelized with coefficients according to the indices they have in common,
   conjugating the coefficients, and then sum along antenna dimension to reduce.
 
   TODO: this seems equivalent to a batch matrix multiplication, could we do this with
   a cublas routine?
 */
-__global__ void beamform(const thrust::complex<float>* transposed,
+__global__ void beamform(const thrust::complex<float>* channelized,
                          const float* coefficients,
                          thrust::complex<float>* voltage,
                          int nants, int nbeams, int nchans, int npol) {
@@ -68,11 +84,11 @@ __global__ void beamform(const thrust::complex<float>* transposed,
   __shared__ thrust::complex<float> reduced[MAX_ANTS];
 
   for (int pol = 0; pol < npol; ++pol) {
-    int transposed_index = index4d(time, chan, nchans, pol, npol, antenna, nants);
+    int channelized_index = index4d(time, chan, nchans, pol, npol, antenna, nants);
     int coeff_index = index4d(chan, beam, nbeams, pol, npol, antenna, nants);
     thrust::complex<float> conjugated = thrust::complex<float>
       (coefficients[2 * coeff_index], -coefficients[2 * coeff_index + 1]);
-    reduced[antenna] = transposed[transposed_index] * conjugated;
+    reduced[antenna] = channelized[channelized_index] * conjugated;
 
     __syncthreads();
 
@@ -151,18 +167,24 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   TODO: nants and npol are specified twice, one by the recipe file and one by the raw input.
   We should really check to ensure they are the same and handle it cleanly if they aren't.
  */
-Beamformer::Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp)
-  : nants(nants), nbeams(nbeams), nchans(nchans), npol(npol), nsamp(nsamp) {
-  assert(0 == nchans % STI);
-
+Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int nchans,
+                       int npol, int nsamp)
+  : fft_size(fft_size), nants(nants), nbeams(nbeams), nblocks(nblocks), nchans(nchans),
+    npol(npol), nsamp(nsamp) {
+  assert(0 == nsamp % (STI * fft_size));
+  assert(0 == nsamp % nblocks);
+  
   cudaMallocManaged(&input, 2 * nants * nchans * npol * nsamp * sizeof(signed char));
   checkCuda("Beamformer input malloc");
   
   cudaMallocManaged(&coefficients, 2 * nants * nbeams * nchans * npol * sizeof(float));
   checkCuda("Beamformer coefficients malloc");
 
-  cudaMallocManaged(&transposed, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
-  checkCuda("Beamformer transposed malloc");
+  cudaMallocManaged(&fft_buffer, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
+  checkCuda("Beamformer fft_buffer malloc");
+  
+  cudaMallocManaged(&channelized, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
+  checkCuda("Beamformer channelized malloc");
 
   cudaMallocManaged(&voltage, nbeams * nchans * npol * nsamp * sizeof(thrust::complex<float>));
   checkCuda("Beamformer voltage malloc");
@@ -174,32 +196,60 @@ Beamformer::Beamformer(int nants, int nbeams, int nchans, int npol, int nsamp)
 Beamformer::~Beamformer() {
   cudaFree(input);
   cudaFree(coefficients);
-  cudaFree(transposed);
+  cudaFree(channelized);
   cudaFree(voltage);
   cudaFree(power);
+}
+
+char* Beamformer::inputPointer(int block) {
+  assert(block < nblocks);
+
+  int total_bytes = nants * nchans * nsamp * npol * 2;
+  int bytes_per_block = total_bytes / nblocks;
+
+  return ((char*) input) + (block * bytes_per_block);
 }
 
 /*
   The caller should first put the data into *input and *coefficients.
  */
 void Beamformer::processInput() {
-  dim3 transpose_block(nants, npol, 1);
-  dim3 transpose_grid(nsamp, nchans, 1);
-  transpose<<<transpose_grid, transpose_block>>>(input, transposed, nants, nchans, npol, nsamp);
-  checkCuda("transpose cuda kernel");
 
+  int time_per_block = nsamp / nblocks;
+  dim3 convert_raw_block(time_per_block, 1, 1);
+  dim3 convert_raw_grid(nblocks, nants, nchans);
+  convertRaw<<<convert_raw_grid, convert_raw_block>>>
+    (input, fft_buffer, nants, nblocks, nchans, npol, nsamp, time_per_block);
+  checkCuda("Beamformer convertRaw");
+  
+  // Run FFTs. TODO: see if there's a faster way
+  int num_ffts = nants * npol * nchans * nsamp / fft_size;
+  int batch_size = nants * npol;
+  int num_batches = num_ffts / batch_size;
+  cufftHandle plan;
+  cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
+  checkCuda("Beamformer fft planning");
+  for (int i = 0; i < num_batches; ++i) {
+    cuComplex* pointer = (cuComplex*) fft_buffer + i * batch_size * fft_size;
+    cufftExecC2C(plan, pointer, pointer, CUFFT_FORWARD);
+  }
+  cufftDestroy(plan);
+  checkCuda("Beamformer fft operation");
+
+  // TODO: run a shift kernel
+  
   dim3 beamform_block(nants, 1, 1);
   dim3 beamform_grid(nsamp, nchans, nbeams);
-  beamform<<<beamform_grid, beamform_block>>>(transposed, coefficients, voltage,
+  beamform<<<beamform_grid, beamform_block>>>(channelized, coefficients, voltage,
                                               nants, nbeams, nchans, npol);
-  checkCuda("beamform cuda kernel");
+  checkCuda("Beamformer beamform");
 
   assert(0 == nsamp % STI);
   int nwindows = nsamp / STI;
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(nwindows, nbeams, nchans);
   calculatePower<<<power_grid, power_block>>>(voltage, power, nbeams, nchans, npol, nwindows);
-  checkCuda("power cuda kernel");
+  checkCuda("Beamformer calculatePower");
 }
 
 thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam, int freq) const {
@@ -213,15 +263,15 @@ thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam
   return thrust::complex<float>(coefficients[2*i], coefficients[2*i+1]);
 }
 
-thrust::complex<float> Beamformer::getTransposed(int time, int chan, int pol, int antenna) const {
+thrust::complex<float> Beamformer::getChannelized(int time, int chan, int pol, int antenna) const {
   cudaDeviceSynchronize();
-  checkCuda("Beamformer getTransposed");
+  checkCuda("Beamformer getChannelized");
   assert(time < nsamp);
   assert(chan < nchans);
   assert(pol < npol);
   assert(antenna < nants);
   int i = index4d(time, chan, nchans, pol, npol, antenna, nants);
-  return transposed[i];
+  return channelized[i];
 }
 
 thrust::complex<float> Beamformer::getVoltage(int time, int chan, int beam, int pol) const {

@@ -16,7 +16,7 @@ boost_dep = dependency('boost', modules: ['program_options'])
 
 hdf5_dep = dependency('hdf5', language: 'c')
 
-cuda_dep = dependency('cuda')
+cuda_dep = dependency('cuda', version: '>=11', modules: ['cufft'])
 
 capnp_opt = cmake.subproject_options()
 capnp_opt.set_override_option('warning_level', '0')

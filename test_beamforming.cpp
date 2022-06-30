@@ -48,11 +48,11 @@ int testWithoutChannelizing() {
     return 1;
   }
 
-  Beamformer beamformer(header.nants, recipe.nbeams, header.num_channels,
+  Beamformer beamformer(1, header.nants, recipe.nbeams, 1, header.num_channels,
                         recipe.npol, header.num_timesteps);
 
   cout << "reading " << header.blocsize << " bytes\n";
-  reader.readData((char*) beamformer.input);
+  reader.readData(beamformer.inputPointer(0));
   
   cout << "\nfrom raw file:\n";
   cout << "nants: " << header.nants << endl;
@@ -76,7 +76,7 @@ int testWithoutChannelizing() {
 
   beamformer.processInput();
 
-  assertComplexEq(beamformer.getTransposed(9, 7, 1, 3), 8.0, 7.0);
+  assertComplexEq(beamformer.getChannelized(9, 7, 1, 3), 8.0, 7.0);
 
   assertComplexEq(beamformer.getVoltage(0, 0, 0, 0), -4715.979492, 2549.703125);
   assertComplexEq(beamformer.getVoltage(4, 3, 2, 1), 562.406616, -10480.619141);
@@ -96,19 +96,34 @@ int main(int argc, char* argv[]) {
     cout << "raw error: " << reader.errorMessage() << endl;
     return 1;
   }
-
-  int nbands = 4;
   
-  Beamformer beamformer(header.nants, recipe.nbeams, header.num_channels / nbands,
-                        recipe.npol, header.num_timesteps);
-  reader.readBand(header, 2, nbands, (char*) beamformer.input);
+  int nbands = 4;
+  int fft_size = 1024;
+  int nblocks = 16;
+  int nsamp = header.num_timesteps * nblocks;
+  
+  Beamformer beamformer(fft_size, header.nants, recipe.nbeams, nblocks,
+                        header.num_channels / nbands, recipe.npol, nsamp);
 
-  for (int i = 0; i < 10; ++i) {
-    if (!reader.readHeader(&header)) {
-      cout << "header " << i << " raw error: " << reader.errorMessage() << endl;
-      return 1;
+  cout << "\none block from the raw file:\n";
+  cout << "nants: " << header.nants << endl;
+  cout << "nchans: " << header.num_channels << endl;
+  cout << "npol: " << header.npol << endl;
+  cout << "num_timesteps: " << header.num_timesteps << endl;
+
+  int block = 0;
+  while (true) {
+    // TODO: shift this by block
+    reader.readBand(header, 2, nbands, beamformer.inputPointer(block));
+    ++block;
+    cout << "read block " << block << endl;
+    if (block == 16) {
+      break;
     }
-    reader.readBand(header, 2, nbands, (char*) beamformer.input);
+    
+    assert(reader.readHeader(&header));
   }
 
+  cout << "OK\n";
+  return 0;
 }
