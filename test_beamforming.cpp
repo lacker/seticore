@@ -29,8 +29,11 @@ void assertFloatEq(float a, float b) {
   }
 }
 
-int main(int argc, char* argv[]) {
-  RecipeFile recipe("/d/minput/guppi_59599_76288_000062_J03323-28075_0001.bfr5");
+const string& RAW_FILE = "/d/minput/guppi_59599_76288_000062_J03323-28075_0001.0000.raw";
+const string& RECIPE_FILE = "/d/minput/guppi_59599_76288_000062_J03323-28075_0001.bfr5";
+
+int testWithoutChannelizing() {
+  RecipeFile recipe(RECIPE_FILE);
   cout << "from recipe file:\n";
   cout << "nants: " << recipe.nants << endl;
   cout << "nbeams: " << recipe.nbeams << endl;
@@ -38,7 +41,7 @@ int main(int argc, char* argv[]) {
   cout << "ndelays: " << recipe.delays.size() << endl;
 
   // Read one block from the raw file
-  raw::Reader reader("/d/minput/guppi_59599_76288_000062_J03323-28075_0001.0000.raw");
+  raw::Reader reader(RAW_FILE);
   raw::Header header;
   if (!reader.readHeader(&header)) {
     cout << "raw error: " << reader.errorMessage() << endl;
@@ -82,4 +85,30 @@ int main(int argc, char* argv[]) {
   
   cout << "OK\n";
   return 0;
+}
+
+int main(int argc, char* argv[]) {
+  RecipeFile recipe(RECIPE_FILE);
+  raw::Reader reader(RAW_FILE);
+  raw::Header header;
+
+  if (!reader.readHeader(&header)) {
+    cout << "raw error: " << reader.errorMessage() << endl;
+    return 1;
+  }
+
+  int nbands = 4;
+  
+  Beamformer beamformer(header.nants, recipe.nbeams, header.num_channels / nbands,
+                        recipe.npol, header.num_timesteps);
+  reader.readBand(header, 2, nbands, (char*) beamformer.input);
+
+  for (int i = 0; i < 10; ++i) {
+    if (!reader.readHeader(&header)) {
+      cout << "header " << i << " raw error: " << reader.errorMessage() << endl;
+      return 1;
+    }
+    reader.readBand(header, 2, nbands, (char*) beamformer.input);
+  }
+
 }
