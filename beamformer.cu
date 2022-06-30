@@ -164,9 +164,9 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
 __global__ void calculatePower(const thrust::complex<float>* voltage,
                                float* power,
                                int nbeams, int num_channels, int npol, int num_output_timesteps) {
-  int chan = blockIdx.z;
+  int chan = blockIdx.x;
   int beam = blockIdx.y;
-  int output_timestep = blockIdx.x;
+  int output_timestep = blockIdx.z;
 
   int fine_timestep = threadIdx.x;
   assert(fine_timestep < STI);
@@ -301,9 +301,11 @@ void Beamformer::processInput() {
   checkCuda("Beamformer beamform");
 
   dim3 power_block(STI, 1, 1);
-  dim3 power_grid(numOutputTimesteps(), nbeams, numOutputChannels());
+  dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block>>>
     (voltage, power, nbeams, numOutputChannels(), npol, numOutputTimesteps());
+  cout << "power block: " << power_block.x << " " << power_block.y << " " << power_block.z << endl;
+  cout << "power grid: " << power_grid.x << " " << power_grid.y << " " << power_grid.z << endl;
   checkCuda("Beamformer calculatePower");
 }
 

@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
   }
   
   int nbands = 4;
-  int fft_size = 1024;
+  int fft_size = 128;
   int nblocks = 16;
   int nsamp = header.num_timesteps * nblocks;
   
@@ -113,8 +113,7 @@ int main(int argc, char* argv[]) {
 
   int block = 0;
   while (true) {
-    // TODO: shift this by block
-    reader.readBand(header, 2, nbands, beamformer.inputPointer(block));
+    reader.readBand(header, 0, nbands, beamformer.inputPointer(block));
     ++block;
     cout << "read block " << block << endl;
     if (block == 16) {
@@ -122,8 +121,19 @@ int main(int argc, char* argv[]) {
     }
     
     assert(reader.readHeader(&header));
+
+    if (block == 8) {
+      // Start time for this block is mid time for the beamformer
+      double mid_time = header.getStartTime();
+      int time_array_index = recipe.getTimeArrayIndex(mid_time);
+      int schan = header.getInt("SCHAN", 0);
+      recipe.generateCoefficients(time_array_index, schan, beamformer.num_coarse_channels,
+                                  header.obsfreq, header.obsbw, beamformer.coefficients);
+    }
   }
 
+  beamformer.processInput();
+  cout << "power[0][0][0]: " << beamformer.getPower(0, 0, 0) << endl;
   cout << "OK\n";
   return 0;
 }
