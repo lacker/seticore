@@ -5,6 +5,7 @@
 
 #include "beamformer.h"
 #include "cuda_util.h"
+#include "util.h"
 
 using namespace std;
 
@@ -57,20 +58,50 @@ __global__ void convertRaw(const signed char* input, thrust::complex<float>* fft
 }
 
 /*
+  shift converts from the post-FFT format with format:
+    fft_buffer[polarity][antenna][frequency-coarse-index][time][frequency-fine-index]
+
+  to a format ready for beamforming:
+    prebeam[time][frequency][polarity][antenna]
+
+  We also toggle the high bit of the frequency fine index. Hence "shift".
+  This is like swapping the low half and the high half of the output of each FFT.
+  It would be great for this comment to explain why this shift is necessary, but, I don't
+  understand it myself, so I can't explain it.
+ */
+__global__ void shift(thrust::complex<float>* fft_buffer, thrust::complex<float>* prebeam,
+                      int fft_size, int nants, int npol, int nchans, int num_timesteps) {
+  int antenna = threadIdx.y;
+  int pol = threadIdx.z;
+  int fine_chan = blockIdx.x;
+  int coarse_chan = blockIdx.y;
+  int time = blockIdx.z;
+
+  int output_fine_chan = fine_chan ^ (fft_size >> 1);
+
+  int input_index = index5d(pol, antenna, nants, coarse_chan, nchans,
+                            time, num_timesteps, fine_chan, fft_size);
+  int output_index = index5d(time, coarse_chan, nchans, output_fine_chan, fft_size,
+                             pol, npol, antenna, nants);
+
+  prebeam[output_index] = fft_buffer[input_index];
+}
+
+/*
   Beamforming combines the channelized data with format:
-    channelized[time][frequency][polarity][antenna]
+    prebeam[time][frequency][polarity][antenna]
   with the coefficient data, format:
     coefficients[frequency][beam][polarity][antenna][real or imag]
   to generate output beams with format:
     voltage[time][frequency][beam][polarity]
 
-  We combine channelized with coefficients according to the indices they have in common,
+  We combine prebeam with coefficients according to the indices they have in common,
   conjugating the coefficients, and then sum along antenna dimension to reduce.
 
   TODO: this seems equivalent to a batch matrix multiplication, could we do this with
   a cublas routine?
 */
-__global__ void beamform(const thrust::complex<float>* channelized,
+__global__ void beamform(const thrust::complex<float>* prebeam,
                          const float* coefficients,
                          thrust::complex<float>* voltage,
                          int nants, int nbeams, int nchans, int npol) {
@@ -84,11 +115,11 @@ __global__ void beamform(const thrust::complex<float>* channelized,
   __shared__ thrust::complex<float> reduced[MAX_ANTS];
 
   for (int pol = 0; pol < npol; ++pol) {
-    int channelized_index = index4d(time, chan, nchans, pol, npol, antenna, nants);
+    int prebeam_index = index4d(time, chan, nchans, pol, npol, antenna, nants);
     int coeff_index = index4d(chan, beam, nbeams, pol, npol, antenna, nants);
     thrust::complex<float> conjugated = thrust::complex<float>
       (coefficients[2 * coeff_index], -coefficients[2 * coeff_index + 1]);
-    reduced[antenna] = channelized[channelized_index] * conjugated;
+    reduced[antenna] = prebeam[prebeam_index] * conjugated;
 
     __syncthreads();
 
@@ -173,6 +204,7 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int nch
     npol(npol), nsamp(nsamp) {
   assert(0 == nsamp % (STI * fft_size));
   assert(0 == nsamp % nblocks);
+  assert(roundUpToPowerOfTwo(fft_size) == fft_size);
   
   cudaMallocManaged(&input, 2 * nants * nchans * npol * nsamp * sizeof(signed char));
   checkCuda("Beamformer input malloc");
@@ -183,8 +215,8 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int nch
   cudaMallocManaged(&fft_buffer, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
   checkCuda("Beamformer fft_buffer malloc");
   
-  cudaMallocManaged(&channelized, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
-  checkCuda("Beamformer channelized malloc");
+  cudaMallocManaged(&prebeam, nants * nchans * npol * nsamp * sizeof(thrust::complex<float>));
+  checkCuda("Beamformer prebeam malloc");
 
   cudaMallocManaged(&voltage, nbeams * nchans * npol * nsamp * sizeof(thrust::complex<float>));
   checkCuda("Beamformer voltage malloc");
@@ -196,7 +228,7 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int nch
 Beamformer::~Beamformer() {
   cudaFree(input);
   cudaFree(coefficients);
-  cudaFree(channelized);
+  cudaFree(prebeam);
   cudaFree(voltage);
   cudaFree(power);
 }
@@ -214,7 +246,6 @@ char* Beamformer::inputPointer(int block) {
   The caller should first put the data into *input and *coefficients.
  */
 void Beamformer::processInput() {
-
   int time_per_block = nsamp / nblocks;
   dim3 convert_raw_block(time_per_block, 1, 1);
   dim3 convert_raw_grid(nblocks, nants, nchans);
@@ -236,19 +267,23 @@ void Beamformer::processInput() {
   cufftDestroy(plan);
   checkCuda("Beamformer fft operation");
 
-  // TODO: run a shift kernel
+  int output_nchans = nchans * fft_size;
+  dim3 shift_block(1, nants, npol);
+  dim3 shift_grid(fft_size, nchans, nsamp / fft_size);
+  shift<<<shift_grid, shift_block>>>(fft_buffer, prebeam, fft_size, nants, npol,
+                                     nchans, nsamp / fft_size);
+  checkCuda("Beamformer shift");
   
   dim3 beamform_block(nants, 1, 1);
-  dim3 beamform_grid(nsamp, nchans, nbeams);
-  beamform<<<beamform_grid, beamform_block>>>(channelized, coefficients, voltage,
-                                              nants, nbeams, nchans, npol);
+  dim3 beamform_grid(nsamp / fft_size, output_nchans, nbeams);
+  beamform<<<beamform_grid, beamform_block>>>(prebeam, coefficients, voltage,
+                                              nants, nbeams, output_nchans, npol);
   checkCuda("Beamformer beamform");
 
-  assert(0 == nsamp % STI);
-  int nwindows = nsamp / STI;
+  int nwindows = nsamp / (STI * fft_size);
   dim3 power_block(STI, 1, 1);
-  dim3 power_grid(nwindows, nbeams, nchans);
-  calculatePower<<<power_grid, power_block>>>(voltage, power, nbeams, nchans, npol, nwindows);
+  dim3 power_grid(nwindows, nbeams, output_nchans);
+  calculatePower<<<power_grid, power_block>>>(voltage, power, nbeams, output_nchans, npol, nwindows);
   checkCuda("Beamformer calculatePower");
 }
 
@@ -263,15 +298,15 @@ thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam
   return thrust::complex<float>(coefficients[2*i], coefficients[2*i+1]);
 }
 
-thrust::complex<float> Beamformer::getChannelized(int time, int chan, int pol, int antenna) const {
+thrust::complex<float> Beamformer::getPrebeam(int time, int chan, int pol, int antenna) const {
   cudaDeviceSynchronize();
-  checkCuda("Beamformer getChannelized");
+  checkCuda("Beamformer getPrebeam");
   assert(time < nsamp);
   assert(chan < nchans);
   assert(pol < npol);
   assert(antenna < nants);
   int i = index4d(time, chan, nchans, pol, npol, antenna, nants);
-  return channelized[i];
+  return prebeam[i];
 }
 
 thrust::complex<float> Beamformer::getVoltage(int time, int chan, int beam, int pol) const {

@@ -44,7 +44,7 @@ class Beamformer {
   
   // These cause a cuda sync so they are slow, only useful for debugging or testing
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int freq) const;
-  thrust::complex<float> getChannelized(int time, int chan, int pol, int antenna) const;
+  thrust::complex<float> getPrebeam(int time, int chan, int pol, int antenna) const;
   thrust::complex<float> getVoltage(int time, int chan, int beam, int pol) const;
   float getPower(int beam, int time, int chan) const;
 
@@ -79,8 +79,8 @@ class Beamformer {
   // The channelized input data, ready for beamforming.
   //
   // Its format is row-major:
-  //   channelized[time][frequency][polarity][antenna]
-  thrust::complex<float>* channelized;
+  //   prebeam[time][frequency][polarity][antenna]
+  thrust::complex<float>* prebeam;
 
   // The beamformed data, as voltages.
   //

@@ -76,7 +76,7 @@ int testWithoutChannelizing() {
 
   beamformer.processInput();
 
-  assertComplexEq(beamformer.getChannelized(9, 7, 1, 3), 8.0, 7.0);
+  assertComplexEq(beamformer.getPrebeam(9, 7, 1, 3), 8.0, 7.0);
 
   assertComplexEq(beamformer.getVoltage(0, 0, 0, 0), -4715.979492, 2549.703125);
   assertComplexEq(beamformer.getVoltage(4, 3, 2, 1), 562.406616, -10480.619141);
