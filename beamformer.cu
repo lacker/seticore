@@ -304,8 +304,6 @@ void Beamformer::processInput() {
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block>>>
     (voltage, power, nbeams, numOutputChannels(), npol, numOutputTimesteps());
-  cout << "power block: " << power_block.x << " " << power_block.y << " " << power_block.z << endl;
-  cout << "power grid: " << power_grid.x << " " << power_grid.y << " " << power_grid.z << endl;
   checkCuda("Beamformer calculatePower");
 }
 
