@@ -293,7 +293,7 @@ void Dedopplerer::search(const FilterbankBuffer& input,
 
   // For now all cuda operations use the same grid.
   // This will create one cuda thread per frequency bin
-  int grid_size = (num_channels + CUDA_BLOCK_SIZE - 1) / CUDA_BLOCK_SIZE;
+  int grid_size = (num_channels + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
 
   // Zero out the path sums in between each coarse channel because
   // we pick the top hits separately for each coarse channel
@@ -304,7 +304,7 @@ void Dedopplerer::search(const FilterbankBuffer& input,
   memset(top_drift_blocks, 0, num_channels * sizeof(int));
   memset(top_path_offsets, 0, num_channels * sizeof(int));
 
-  sumColumns<<<grid_size, CUDA_BLOCK_SIZE>>>(input.data, column_sums,
+  sumColumns<<<grid_size, CUDA_MAX_THREADS>>>(input.data, column_sums,
                                              rounded_num_timesteps, num_channels);
   checkCuda("sumColumns");
   
@@ -327,7 +327,7 @@ void Dedopplerer::search(const FilterbankBuffer& input,
     for (int path_length = 2; path_length <= rounded_num_timesteps; path_length *= 2) {
 
       // Invoke cuda kernel
-      taylorTree<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, target_buffer,
+      taylorTree<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, target_buffer,
                                                  rounded_num_timesteps, num_channels,
                                                  path_length, drift_block);
       checkCuda("taylorTree");
@@ -347,10 +347,10 @@ void Dedopplerer::search(const FilterbankBuffer& input,
 
     // Invoke cuda kernel
     // The final path sums are in source_buffer because we did one last alias-swap
-    findTopPathSums<<<grid_size, CUDA_BLOCK_SIZE>>>(source_buffer, rounded_num_timesteps,
-                                                    num_channels, drift_block,
-                                                    top_path_sums, top_drift_blocks,
-                                                    top_path_offsets);
+    findTopPathSums<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, rounded_num_timesteps,
+                                                     num_channels, drift_block,
+                                                     top_path_sums, top_drift_blocks,
+                                                     top_path_offsets);
     checkCuda("findTopPathSums");
   }
 

@@ -84,7 +84,7 @@ class Beamformer {
   // The fft_buffer is where we run FFTs as part of the channelization process.
   // The FFT is in-place so there are two different data formats.
   //
-  // The convertToFloat kernel populates this buffer with row-major:
+  // The convertRaw kernel populates this buffer with row-major:
   //   fft_buffer[pol][antenna][coarse-channel][time]
   // which is equivalent to
   //   fft_buffer[pol][antenna][coarse-channel][time-coarse-index][time-fine-index]

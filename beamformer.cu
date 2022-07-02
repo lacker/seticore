@@ -269,6 +269,8 @@ void Beamformer::processInput() {
   int time_per_block = nsamp / nblocks;
   dim3 convert_raw_block(time_per_block, 1, 1);
   dim3 convert_raw_grid(nblocks, nants, num_coarse_channels);
+  cout << "raw block: " << time_per_block << " 1 1\n";
+  cout << "raw grid: " << nblocks << " " << nants << " " << num_coarse_channels << endl;
   convertRaw<<<convert_raw_grid, convert_raw_block>>>
     (input, fft_buffer, nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");

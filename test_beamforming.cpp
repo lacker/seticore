@@ -43,32 +43,37 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  cout << "\none block from the raw file:\n";
+  cout << "\none block from " << RAW_FILE_0 << endl;
   cout << "nants: " << header.nants << endl;
   cout << "nchans: " << header.num_channels << endl;
   cout << "npol: " << header.npol << endl;
   cout << "num_timesteps: " << header.num_timesteps << endl;
+
+  int timesteps_per_block = 8192;
   
-  int nbands = 4;
-  int fft_size = 128;
-  int nblocks = 16;
-  int nsamp = header.num_timesteps * nblocks;
+  int fft_size = 16384;
+  int nants = 61;
+  int nbands = 16;
+  int nbeams = 64;
+  int nblocks = 128;
+  int num_coarse_channels = 4;
+  int npol = 2;
+  int nsamp = timesteps_per_block * nblocks;
   
-  Beamformer beamformer(fft_size, header.nants, recipe.nbeams, nblocks,
-                        header.num_channels / nbands, recipe.npol, nsamp);
+  Beamformer beamformer(fft_size, nants, nbeams, nblocks,
+                        num_coarse_channels, npol, nsamp);
 
   int block = 0;
-  while (true) {
-    reader.readBand(header, 0, nbands, beamformer.inputPointer(block));
+  int band = 0;
+  while (block < nblocks) {
+    reader.readBand(header, band, nbands, beamformer.inputPointer(block));
     ++block;
-    cout << "read block " << block << endl;
-    if (block == 16) {
+    
+    if (!reader.readHeader(&header)) {
       break;
     }
-    
-    assert(reader.readHeader(&header));
 
-    if (block == 8) {
+    if (block == nblocks / 2) {
       // Start time for this block is mid time for the beamformer
       double mid_time = header.getStartTime();
       int time_array_index = recipe.getTimeArrayIndex(mid_time);
@@ -77,6 +82,7 @@ int main(int argc, char* argv[]) {
                                   header.obsfreq, header.obsbw, beamformer.coefficients);
     }
   }
+  cout << "read " << block << " blocks, band " << band << endl;
 
   beamformer.processInput();
   cout << "power[0][0][0]: " << beamformer.getPower(0, 0, 0) << endl;
