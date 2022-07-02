@@ -38,20 +38,27 @@ __host__ __device__ int index5d(int a, int b, int b_end, int c, int c_end, int d
 
   block and time-within-block combine to form a single time index.
  */
-__global__ void convertRaw(const signed char* input, thrust::complex<float>* fft_buffer,
+__global__ void convertRaw(const signed char* input, int input_size,
+                           thrust::complex<float>* fft_buffer, int fft_buffer_size,
                            int nants, int nblocks, int num_coarse_channels, int npol, int nsamp,
                            int time_per_block) {
-  int time_within_block = threadIdx.x;
-  int block = blockIdx.x;
-  int antenna = blockIdx.y;
-  int chan = blockIdx.z;
+  int time_within_block = blockIdx.x * CUDA_MAX_THREADS + threadIdx.x;
+  if (time_within_block >= time_per_block) {
+    return;
+  }
+  int block = blockIdx.y;
+  int antenna = blockIdx.z / num_coarse_channels;
+  int chan = blockIdx.z % num_coarse_channels;
   int time = block * time_per_block + time_within_block;
-
+  
   for (int pol = 0; pol < npol; ++pol) {
     int input_index = 2 * index5d(block, antenna, nants, chan, num_coarse_channels,
                                   time_within_block, time_per_block, pol, npol);
     int converted_index = index4d(pol, antenna, nants, chan, num_coarse_channels, time, nsamp);
 
+    assert(input_index + 1 < input_size);
+    assert(converted_index < fft_buffer_size);
+    
     fft_buffer[converted_index] = thrust::complex<float>
       (input[input_index] * 1.0, input[input_index + 1] * 1.0);
   }
@@ -214,16 +221,17 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
   assert(0 == nsamp % nblocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
 
-  // The metric that is unchanged by the FFT
   int frame_size = num_coarse_channels * nsamp;
-  
-  cudaMallocManaged(&input, 2 * nants * npol * frame_size * sizeof(signed char));
+
+  input_size = 2 * nants * npol * frame_size;
+  cudaMallocManaged(&input, input_size * sizeof(signed char));
   checkCuda("Beamformer input malloc");
   
   cudaMallocManaged(&coefficients, 2 * nants * nbeams * num_coarse_channels * npol * sizeof(float));
   checkCuda("Beamformer coefficients malloc");
 
-  cudaMallocManaged(&fft_buffer, nants * npol * frame_size * sizeof(thrust::complex<float>));
+  fft_buffer_size = nants * npol * frame_size;
+  cudaMallocManaged(&fft_buffer, fft_buffer_size * sizeof(thrust::complex<float>));
   checkCuda("Beamformer fft_buffer malloc");
   
   cudaMallocManaged(&prebeam, nants * npol * frame_size * sizeof(thrust::complex<float>));
@@ -267,13 +275,20 @@ char* Beamformer::inputPointer(int block) {
  */
 void Beamformer::processInput() {
   int time_per_block = nsamp / nblocks;
-  dim3 convert_raw_block(time_per_block, 1, 1);
-  dim3 convert_raw_grid(nblocks, nants, num_coarse_channels);
-  cout << "raw block: " << time_per_block << " 1 1\n";
-  cout << "raw grid: " << nblocks << " " << nants << " " << num_coarse_channels << endl;
+  // Unfortunate overuse of "block"
+  int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
+  dim3 convert_raw_block(CUDA_MAX_THREADS, 1, 1);
+  dim3 convert_raw_grid(cuda_blocks_per_block, nblocks, nants * num_coarse_channels);
+  cout << "raw block: " << CUDA_MAX_THREADS << " 1 1\n";
+  cout << "raw grid: " << cuda_blocks_per_block << " " << nblocks << " " << nants * num_coarse_channels << endl;
   convertRaw<<<convert_raw_grid, convert_raw_block>>>
-    (input, fft_buffer, nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
+    (input, input_size,
+     fft_buffer, fft_buffer_size,
+     nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");
+
+  cout << "getFFTBuffer 1 2 3 4 5: " << cToS(getFFTBuffer(1, 2, 3, 4, 5)) << endl;
+  exit(0);
   
   // Run FFTs. TODO: see if there's a faster way
   int num_ffts = nants * npol * num_coarse_channels * nsamp / fft_size;
@@ -319,6 +334,22 @@ thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam
   assert(coarse_channel < num_coarse_channels);
   int i = index4d(coarse_channel, beam, nbeams, pol, npol, antenna, nants);
   return thrust::complex<float>(coefficients[2*i], coefficients[2*i+1]);
+}
+
+// The last index can be either time's fine index or the fine channel index, depending
+// on whether it's pre-FFT or post-FFT.
+thrust::complex<float> Beamformer::getFFTBuffer(int pol, int antenna, int coarse_channel,
+                                                int time, int last_index) const {
+  cudaDeviceSynchronize();
+  checkCuda("Beamformer getFFTBuffer");
+  assert(pol < npol);
+  assert(antenna < nants);
+  assert(coarse_channel < num_coarse_channels);
+  assert(time * fft_size < nsamp);
+  assert(last_index < fft_size);
+  int i = index5d(pol, antenna, nants, coarse_channel, num_coarse_channels,
+                  time, nsamp / fft_size, last_index, fft_size);
+  return fft_buffer[i];
 }
 
 thrust::complex<float> Beamformer::getPrebeam(int time, int channel, int pol, int antenna) const {

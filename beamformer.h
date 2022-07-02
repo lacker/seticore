@@ -61,6 +61,8 @@ class Beamformer {
   
   // These cause a cuda sync so they are slow, only useful for debugging or testing
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int coarse_channel) const;
+  thrust::complex<float> getFFTBuffer(int pol, int antenna, int coarse_channel,
+                                      int time, int last_index) const;
   thrust::complex<float> getPrebeam(int time, int channel, int pol, int antenna) const;
   thrust::complex<float> getVoltage(int time, int channel, int beam, int pol) const;
   float getPower(int beam, int time, int channel) const;
@@ -80,7 +82,8 @@ class Beamformer {
   //
   // The signed chars should be interpreted as int8.
   signed char *input;
-
+  int input_size;
+  
   // The fft_buffer is where we run FFTs as part of the channelization process.
   // The FFT is in-place so there are two different data formats.
   //
@@ -93,6 +96,7 @@ class Beamformer {
   // buffer with row-major:
   //   fft_buffer[pol][antenna][coarse-channel][time][fine-channel]
   thrust::complex<float>* fft_buffer;
+  int fft_buffer_size;
   
   // The channelized input data, ready for beamforming.
   //

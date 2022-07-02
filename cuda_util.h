@@ -12,5 +12,3 @@ const int CUDA_MAX_THREADS = 1024;
 // Helpers to nicely display cuda errors
 void checkCuda(const string& tag);
 
-
- 

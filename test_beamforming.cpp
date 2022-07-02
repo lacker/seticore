@@ -68,6 +68,10 @@ int main(int argc, char* argv[]) {
   while (block < nblocks) {
     reader.readBand(header, band, nbands, beamformer.inputPointer(block));
     ++block;
+
+    if (block % 8 == 0) {
+      cout << "read " << block << " blocks, band " << band << endl;
+    }
     
     if (!reader.readHeader(&header)) {
       break;
@@ -82,7 +86,6 @@ int main(int argc, char* argv[]) {
                                   header.obsfreq, header.obsbw, beamformer.coefficients);
     }
   }
-  cout << "read " << block << " blocks, band " << band << endl;
 
   beamformer.processInput();
   cout << "power[0][0][0]: " << beamformer.getPower(0, 0, 0) << endl;
