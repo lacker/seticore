@@ -234,7 +234,7 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
                          bool has_dc_spike)
     : num_timesteps(num_timesteps), num_channels(num_channels), foff(foff), tsamp(tsamp),
       has_dc_spike(has_dc_spike) {
-
+  assert(num_timesteps > 1);
   rounded_num_timesteps = roundUpToPowerOfTwo(num_timesteps);
   drift_timesteps = rounded_num_timesteps - 1;
 

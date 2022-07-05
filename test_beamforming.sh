@@ -13,4 +13,6 @@ if [ ! -f "data/$BFR" ]; then
     wget https://bldata.berkeley.edu/pipeline/testdata/$BFR -P data/
 fi
 
+rm -f ./data/beamforming.hits
+
 ./build/test_beamforming

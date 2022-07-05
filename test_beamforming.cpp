@@ -2,6 +2,10 @@
 #include <iostream>
 
 #include "beamformer.h"
+#include "dedoppler.h"
+#include "hit_file_writer.h"
+#include "filterbank_buffer.h"
+#include "filterbank_file.h"
 #include "raw/raw.h"
 #include "recipe_file.h"
 #include "util.h"
@@ -33,6 +37,7 @@ void assertFloatEq(float a, float b) {
 const string& RAW_FILE_0 = "/d/mubf/guppi_59712_16307_003760_J1939-6342_0001.0000.raw";
 const string& RAW_FILE_1 = "/d/mubf/guppi_59712_16307_003760_J1939-6342_0001.0001.raw";
 const string& RECIPE_FILE = "/d/mubf/MeerKAT-array_1-20220513T043147Z.bfr5";
+const string& OUTPUT_HITS = "./data/beamforming.hits";
 
 int main(int argc, char* argv[]) {
   RecipeFile recipe(RECIPE_FILE);
@@ -44,7 +49,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  cout << "\none block from " << RAW_FILE_0 << endl;
+  cout << "reading raw file: " << RAW_FILE_0 << endl;
+  cout << "gathering metadata from first block:\n";
   cout << "nants: " << header.nants << endl;
   cout << "nchans: " << header.num_channels << endl;
   cout << "npol: " << header.npol << endl;
@@ -60,10 +66,34 @@ int main(int argc, char* argv[]) {
   int num_coarse_channels = 4;
   int npol = 2;
   int nsamp = timesteps_per_block * nblocks;
+
+  // double obsfreq = header.obsfreq;
+  double obsbw = header.obsbw;
+  double tbin = header.tbin;
   
   Beamformer beamformer(fft_size, nants, nbeams, nblocks,
                         num_coarse_channels, npol, nsamp);
 
+  // Calculate metadata for output
+  FilterbankFile metadata("");
+  metadata.has_dc_spike = false;
+  metadata.source_name = string(header.src_name);
+  double output_bandwidth = obsbw / nbands;
+  metadata.fch1 = header.obsfreq - 0.5 * obsbw;
+  metadata.foff = output_bandwidth / beamformer.numOutputChannels();
+  metadata.tsamp = tbin * nblocks / beamformer.numOutputTimesteps();
+  metadata.num_timesteps = beamformer.numOutputTimesteps();
+  metadata.num_freqs = beamformer.numOutputChannels();
+  metadata.coarse_channel_size = metadata.num_freqs;
+  metadata.num_coarse_channels = 1;
+  metadata.telescope_id = 64;
+
+  cout << "dedopplering: " << metadata.num_freqs << " channels, "
+       << metadata.num_timesteps << " timesteps\n";
+
+  cout << "foff: " << metadata.foff << endl;
+  cout << "tsamp: " << metadata.tsamp << endl;
+  
   int block = 0;
   int band = 0;
   while (block < nblocks) {
@@ -88,8 +118,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  cout << "\nbeamforming...\n";
   beamformer.processInput();
-
+  cout << "spot checking data.\n";
+  
   auto val = beamformer.getPrebeam(0, 0, 0, 0);
   assertComplexEq(val, 483.0, -3011.0);
   cout << "prebeam[0]: " << cToS(val) << endl;
@@ -100,6 +132,26 @@ int main(int argc, char* argv[]) {
 
   float power = beamformer.getPower(0, 0, 0);
   cout << "power[0]: " << power << endl;
-  
+
+  // Beam zero
+  cout << "\nstarting dedoppler search.\n";
+  cout << "searching beam 0...\n";
+  FilterbankBuffer buffer(beamformer.numOutputTimesteps(), beamformer.numOutputChannels(),
+                          beamformer.power);
+  Dedopplerer dedopplerer(beamformer.numOutputTimesteps(), beamformer.numOutputChannels(),
+                          metadata.foff, metadata.tsamp, false);
+  vector<DedopplerHit> hits;
+  float snr = 8.0;
+  cout << "SNR threshold: " << snr << endl;
+  dedopplerer.search(buffer, 0.01, 0.01, snr, &hits);
+
+  // Write hits to output
+  auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
+  for (DedopplerHit hit : hits) {
+    cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
+         << ", snr = " << hit.snr << endl;
+    recorder.recordHit(0, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
+  }
+  cout << "wrote " << hits.size() << " hits to " << OUTPUT_HITS << endl;  
   return 0;
 }

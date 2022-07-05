@@ -19,7 +19,7 @@ class FilterbankFile {
   double fch1, foff, tstart, tsamp, src_dej, src_raj;
   int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels, telescope_id;
   
-  virtual void loadCoarseChannel(int i, FilterbankBuffer* buffer) const = 0;
+  virtual void loadCoarseChannel(int i, FilterbankBuffer* buffer);
 
   virtual ~FilterbankFile() {}
   

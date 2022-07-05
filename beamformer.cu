@@ -265,7 +265,7 @@ int Beamformer::numOutputChannels() const {
 }
 
 int Beamformer::numOutputTimesteps() const {
-  return nsamp / (fft_size * STI);
+  return nsamp / (fft_size * STI); 
 }
 
 char* Beamformer::inputPointer(int block) {
