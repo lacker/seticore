@@ -13,8 +13,5 @@ int roundUpToPowerOfTwo(int n) {
 }
 
 string cToS(thrust::complex<float> c) {
-  if (c.imag() >= 0) {
-    return fmt::format("{:.6f} + {:.6f} i", c.real(), c.imag());
-  }
-  return fmt::format("{:.6f} - {:.6f} i", c.real(), -c.imag());
+  return fmt::format("{:.6f} + {:.6f} i", c.real(), c.imag());
 }

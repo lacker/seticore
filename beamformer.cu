@@ -34,12 +34,12 @@ __host__ __device__ int index5d(int a, int b, int b_end, int c, int c_end, int d
     input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
 
   to complex-float output with format:
-    fft_buffer[polarity][antenna][coarse-channel][time]
+    buffer[polarity][antenna][coarse-channel][time]
 
   block and time-within-block combine to form a single time index.
  */
 __global__ void convertRaw(const signed char* input, int input_size,
-                           thrust::complex<float>* fft_buffer, int fft_buffer_size,
+                           thrust::complex<float>* buffer, int buffer_size,
                            int nants, int nblocks, int num_coarse_channels, int npol, int nsamp,
                            int time_per_block) {
   int time_within_block = blockIdx.x * CUDA_MAX_THREADS + threadIdx.x;
@@ -57,16 +57,16 @@ __global__ void convertRaw(const signed char* input, int input_size,
     int converted_index = index4d(pol, antenna, nants, chan, num_coarse_channels, time, nsamp);
 
     assert(input_index + 1 < input_size);
-    assert(converted_index < fft_buffer_size);
+    assert(converted_index < buffer_size);
     
-    fft_buffer[converted_index] = thrust::complex<float>
+    buffer[converted_index] = thrust::complex<float>
       (input[input_index] * 1.0, input[input_index + 1] * 1.0);
   }
 }
 
 /*
   shift converts from the post-FFT format with format:
-    fft_buffer[polarity][antenna][coarse-channel][time][fine-channel]
+    buffer[polarity][antenna][coarse-channel][time][fine-channel]
 
   to a format ready for beamforming:
     prebeam[time][channel][polarity][antenna]
@@ -76,7 +76,7 @@ __global__ void convertRaw(const signed char* input, int input_size,
   It would be great for this comment to explain why this shift is necessary, but, I don't
   understand it myself, so I can't explain it.
  */
-__global__ void shift(thrust::complex<float>* fft_buffer, thrust::complex<float>* prebeam,
+__global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* prebeam,
                       int fft_size, int nants, int npol, int num_coarse_channels,
                       int num_timesteps) {
   int antenna = threadIdx.y;
@@ -92,7 +92,7 @@ __global__ void shift(thrust::complex<float>* fft_buffer, thrust::complex<float>
   int output_index = index5d(time, coarse_chan, num_coarse_channels, output_fine_chan, fft_size,
                              pol, npol, antenna, nants);
 
-  prebeam[output_index] = fft_buffer[input_index];
+  prebeam[output_index] = buffer[input_index];
 }
 
 /*
@@ -103,7 +103,7 @@ __global__ void shift(thrust::complex<float>* fft_buffer, thrust::complex<float>
     coefficients[coarse-channel][beam][polarity][antenna][real or imag]
 
   to generate output beams with format:
-    voltage[time][coarse-channel][fine-channel][beam][polarity]
+    buffer[time][coarse-channel][fine-channel][beam][polarity]
 
   We combine prebeam with coefficients according to the indices they have in common,
   conjugating the coefficients, and then sum along antenna dimension to reduce.
@@ -115,7 +115,8 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
                          const float* coefficients,
                          thrust::complex<float>* voltage,
                          int fft_size, int nants, int nbeams, int num_coarse_channels, int npol,
-                         int num_timesteps) {
+                         int num_timesteps,
+                         int prebeam_size, int voltage_size, int coefficients_size) {
   int antenna = threadIdx.x;
   int fine_chan = blockIdx.x;
   int coarse_chan = blockIdx.y;
@@ -127,17 +128,21 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
 
   for (int pol = 0; pol < npol; ++pol) {
     int coeff_index = index4d(coarse_chan, beam, nbeams, pol, npol, antenna, nants);
+    assert(2 * coeff_index + 1 < coefficients_size);
     thrust::complex<float> conjugated = thrust::complex<float>
       (coefficients[2 * coeff_index], -coefficients[2 * coeff_index + 1]);
     for (int time = 0; time < num_timesteps; ++time) {
       int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan, fft_size,
                                   pol, npol, antenna, nants);
+      assert(prebeam_index < prebeam_size);
+      assert(antenna < MAX_ANTS);
       reduced[antenna] = prebeam[prebeam_index] * conjugated;
 
       __syncthreads();
 
       for (int k = MAX_ANTS / 2; k > 0; k >>= 1) {
         if (antenna < k && antenna + k < nants) {
+          assert(antenna + k < MAX_ANTS);
           reduced[antenna] += reduced[antenna + k];
         }
         __syncthreads();
@@ -146,6 +151,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
       if (antenna == 0) {
         int voltage_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan, fft_size,
                                     beam, nbeams, pol, npol);
+        assert(voltage_index < voltage_size);
         voltage[voltage_index] = reduced[0];
       }
     }
@@ -222,34 +228,35 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
 
   int frame_size = num_coarse_channels * nsamp;
-
+  
   input_size = 2 * nants * npol * frame_size;
   cudaMallocManaged(&input, input_size * sizeof(signed char));
   checkCuda("Beamformer input malloc");
-  
-  cudaMallocManaged(&coefficients, 2 * nants * nbeams * num_coarse_channels * npol * sizeof(float));
+
+  coefficients_size = 2 * nants * nbeams * num_coarse_channels * npol;
+  cudaMallocManaged(&coefficients, coefficients_size * sizeof(float));
   checkCuda("Beamformer coefficients malloc");
 
-  fft_buffer_size = nants * npol * frame_size;
-  cudaMallocManaged(&fft_buffer, fft_buffer_size * sizeof(thrust::complex<float>));
-  checkCuda("Beamformer fft_buffer malloc");
-  
-  cudaMallocManaged(&prebeam, nants * npol * frame_size * sizeof(thrust::complex<float>));
+  size_t fft_buffer_size = nants * npol * frame_size;
+  size_t voltage_size = nbeams * npol * frame_size;
+  buffer_size = max(fft_buffer_size, voltage_size);
+  cudaMallocManaged(&buffer, buffer_size * sizeof(thrust::complex<float>));
+  checkCuda("Beamformer buffer malloc");
+
+  prebeam_size = nants * npol * frame_size;
+  cudaMallocManaged(&prebeam, prebeam_size * sizeof(thrust::complex<float>));
   checkCuda("Beamformer prebeam malloc");
 
-  cudaMallocManaged(&voltage, nbeams * npol * frame_size * sizeof(thrust::complex<float>));
-  checkCuda("Beamformer voltage malloc");
-
-  cudaMallocManaged(&power, nbeams * frame_size * sizeof(float) / STI);
+  power_size = nbeams * frame_size / STI;
+  cudaMallocManaged(&power, power_size * sizeof(float));
   checkCuda("Beamformer power malloc");
 }
 
 Beamformer::~Beamformer() {
   cudaFree(input);
   cudaFree(coefficients);
-  cudaFree(fft_buffer);
+  cudaFree(buffer);
   cudaFree(prebeam);
-  cudaFree(voltage);
   cudaFree(power);
 }
 
@@ -279,17 +286,12 @@ void Beamformer::processInput() {
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
   dim3 convert_raw_block(CUDA_MAX_THREADS, 1, 1);
   dim3 convert_raw_grid(cuda_blocks_per_block, nblocks, nants * num_coarse_channels);
-  cout << "raw block: " << CUDA_MAX_THREADS << " 1 1\n";
-  cout << "raw grid: " << cuda_blocks_per_block << " " << nblocks << " " << nants * num_coarse_channels << endl;
   convertRaw<<<convert_raw_grid, convert_raw_block>>>
     (input, input_size,
-     fft_buffer, fft_buffer_size,
+     buffer, buffer_size,
      nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");
 
-  cout << "getFFTBuffer 1 2 3 4 5: " << cToS(getFFTBuffer(1, 2, 3, 4, 5)) << endl;
-  exit(0);
-  
   // Run FFTs. TODO: see if there's a faster way
   int num_ffts = nants * npol * num_coarse_channels * nsamp / fft_size;
   int batch_size = nants * npol;
@@ -298,7 +300,7 @@ void Beamformer::processInput() {
   cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
   checkCuda("Beamformer fft planning");
   for (int i = 0; i < num_batches; ++i) {
-    cuComplex* pointer = (cuComplex*) fft_buffer + i * batch_size * fft_size;
+    cuComplex* pointer = (cuComplex*) buffer + i * batch_size * fft_size;
     cufftExecC2C(plan, pointer, pointer, CUFFT_FORWARD);
   }
   cufftDestroy(plan);
@@ -306,22 +308,40 @@ void Beamformer::processInput() {
 
   dim3 shift_block(1, nants, npol);
   dim3 shift_grid(fft_size, num_coarse_channels, nsamp / fft_size);
-  shift<<<shift_grid, shift_block>>>(fft_buffer, prebeam, fft_size, nants, npol,
+  shift<<<shift_grid, shift_block>>>(buffer, prebeam, fft_size, nants, npol,
                                      num_coarse_channels, nsamp / fft_size);
+  cudaDeviceSynchronize();
   checkCuda("Beamformer shift");
   
   dim3 beamform_block(nants, 1, 1);
   dim3 beamform_grid(fft_size, num_coarse_channels, nbeams);
-  beamform<<<beamform_grid, beamform_block>>>(prebeam, coefficients, voltage, fft_size,
+  beamform<<<beamform_grid, beamform_block>>>(prebeam, coefficients, buffer, fft_size,
                                               nants, nbeams, num_coarse_channels, npol,
-                                              nsamp / fft_size);
-  checkCuda("Beamformer beamform");
+                                              nsamp / fft_size, prebeam_size, buffer_size,
+                                              coefficients_size);
+
+  cudaDeviceSynchronize();
 
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block>>>
-    (voltage, power, nbeams, numOutputChannels(), npol, numOutputTimesteps());
+    (buffer, power, nbeams, numOutputChannels(), npol, numOutputTimesteps());
   checkCuda("Beamformer calculatePower");
+}
+
+thrust::complex<float> Beamformer::getInput(int block, int antenna, int coarse_channel,
+                                            int time_within_block, int pol) const {
+  cudaDeviceSynchronize();
+  checkCuda("Beamformer getInput");
+  assert(block < nblocks);
+  assert(antenna < nants);
+  assert(coarse_channel < num_coarse_channels);
+  assert(pol < npol);
+  int i = index5d(block, antenna, nants, coarse_channel, num_coarse_channels,
+                  time_within_block, nsamp / nblocks, pol, npol);
+  float real = input[2*i];
+  float imag = input[2*i + 1];
+  return thrust::complex<float>(real, imag);
 }
 
 thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam,
@@ -349,7 +369,7 @@ thrust::complex<float> Beamformer::getFFTBuffer(int pol, int antenna, int coarse
   assert(last_index < fft_size);
   int i = index5d(pol, antenna, nants, coarse_channel, num_coarse_channels,
                   time, nsamp / fft_size, last_index, fft_size);
-  return fft_buffer[i];
+  return buffer[i];
 }
 
 thrust::complex<float> Beamformer::getPrebeam(int time, int channel, int pol, int antenna) const {
@@ -371,7 +391,7 @@ thrust::complex<float> Beamformer::getVoltage(int time, int channel, int beam, i
   assert(beam < nbeams);
   assert(pol < npol);
   int i = index4d(time, channel, numOutputChannels(), beam, nbeams, pol, npol);
-  return voltage[i];
+  return buffer[i];
 }
 
 float Beamformer::getPower(int beam, int time, int channel) const {

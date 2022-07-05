@@ -4,6 +4,7 @@
 #include "beamformer.h"
 #include "raw/raw.h"
 #include "recipe_file.h"
+#include "util.h"
 
 using namespace std;
 
@@ -51,7 +52,7 @@ int main(int argc, char* argv[]) {
 
   int timesteps_per_block = 8192;
   
-  int fft_size = 16384;
+  int fft_size = 131072;
   int nants = 61;
   int nbands = 16;
   int nbeams = 64;
@@ -88,7 +89,17 @@ int main(int argc, char* argv[]) {
   }
 
   beamformer.processInput();
-  cout << "power[0][0][0]: " << beamformer.getPower(0, 0, 0) << endl;
-  cout << "OK\n";
+
+  auto val = beamformer.getPrebeam(0, 0, 0, 0);
+  assertComplexEq(val, 483.0, -3011.0);
+  cout << "prebeam[0]: " << cToS(val) << endl;
+
+  val = beamformer.getVoltage(0, 0, 0, 0);
+  assertComplexEq(val, -1938482.875, 8989387.0);
+  cout << "voltage[0]: " << cToS(val) << endl;
+
+  float power = beamformer.getPower(0, 0, 0);
+  cout << "power[0]: " << power << endl;
+  
   return 0;
 }

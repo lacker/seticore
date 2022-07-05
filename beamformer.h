@@ -60,6 +60,8 @@ class Beamformer {
   char* inputPointer(int block);
   
   // These cause a cuda sync so they are slow, only useful for debugging or testing
+  thrust::complex<float> getInput(int block, int antenna, int coarse_channel,
+                                  int time_within_block, int pol) const;
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int coarse_channel) const;
   thrust::complex<float> getFFTBuffer(int pol, int antenna, int coarse_channel,
                                       int time, int last_index) const;
@@ -70,7 +72,7 @@ class Beamformer {
   // Beamforming coefficients, formatted by row-major:
   //   coefficients[coarse-channel][beam][polarity][antenna][real or imag]
   float *coefficients;
-
+  size_t coefficients_size;
   
  private:
 
@@ -82,34 +84,31 @@ class Beamformer {
   //
   // The signed chars should be interpreted as int8.
   signed char *input;
-  int input_size;
+  size_t input_size;
   
-  // The fft_buffer is where we run FFTs as part of the channelization process.
-  // The FFT is in-place so there are two different data formats.
+  // The buffer is reused for a few different stages of the pipeline.
   //
   // The convertRaw kernel populates this buffer with row-major:
-  //   fft_buffer[pol][antenna][coarse-channel][time]
+  //   buffer[pol][antenna][coarse-channel][time]
   // which is equivalent to
-  //   fft_buffer[pol][antenna][coarse-channel][time-coarse-index][time-fine-index]
+  //   buffer[pol][antenna][coarse-channel][time-coarse-index][time-fine-index]
   //
-  // The FFT converts the time fine index to a frequency fine index, leaving this
+  // The FFT converts the time fine index in-place to a frequency fine index, leaving this
   // buffer with row-major:
-  //   fft_buffer[pol][antenna][coarse-channel][time][fine-channel]
-  thrust::complex<float>* fft_buffer;
-  int fft_buffer_size;
+  //   buffer[pol][antenna][coarse-channel][time][fine-channel]
+  //
+  // After beamforming, the voltage data is also placed here, in row-major:
+  //   voltage[time][channel][beam][polarity]
+  thrust::complex<float>* buffer;
+  size_t buffer_size;
   
   // The channelized input data, ready for beamforming.
   //
   // Its format is row-major:
   //   prebeam[time][channel][polarity][antenna]
   thrust::complex<float>* prebeam;
-
-  // The beamformed data, as voltages.
-  //
-  // Its format is row-major:
-  //   voltage[time][channel][beam][polarity]
-  thrust::complex<float>* voltage;
-
+  size_t prebeam_size;
+  
   // The beamformed data, as power.
   //
   // Its format is row-major:
@@ -117,5 +116,5 @@ class Beamformer {
   //
   // but its time resolution has been reduced by a factor of (fft_size * STI).
   float* power;
-  
+  size_t power_size;
 };
