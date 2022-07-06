@@ -310,7 +310,6 @@ void Beamformer::processInput() {
   dim3 shift_grid(fft_size, num_coarse_channels, nsamp / fft_size);
   shift<<<shift_grid, shift_block>>>(buffer, prebeam, fft_size, nants, npol,
                                      num_coarse_channels, nsamp / fft_size);
-  cudaDeviceSynchronize();
   checkCuda("Beamformer shift");
   
   dim3 beamform_block(nants, 1, 1);
@@ -319,8 +318,6 @@ void Beamformer::processInput() {
                                               nants, nbeams, num_coarse_channels, npol,
                                               nsamp / fft_size, prebeam_size, buffer_size,
                                               coefficients_size);
-
-  cudaDeviceSynchronize();
 
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());

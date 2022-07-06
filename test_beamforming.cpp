@@ -49,12 +49,13 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  cout << "reading raw file: " << RAW_FILE_0 << endl;
+  cout << "\nreading raw file: " << RAW_FILE_0 << endl;
   cout << "gathering metadata from first block:\n";
   cout << "nants: " << header.nants << endl;
   cout << "nchans: " << header.num_channels << endl;
   cout << "npol: " << header.npol << endl;
   cout << "num_timesteps: " << header.num_timesteps << endl;
+  cout << "tbin: " << header.tbin << endl;
 
   int timesteps_per_block = 8192;
   
@@ -81,7 +82,7 @@ int main(int argc, char* argv[]) {
   double output_bandwidth = obsbw / nbands;
   metadata.fch1 = header.obsfreq - 0.5 * obsbw;
   metadata.foff = output_bandwidth / beamformer.numOutputChannels();
-  metadata.tsamp = tbin * nblocks / beamformer.numOutputTimesteps();
+  metadata.tsamp = tbin * nblocks * timesteps_per_block / beamformer.numOutputTimesteps();
   metadata.num_timesteps = beamformer.numOutputTimesteps();
   metadata.num_freqs = beamformer.numOutputChannels();
   metadata.coarse_channel_size = metadata.num_freqs;
@@ -149,7 +150,7 @@ int main(int argc, char* argv[]) {
   auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
   for (DedopplerHit hit : hits) {
     cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
-         << ", snr = " << hit.snr << endl;
+         << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
     recorder.recordHit(0, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
   }
   cout << "wrote " << hits.size() << " hits to " << OUTPUT_HITS << endl;  
