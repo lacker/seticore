@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
   cout << "tbin: " << header.tbin << endl;
 
   int timesteps_per_block = 8192;
-  
+
   int fft_size = 131072;
   int nants = 61;
   int nbands = 16;
@@ -68,6 +68,11 @@ int main(int argc, char* argv[]) {
   int npol = 2;
   int nsamp = timesteps_per_block * nblocks;
 
+  assert(header.num_timesteps == timesteps_per_block);
+  assert((int) header.npol == npol);
+  assert(recipe.nbeams == nbeams);
+  assert(num_coarse_channels * nbands == header.num_channels);
+  
   // double obsfreq = header.obsfreq;
   double obsbw = header.obsbw;
   double tbin = header.tbin;
