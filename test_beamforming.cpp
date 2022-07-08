@@ -57,21 +57,24 @@ int main(int argc, char* argv[]) {
   cout << "num_timesteps: " << header.num_timesteps << endl;
   cout << "tbin: " << header.tbin << endl;
 
-  int timesteps_per_block = 8192;
-
+  // Can be passed as arguments
   int fft_size = 131072;
-  int nants = 61;
-  int nbands = 16;
-  int nbeams = 64;
+  int telescope_id = 64;
+
+  // This we need to detect from existing files
   int nblocks = 128;
-  int num_coarse_channels = 4;
-  int npol = 2;
+
+  // We need "planner" type functionality to figure out how thin to slice a band
+  int nbands = 16;
+  
+  int timesteps_per_block = header.num_timesteps;
+  int nants = header.nants;
+  int nbeams = recipe.nbeams;
+  int num_coarse_channels = header.num_channels / nbands;
+  int npol = header.npol;
   int nsamp = timesteps_per_block * nblocks;
 
-  assert(header.num_timesteps == timesteps_per_block);
-  assert((int) header.npol == npol);
-  assert(recipe.nbeams == nbeams);
-  assert(num_coarse_channels * nbands == header.num_channels);
+  assert(0 == header.num_channels % nbands);
   
   // double obsfreq = header.obsfreq;
   double obsbw = header.obsbw;
@@ -91,8 +94,12 @@ int main(int argc, char* argv[]) {
   metadata.num_timesteps = beamformer.numOutputTimesteps();
   metadata.num_freqs = beamformer.numOutputChannels();
   metadata.coarse_channel_size = metadata.num_freqs;
+  metadata.telescope_id = telescope_id;
+
+  // Right now the dedoppler treats everything in the subband as a single
+  // coarse channel. That is probably not the right way to do it, but it
+  // only affects the SNR normalization logic.
   metadata.num_coarse_channels = 1;
-  metadata.telescope_id = 64;
 
   cout << "dedopplering: " << metadata.num_freqs << " channels, "
        << metadata.num_timesteps << " timesteps\n";

@@ -8,9 +8,15 @@
 
 using namespace std;
 
+// This is allegedly a SIGPROC standard but the most authoritative source
+// I can find is:
+//   https://github.com/UCBerkeleySETI/blimpy/blob/master/blimpy/ephemeris/observatory_info.csv
 const int NO_TELESCOPE_ID = -1;
+const int PARKES = 4;
 const int GREEN_BANK = 6;
 const int ATA = 9;
+const int VLA = 12;
+const int MEERKAT = 64;
 
 /*
   Guesses some metadata from other metadata:
