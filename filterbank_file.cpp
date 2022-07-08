@@ -51,8 +51,9 @@ void FilterbankFile::inferMetadata() {
   num_coarse_channels = num_freqs / coarse_channel_size;
 }
 
-void FilterbankFile::loadCoarseChannel(int i, FilterbankBuffer* buffer) {
-  cerr << "cannot loadCoarseChannel from a base FilterbankFile\n";
+void FilterbankFile::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
+  cerr << "cannot loadCoarseChannel from a base FilterbankFile: "
+       << filename << "\n";
   exit(1);
 }
 

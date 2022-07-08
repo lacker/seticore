@@ -38,6 +38,7 @@ srcs = [
     'hit.capnp.c++',
     'hit_file_writer.cpp',
     'hit_recorder.cpp',
+    'multibeam_buffer.cu',
     'recipe_file.cpp',
     'run_dedoppler.cpp',
     'util.cpp',

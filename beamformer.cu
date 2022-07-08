@@ -166,7 +166,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   The input voltages have format:
     voltage[time][frequency][beam][polarity]
 
-  and the outpower power has format:
+  and the output power has format:
     power[beam][time][frequency]
 
   where the time dimension has shrunk by a factor of STI, now indexed by [0, nwin).
