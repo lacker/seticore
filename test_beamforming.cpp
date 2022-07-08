@@ -40,6 +40,48 @@ const string& RAW_FILE_1 = "/d/mubf/guppi_59712_16307_003760_J1939-6342_0001.000
 const string& RECIPE_FILE = "/d/mubf/MeerKAT-array_1-20220513T043147Z.bfr5";
 const string& OUTPUT_HITS = "./data/beamforming.hits";
 
+// Reads data for one band from the raw file, into the beamformer input.
+// Updates beamforming coefficients appropriately.
+void readRawBand(const string& raw_file,
+                 Beamformer& beamformer,
+                 const RecipeFile& recipe,
+                 int band,
+                 int num_bands) {
+  // TODO: infer this from somewhere
+  int nblocks = 128;
+
+  raw::Reader reader(raw_file);
+  raw::Header header;
+
+  for (int block = 0; block < nblocks; ++block) {
+    if (!reader.readHeader(&header)) {
+      // TODO: handle data being shorter for the last raw file
+      // TODO: check for missing blocks, if we see one then put in zeros
+      cerr << "error reading raw header: " << reader.errorMessage() << endl;
+      exit(1);
+    }
+
+    // TODO: sanity check all headers
+    
+    if (block == nblocks / 2) {
+      // Start time for this block is mid time for the beamformer
+      double mid_time = header.getStartTime();
+      int time_array_index = recipe.getTimeArrayIndex(mid_time);
+      int schan = header.getInt("SCHAN", 0);
+      recipe.generateCoefficients(time_array_index, schan,
+                                  beamformer.num_coarse_channels,
+                                  header.obsfreq, header.obsbw,
+                                  beamformer.coefficients);
+    }
+    
+    reader.readBand(header, band, num_bands, beamformer.inputPointer(block));
+    if ((block + 1) % 8 == 0) {
+      cout << "read " << block + 1 << " blocks, band " << band << endl;
+    }
+  }
+}
+                    
+
 int main(int argc, char* argv[]) {
   RecipeFile recipe(RECIPE_FILE);
   raw::Reader reader(RAW_FILE_0);
@@ -65,8 +107,8 @@ int main(int argc, char* argv[]) {
   // This we need to detect from existing files
   int nblocks = 128;
 
-  // We need "planner" type functionality to figure out how thin to slice a band
-  int nbands = 16;
+  // TODO: How should we figure out how thin to slice a band?
+  int nbands = 32;
   
   int timesteps_per_block = header.num_timesteps;
   int nants = header.nants;
@@ -102,36 +144,9 @@ int main(int argc, char* argv[]) {
   // only affects the SNR normalization logic.
   metadata.num_coarse_channels = 1;
 
-  cout << "dedopplering: " << metadata.num_freqs << " channels, "
-       << metadata.num_timesteps << " timesteps\n";
-
-  cout << "foff: " << metadata.foff << endl;
-  cout << "tsamp: " << metadata.tsamp << endl;
+  readRawBand(RAW_FILE_0, beamformer, recipe, 0, nbands);
   
-  int block = 0;
-  int band = 0;
-  while (block < nblocks) {
-    reader.readBand(header, band, nbands, beamformer.inputPointer(block));
-    ++block;
-
-    if (block % 8 == 0) {
-      cout << "read " << block << " blocks, band " << band << endl;
-    }
-    
-    if (!reader.readHeader(&header)) {
-      break;
-    }
-
-    if (block == nblocks / 2) {
-      // Start time for this block is mid time for the beamformer
-      double mid_time = header.getStartTime();
-      int time_array_index = recipe.getTimeArrayIndex(mid_time);
-      int schan = header.getInt("SCHAN", 0);
-      recipe.generateCoefficients(time_array_index, schan, beamformer.num_coarse_channels,
-                                  header.obsfreq, header.obsbw, beamformer.coefficients);
-    }
-  }
-
+  // Create a buffer that, for now, is large enough to hold one beamformer output
   MultibeamBuffer multibeam(beamformer.nbeams, beamformer.numOutputTimesteps(),
                             beamformer.numOutputChannels());
   
@@ -149,9 +164,14 @@ int main(int argc, char* argv[]) {
 
   float power = multibeam.getFloat(0, 0, 0);
   cout << "power[0]: " << power << endl;
-
+  assertFloatEq(power / 1.0e14, 1.87708);
+  
   // Beam zero
-  cout << "\nstarting dedoppler search.\n";
+  cout << "\ndedoppler searching " << metadata.num_freqs << " channels, "
+       << metadata.num_timesteps << " timesteps\n";
+  cout << "foff: " << metadata.foff << endl;
+  cout << "tsamp: " << metadata.tsamp << endl;
+  
   cout << "searching beam 0...\n";
   FilterbankBuffer buffer = multibeam.getBeam(0);
   Dedopplerer dedopplerer(beamformer.numOutputTimesteps(), beamformer.numOutputChannels(),
