@@ -2,6 +2,8 @@
 
 #include <thrust/complex.h>
 
+#include "multibeam_buffer.h"
+
 using namespace std;
 
 // Factor to reduce the time dimension by in our output
@@ -54,7 +56,7 @@ class Beamformer {
   int numOutputChannels() const;
   int numOutputTimesteps() const;
   
-  void processInput();
+  void processInput(MultibeamBuffer& output, int time_offset);
 
   // Returns a point for the given block where input can be read to
   char* inputPointer(int block);
@@ -67,7 +69,6 @@ class Beamformer {
                                       int time, int last_index) const;
   thrust::complex<float> getPrebeam(int time, int channel, int pol, int antenna) const;
   thrust::complex<float> getVoltage(int time, int channel, int beam, int pol) const;
-  float getPower(int beam, int time, int channel) const;
 
   // Beamforming coefficients, formatted by row-major:
   //   coefficients[coarse-channel][beam][polarity][antenna][real or imag]
@@ -76,10 +77,6 @@ class Beamformer {
 
   // The beamformed data, as power.
   //
-  // Its format is row-major:
-  //   power[beam][time][channel]
-  //
-  // but its time resolution has been reduced by a factor of (fft_size * STI).
   float* power;
   size_t power_size;
   

@@ -20,3 +20,13 @@ FilterbankBuffer MultibeamBuffer::getBeam(int beam) {
   int beam_size = num_timesteps * num_channels;
   return FilterbankBuffer(num_timesteps, num_channels, data + beam * beam_size);
 }
+
+float MultibeamBuffer::getFloat(int beam, int time, int channel) {
+  cudaDeviceSynchronize();
+  checkCuda("MultibeamBuffer getFloat");
+  assert(beam < num_beams);
+  assert(time < num_timesteps);
+  assert(channel < num_channels);
+  int index = (beam * num_timesteps + time) * num_channels + channel;
+  return data[index];
+}

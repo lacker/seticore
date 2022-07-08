@@ -6,6 +6,7 @@
 #include "hit_file_writer.h"
 #include "filterbank_buffer.h"
 #include "filterbank_file.h"
+#include "multibeam_buffer.h"
 #include "raw/raw.h"
 #include "recipe_file.h"
 #include "util.h"
@@ -131,8 +132,11 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  MultibeamBuffer multibeam(beamformer.nbeams, beamformer.numOutputTimesteps(),
+                            beamformer.numOutputChannels());
+  
   cout << "\nbeamforming...\n";
-  beamformer.processInput();
+  beamformer.processInput(multibeam, 0);
   cout << "spot checking data.\n";
   
   auto val = beamformer.getPrebeam(0, 0, 0, 0);
@@ -143,14 +147,13 @@ int main(int argc, char* argv[]) {
   assertComplexEq(val, -1938482.875, 8989387.0);
   cout << "voltage[0]: " << cToS(val) << endl;
 
-  float power = beamformer.getPower(0, 0, 0);
+  float power = multibeam.getFloat(0, 0, 0);
   cout << "power[0]: " << power << endl;
 
   // Beam zero
   cout << "\nstarting dedoppler search.\n";
   cout << "searching beam 0...\n";
-  FilterbankBuffer buffer(beamformer.numOutputTimesteps(), beamformer.numOutputChannels(),
-                          beamformer.power);
+  FilterbankBuffer buffer = multibeam.getBeam(0);
   Dedopplerer dedopplerer(beamformer.numOutputTimesteps(), beamformer.numOutputChannels(),
                           metadata.foff, metadata.tsamp, false);
   vector<DedopplerHit> hits;

@@ -26,4 +26,6 @@ class MultibeamBuffer {
   ~MultibeamBuffer();
 
   FilterbankBuffer getBeam(int beam);
+
+  float getFloat(int beam, int time, int channel);
 };

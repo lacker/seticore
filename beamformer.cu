@@ -170,20 +170,23 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
     power[beam][time][frequency]
 
   where the time dimension has shrunk by a factor of STI, now indexed by [0, nwin).
+  We add time_offset to all the times in the output.
 
   TODO: this also seems equivalent to a batch matrix multiplication. could we do this
   with a cublas routine?
  */
 __global__ void calculatePower(const thrust::complex<float>* voltage,
                                float* power,
-                               int nbeams, int num_channels, int npol, int num_output_timesteps) {
+                               int nbeams, int num_channels, int npol,
+                               int num_output_timesteps, int time_offset) {
   int chan = blockIdx.x;
   int beam = blockIdx.y;
-  int output_timestep = blockIdx.z;
-
+  int coarse_timestep = blockIdx.z;
+  int output_timestep = coarse_timestep + time_offset;
+  
   int fine_timestep = threadIdx.x;
   assert(fine_timestep < STI);
-  int time = output_timestep * STI + fine_timestep;
+  int time = coarse_timestep * STI + fine_timestep;
 
   assert(2 == npol);
   int pol0_index = index4d(time, chan, num_channels, beam, nbeams, 0, npol);
@@ -279,8 +282,14 @@ char* Beamformer::inputPointer(int block) {
 
 /*
   The caller should first put the data into *input and *coefficients.
+
+  Power from beamforming is written into output, with an offset of time_offset.
+
+  The format of the output is row-major:
+     power[beam][time][channel]
+  but its time resolution has been reduced by a factor of (fft_size * STI).
  */
-void Beamformer::processInput() {
+void Beamformer::processInput(MultibeamBuffer& output, int time_offset) {
   int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
@@ -322,7 +331,8 @@ void Beamformer::processInput() {
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block>>>
-    (buffer, power, nbeams, numOutputChannels(), npol, numOutputTimesteps());
+    (buffer, output.data, nbeams, numOutputChannels(), npol, numOutputTimesteps(),
+     time_offset);
   checkCuda("Beamformer calculatePower");
 }
 
@@ -391,12 +401,3 @@ thrust::complex<float> Beamformer::getVoltage(int time, int channel, int beam, i
   return buffer[i];
 }
 
-float Beamformer::getPower(int beam, int time, int channel) const {
-  cudaDeviceSynchronize();
-  checkCuda("Beamformer getPower");
-  assert(beam < nbeams);
-  assert(time < numOutputTimesteps());
-  assert(channel < numOutputChannels());
-  int i = index3d(beam, time, numOutputTimesteps(), channel, numOutputChannels());
-  return power[i];
-}
