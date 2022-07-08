@@ -47,13 +47,10 @@ void readRawBand(const string& raw_file,
                  const RecipeFile& recipe,
                  int band,
                  int num_bands) {
-  // TODO: infer this from somewhere
-  int nblocks = 128;
-
   raw::Reader reader(raw_file);
   raw::Header header;
 
-  for (int block = 0; block < nblocks; ++block) {
+  for (int block = 0; block < beamformer.nblocks; ++block) {
     if (!reader.readHeader(&header)) {
       // TODO: handle data being shorter for the last raw file
       // TODO: check for missing blocks, if we see one then put in zeros
@@ -63,7 +60,7 @@ void readRawBand(const string& raw_file,
 
     // TODO: sanity check all headers
     
-    if (block == nblocks / 2) {
+    if (block == beamformer.nblocks / 2) {
       // Start time for this block is mid time for the beamformer
       double mid_time = header.getStartTime();
       int time_array_index = recipe.getTimeArrayIndex(mid_time);
