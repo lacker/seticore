@@ -33,7 +33,12 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int band, int num_ba
   piperblk = header.getUnsignedInt("PIPERBLK", -1);
   assert(piperblk > 0);
 
-  // TODO: set num_blocks 
+  // Find the last block in the last file
+  raw::Reader last_reader(filenames[filenames.size() - 1]);
+  while(last_reader.readHeader(&header)) {}
+  int pktidx_diff = header.pktidx - start_pktidx;
+  assert(0 == pktidx_diff % piperblk);
+  num_blocks = (pktidx_diff / piperblk) + 1;
 }
 
 RawFileGroup::~RawFileGroup() {}
