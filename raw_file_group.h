@@ -45,6 +45,7 @@ class RawFileGroup {
   int npol;
   int schan;
   double obsbw;
+  double obsfreq;
   string source_name;
   double tbin;
   int timesteps_per_block;

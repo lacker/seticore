@@ -20,6 +20,7 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   num_coarse_channels = header.num_channels;
   npol = header.npol;
   obsbw = header.obsbw;
+  obsfreq = header.obsfreq;
   source_name = header.src_name;
   start_pktidx = header.pktidx;
   next_pktidx = start_pktidx;

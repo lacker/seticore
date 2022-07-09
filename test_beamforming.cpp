@@ -41,44 +41,61 @@ const string& RAW_FILE_1 = "/d/mubf/guppi_59712_16307_003760_J1939-6342_0001.000
 const string& RECIPE_FILE = "/d/mubf/MeerKAT-array_1-20220513T043147Z.bfr5";
 const string& OUTPUT_HITS = "./data/beamforming.hits";
 
-// Reads data for one band from the raw file, into the beamformer input.
-// Updates beamforming coefficients appropriately.
-void readRawBand(const string& raw_file,
+
+// Just fill up the beamformer once.
+void readRawBand(RawFileGroup& file_group,
                  Beamformer& beamformer,
                  const RecipeFile& recipe,
-                 int band,
-                 int num_bands) {
-  raw::Reader reader(raw_file);
-  raw::Header header;
-
+                 int band) {
+  file_group.resetBand(band);
+  assert(beamformer.nblocks <= file_group.num_blocks);
+  
   for (int block = 0; block < beamformer.nblocks; ++block) {
-    if (!reader.readHeader(&header)) {
-      // TODO: handle data being shorter for the last raw file
-      // TODO: check for missing blocks, if we see one then put in zeros
-      cerr << "error reading raw header: " << reader.errorMessage() << endl;
-      exit(1);
-    }
-
-    // TODO: sanity check at least the first header per file
-    
-    if (block == beamformer.nblocks / 2) {
-      // Start time for this block is mid time for the beamformer
-      double mid_time = header.getStartTime();
-      int time_array_index = recipe.getTimeArrayIndex(mid_time);
-      int schan = header.getInt("SCHAN", 0);
-      recipe.generateCoefficients(time_array_index, schan,
-                                  beamformer.num_coarse_channels,
-                                  header.obsfreq, header.obsbw,
-                                  beamformer.coefficients);
-    }
-    
-    reader.readBand(header, band, num_bands, beamformer.inputPointer(block));
-    if ((block + 1) % 8 == 0) {
+    file_group.read(beamformer.inputPointer(block));
+    if ((block + 1) % 32 == 0) {
       cout << "read " << block + 1 << " blocks, band " << band << endl;
     }
   }
+
+  double mid_time = file_group.getStartTime(beamformer.nblocks / 2);
+  int time_array_index = recipe.getTimeArrayIndex(mid_time);
+  recipe.generateCoefficients(time_array_index, file_group.schan,
+                              beamformer.num_coarse_channels,
+                              file_group.obsfreq, file_group.obsbw,
+                              beamformer.coefficients);
 }
-                    
+
+
+// Construct metadata for the data that would be created by a given
+// file group and beamformer, running the beamform as many times as
+// it can be filled by the file group.
+FilterbankFile combineMetadata(const RawFileGroup& file_group,
+                               const Beamformer& beamformer,
+                               int band, int telescope_id) {
+  FilterbankFile metadata("");
+  metadata.has_dc_spike = false;
+  metadata.source_name = file_group.source_name;
+  double output_bandwidth = file_group.obsbw / file_group.num_bands;
+  double file_group_fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
+  metadata.fch1 = band * output_bandwidth + file_group_fch1;
+  metadata.foff = output_bandwidth / beamformer.numOutputChannels();
+  int beamformer_runs = file_group.num_blocks / beamformer.nblocks;
+  double time_per_block = file_group.tbin * file_group.timesteps_per_block;
+  double time_per_beamform = time_per_block * beamformer.nblocks;
+  metadata.tsamp = time_per_beamform / beamformer.numOutputTimesteps();
+  metadata.num_timesteps = beamformer.numOutputTimesteps() * beamformer_runs;
+  metadata.num_freqs = beamformer.numOutputChannels();
+  metadata.telescope_id = telescope_id;
+
+  // Currently, we treat every band as a single coarse channel for the
+  // purposes of seti search. This might not be the right way to do it.
+  // TODO: figure out if we should split up seti searching
+  metadata.coarse_channel_size = metadata.num_freqs;
+  metadata.num_coarse_channels = 1;
+
+  return metadata;
+}
+
 
 int main(int argc, char* argv[]) {
   // TODO: How should we figure out how thin to slice a band?
@@ -109,7 +126,7 @@ int main(int argc, char* argv[]) {
   int fft_size = 131072;
   int telescope_id = 64;
 
-  // This we need to detect from existing files
+  // TODO: infer this
   int nblocks = 128;
 
   int timesteps_per_block = header.num_timesteps;
@@ -119,34 +136,12 @@ int main(int argc, char* argv[]) {
   int npol = header.npol;
   int nsamp = timesteps_per_block * nblocks;
 
-  assert(0 == header.num_channels % nbands);
-  
-  // double obsfreq = header.obsfreq;
-  double obsbw = header.obsbw;
-  double tbin = header.tbin;
-  
   Beamformer beamformer(fft_size, nants, nbeams, nblocks,
                         num_coarse_channels, npol, nsamp);
 
-  // Calculate metadata for output
-  FilterbankFile metadata("");
-  metadata.has_dc_spike = false;
-  metadata.source_name = string(header.src_name);
-  double output_bandwidth = obsbw / nbands;
-  metadata.fch1 = header.obsfreq - 0.5 * obsbw;
-  metadata.foff = output_bandwidth / beamformer.numOutputChannels();
-  metadata.tsamp = tbin * nblocks * timesteps_per_block / beamformer.numOutputTimesteps();
-  metadata.num_timesteps = beamformer.numOutputTimesteps();
-  metadata.num_freqs = beamformer.numOutputChannels();
-  metadata.coarse_channel_size = metadata.num_freqs;
-  metadata.telescope_id = telescope_id;
-
-  // Right now the dedoppler treats everything in the subband as a single
-  // coarse channel. That is probably not the right way to do it, but it
-  // only affects the SNR normalization logic.
-  metadata.num_coarse_channels = 1;
-
-  readRawBand(RAW_FILE_0, beamformer, recipe, 0, nbands);
+  FilterbankFile metadata = combineMetadata(file_group, beamformer, 0, telescope_id);
+  
+  readRawBand(file_group, beamformer, recipe, 0);
   
   // Create a buffer that, for now, is large enough to hold one beamformer output
   MultibeamBuffer multibeam(beamformer.nbeams, beamformer.numOutputTimesteps(),
@@ -163,10 +158,7 @@ int main(int argc, char* argv[]) {
   // Search beam zero
   cout << "\ndedoppler searching " << metadata.num_freqs << " channels, "
        << metadata.num_timesteps << " timesteps\n";
-  cout << "foff: " << metadata.foff << endl;
-  cout << "tsamp: " << metadata.tsamp << endl;
   
-  cout << "searching beam 0...\n";
   FilterbankBuffer buffer = multibeam.getBeam(0);
   Dedopplerer dedopplerer(beamformer.numOutputTimesteps(),
                           beamformer.numOutputChannels(),
