@@ -8,11 +8,12 @@
 #include "filterbank_file.h"
 #include "multibeam_buffer.h"
 #include "raw/raw.h"
+#include "raw_file_group.h"
 #include "recipe_file.h"
 #include "util.h"
 
 using namespace std;
-
+ 
 void assertComplexEq(thrust::complex<float> c, float real, float imag) {
   if (abs(c.real() - real) > 0.001) {
     cerr << "c.real() = " << c.real() << " but real = " << real << endl;
@@ -58,7 +59,7 @@ void readRawBand(const string& raw_file,
       exit(1);
     }
 
-    // TODO: sanity check all headers
+    // TODO: sanity check at least the first header per file
     
     if (block == beamformer.nblocks / 2) {
       // Start time for this block is mid time for the beamformer
@@ -80,6 +81,13 @@ void readRawBand(const string& raw_file,
                     
 
 int main(int argc, char* argv[]) {
+  // TODO: How should we figure out how thin to slice a band?
+  int nbands = 32;
+
+  vector<string> filenames;
+  filenames.push_back(RAW_FILE_0);
+  RawFileGroup file_group(filenames, 0, nbands);
+  
   RecipeFile recipe(RECIPE_FILE);
   raw::Reader reader(RAW_FILE_0);
   raw::Header header;
@@ -104,9 +112,6 @@ int main(int argc, char* argv[]) {
   // This we need to detect from existing files
   int nblocks = 128;
 
-  // TODO: How should we figure out how thin to slice a band?
-  int nbands = 32;
-  
   int timesteps_per_block = header.num_timesteps;
   int nants = header.nants;
   int nbeams = recipe.nbeams;
