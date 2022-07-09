@@ -1,7 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "raw/raw.h"
 
 using namespace std;
 
@@ -12,7 +15,24 @@ using namespace std;
   missing blocks with zeros.
 */
 class RawFileGroup {
+ private:
+  // TODO: document what exactly these contain mid-iteration
+  raw::Header header;
+  unique_ptr<raw::Reader> reader;
+
+  // Index of the current file in filenames that reader is opening.
+  // -1 if there is none.
+  int current_file;
+
+  // The next pktidx that we will return from read()
+  int next_pktidx;
+
+  // Helper to advance the reader and header
+  void openNextFile();
+  
  public:
+  const vector<string> filenames;
+
   // Defining a sub-band of the files we are reading in
   const int band;
   const int num_bands;
@@ -37,6 +57,13 @@ class RawFileGroup {
   // This includes missing blocks. 
   int num_blocks;
 
+  // How many bytes each read returns 
+  int read_size;
+  
   RawFileGroup(const vector<string>& filenames, int band, int num_bands);
   ~RawFileGroup();
+
+  void read(char* buffer);
+
+  double getStartTime(int block);
 };
