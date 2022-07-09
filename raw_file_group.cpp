@@ -5,8 +5,8 @@
 
 using namespace std;
 
-RawFileGroup::RawFileGroup(const vector<string>& filenames, int band, int num_bands)
-  : current_file(-1), filenames(filenames), band(band), num_bands(num_bands) {
+RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
+  : current_file(-1), filenames(filenames), band(0), num_bands(num_bands) {
   assert(!filenames.empty());
 
   // Get metadata from the first file
@@ -45,6 +45,13 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int band, int num_ba
 }
 
 RawFileGroup::~RawFileGroup() {}
+
+void RawFileGroup::resetBand(int new_band) {
+  assert(new_band < num_bands);
+  band = new_band;
+  current_file = -1;
+  next_pktidx = start_pktidx;
+}
 
 void RawFileGroup::openNextFile() {
   ++current_file;

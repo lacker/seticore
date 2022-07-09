@@ -13,10 +13,12 @@ using namespace std;
   sequentially-recorded raw files.
   The RawFileGroup also encapsulates missing-block handling, replacing
   missing blocks with zeros.
+  It is not threadsafe.
 */
 class RawFileGroup {
  private:
-  // TODO: document what exactly these contain mid-iteration
+  // When current_file is -1, these should not be used.
+  // Otherwise, header contains the last read from reader.
   raw::Header header;
   unique_ptr<raw::Reader> reader;
 
@@ -34,7 +36,7 @@ class RawFileGroup {
   const vector<string> filenames;
 
   // Defining a sub-band of the files we are reading in
-  const int band;
+  int band;
   const int num_bands;
 
   // Metadata that should be the same for all blocks
@@ -59,9 +61,13 @@ class RawFileGroup {
 
   // How many bytes each read returns 
   int read_size;
-  
-  RawFileGroup(const vector<string>& filenames, int band, int num_bands);
+
+  // Starts off reading band zero
+  RawFileGroup(const vector<string>& filenames, int num_bands);
+
   ~RawFileGroup();
+
+  void resetBand(int new_band);
 
   void read(char* buffer);
 

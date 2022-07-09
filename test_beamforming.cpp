@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 
   vector<string> filenames;
   filenames.push_back(RAW_FILE_0);
-  RawFileGroup file_group(filenames, 0, nbands);
+  RawFileGroup file_group(filenames, nbands);
 
   RecipeFile recipe(RECIPE_FILE);
   raw::Reader reader(RAW_FILE_0);
