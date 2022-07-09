@@ -42,30 +42,6 @@ const string& RECIPE_FILE = "/d/mubf/MeerKAT-array_1-20220513T043147Z.bfr5";
 const string& OUTPUT_HITS = "./data/beamforming.hits";
 
 
-// Just fill up the beamformer once.
-void readRawBand(RawFileGroup& file_group,
-                 Beamformer& beamformer,
-                 const RecipeFile& recipe,
-                 int band) {
-  file_group.resetBand(band);
-  assert(beamformer.nblocks <= file_group.num_blocks);
-  
-  for (int block = 0; block < beamformer.nblocks; ++block) {
-    file_group.read(beamformer.inputPointer(block));
-    if ((block + 1) % 32 == 0) {
-      cout << "read " << block + 1 << " blocks, band " << band << endl;
-    }
-  }
-
-  double mid_time = file_group.getStartTime(beamformer.nblocks / 2);
-  int time_array_index = recipe.getTimeArrayIndex(mid_time);
-  recipe.generateCoefficients(time_array_index, file_group.schan,
-                              beamformer.num_coarse_channels,
-                              file_group.obsfreq, file_group.obsbw,
-                              beamformer.coefficients);
-}
-
-
 // Construct metadata for the data that would be created by a given
 // file group and beamformer, running the beamform as many times as
 // it can be filled by the file group.
@@ -98,58 +74,63 @@ FilterbankFile combineMetadata(const RawFileGroup& file_group,
 
 
 int main(int argc, char* argv[]) {
-  // TODO: How should we figure out how thin to slice a band?
+  // Specifying the non-file parameters
   int nbands = 32;
+  int fft_size = 131072;
+  int telescope_id = 64;
+  int nblocks = 128;
+  float snr = 8.0;
+  float max_drift = 0.01;
+  float min_drift = 0.01;
 
+  // Specifying the input files
   vector<string> filenames;
   filenames.push_back(RAW_FILE_0);
   RawFileGroup file_group(filenames, nbands);
-
   RecipeFile recipe(RECIPE_FILE);
-  raw::Reader reader(RAW_FILE_0);
-  raw::Header header;
 
-  if (!reader.readHeader(&header)) {
-    cout << "raw error: " << reader.errorMessage() << endl;
-    return 1;
-  }
+  int num_coarse_channels = file_group.num_coarse_channels / nbands;
+  int nsamp = file_group.timesteps_per_block * nblocks;
 
-  cout << "\nreading raw file: " << RAW_FILE_0 << endl;
-  cout << "gathering metadata from first block:\n";
-  cout << "nants: " << header.nants << endl;
-  cout << "nchans: " << header.num_channels << endl;
-  cout << "npol: " << header.npol << endl;
-  cout << "num_timesteps: " << header.num_timesteps << endl;
-  cout << "tbin: " << header.tbin << endl;
+  Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, nblocks,
+                        num_coarse_channels, file_group.npol, nsamp);
 
-  // Can be passed as arguments
-  int fft_size = 131072;
-  int telescope_id = 64;
-
-  // TODO: infer this
-  int nblocks = 128;
-
-  int timesteps_per_block = header.num_timesteps;
-  int nants = header.nants;
-  int nbeams = recipe.nbeams;
-  int num_coarse_channels = header.num_channels / nbands;
-  int npol = header.npol;
-  int nsamp = timesteps_per_block * nblocks;
-
-  Beamformer beamformer(fft_size, nants, nbeams, nblocks,
-                        num_coarse_channels, npol, nsamp);
-
-  FilterbankFile metadata = combineMetadata(file_group, beamformer, 0, telescope_id);
-  
-  readRawBand(file_group, beamformer, recipe, 0);
-  
-  // Create a buffer that, for now, is large enough to hold one beamformer output
-  MultibeamBuffer multibeam(beamformer.nbeams, beamformer.numOutputTimesteps(),
+  // Create a buffer large enough to hold all beamformer runs for one band  
+  int beamformer_runs = file_group.num_blocks / beamformer.nblocks;
+  MultibeamBuffer multibeam(beamformer.nbeams,
+                            beamformer.numOutputTimesteps() * beamformer_runs,
                             beamformer.numOutputChannels());
   
-  cout << "\nbeamforming...\n";
-  beamformer.processInput(multibeam, 0);
+  // Hardcoded for now
+  int band = 0;
+  
+  FilterbankFile metadata = combineMetadata(file_group, beamformer, band,
+                                            telescope_id);
+  file_group.resetBand(band);
+  
+  for (int run = 0; run < beamformer_runs; ++run) {
+    if (run > 0) {
+      // We need to sync so that we don't overwrite on reads
+      cudaDeviceSynchronize();
+    }
 
+    for (int block = 0; block < beamformer.nblocks; ++block) {
+      file_group.read(beamformer.inputPointer(block));
+    }
+  
+    cout << "\nbeamforming band " << band << " run " << run << "...\n";
+    
+    int block_right_after_mid = run * beamformer.nblocks + beamformer.nblocks / 2;
+    double mid_time = file_group.getStartTime(block_right_after_mid);
+    int time_array_index = recipe.getTimeArrayIndex(mid_time);
+    recipe.generateCoefficients(time_array_index, file_group.schan,
+                                beamformer.num_coarse_channels,
+                                file_group.obsfreq, file_group.obsbw,
+                                beamformer.coefficients);
+    int time_offset = beamformer.numOutputTimesteps() * run;
+    beamformer.processInput(multibeam, time_offset);
+  }
+  
   // Spot check the beamformed power
   float power = multibeam.getFloat(0, 0, 0);
   cout << "power[0]: " << power << endl;
@@ -164,9 +145,7 @@ int main(int argc, char* argv[]) {
                           beamformer.numOutputChannels(),
                           metadata.foff, metadata.tsamp, false);
   vector<DedopplerHit> hits;
-  float snr = 8.0;
-  cout << "SNR threshold: " << snr << endl;
-  dedopplerer.search(buffer, 0.01, 0.01, snr, &hits);
+  dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
 
   // Spot check the hits
   assert(69884 == hits[0].index);
