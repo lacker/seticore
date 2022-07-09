@@ -25,7 +25,9 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   next_pktidx = start_pktidx;
   tbin = header.tbin;
   timesteps_per_block = header.num_timesteps;
-  
+
+  schan = header.getInt("SCHAN", -1);
+  assert(schan > 0);
   synctime = header.getUnsignedInt("SYNCTIME", -1);
   assert(synctime > 0);
   piperblk = header.getUnsignedInt("PIPERBLK", -1);
@@ -64,6 +66,7 @@ void RawFileGroup::openNextFile() {
   }
 
   // Sanity check some values in this header
+  assert(schan == header.getInt("SCHAN", -1));
   assert(nants == header.nants);
   assert(num_coarse_channels == header.num_channels);
   assert(npol == (int) header.npol);  

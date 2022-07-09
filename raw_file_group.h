@@ -43,6 +43,7 @@ class RawFileGroup {
   int nants;
   int num_coarse_channels;
   int npol;
+  int schan;
   double obsbw;
   string source_name;
   double tbin;
