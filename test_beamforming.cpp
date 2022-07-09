@@ -154,21 +154,13 @@ int main(int argc, char* argv[]) {
   
   cout << "\nbeamforming...\n";
   beamformer.processInput(multibeam, 0);
-  cout << "spot checking data.\n";
-  
-  auto val = beamformer.getPrebeam(0, 0, 0, 0);
-  assertComplexEq(val, 483.0, -3011.0);
-  cout << "prebeam[0]: " << cToS(val) << endl;
 
-  val = beamformer.getVoltage(0, 0, 0, 0);
-  assertComplexEq(val, -1938482.875, 8989387.0);
-  cout << "voltage[0]: " << cToS(val) << endl;
-
+  // Spot check the beamformed power
   float power = multibeam.getFloat(0, 0, 0);
   cout << "power[0]: " << power << endl;
   assertFloatEq(power / 1.0e14, 1.87708);
   
-  // Beam zero
+  // Search beam zero
   cout << "\ndedoppler searching " << metadata.num_freqs << " channels, "
        << metadata.num_timesteps << " timesteps\n";
   cout << "foff: " << metadata.foff << endl;
@@ -176,13 +168,20 @@ int main(int argc, char* argv[]) {
   
   cout << "searching beam 0...\n";
   FilterbankBuffer buffer = multibeam.getBeam(0);
-  Dedopplerer dedopplerer(beamformer.numOutputTimesteps(), beamformer.numOutputChannels(),
+  Dedopplerer dedopplerer(beamformer.numOutputTimesteps(),
+                          beamformer.numOutputChannels(),
                           metadata.foff, metadata.tsamp, false);
   vector<DedopplerHit> hits;
   float snr = 8.0;
   cout << "SNR threshold: " << snr << endl;
   dedopplerer.search(buffer, 0.01, 0.01, snr, &hits);
 
+  // Spot check the hits
+  assert(69884 == hits[0].index);
+  assert(-2 == hits[1].drift_steps);
+  assertFloatEq(8.20315, hits[0].snr);
+  assertFloatEq(-0.847396, hits[1].drift_rate);
+  
   // Write hits to output
   auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
   for (DedopplerHit hit : hits) {
