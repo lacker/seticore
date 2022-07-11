@@ -42,9 +42,8 @@ void runDedoppler(const string& input_filename, const string& output_filename,
     dedopplerer.search(buffer, max_drift, min_drift, snr_threshold, &hits);
     for (DedopplerHit hit : hits) {
 
-      cout << fmt::format("hit: coarse channel = {}, index = {}, snr = {:.6f}, "
-                          "drift rate = {:.6f} ({} bins)\n",
-                          coarse_channel, hit.index, hit.snr, hit.drift_rate, hit.drift_steps);
+      cout << "hit: coarse channel = " << coarse_channel << ", "
+           << hit.toString() << endl;
         
       recorder->recordHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate,
                           hit.snr, buffer.data);

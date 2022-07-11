@@ -23,6 +23,11 @@ FilterbankBuffer::~FilterbankBuffer() {
   }
 }
 
+// Set everything to zero
+void FilterbankBuffer::zero() {
+  memset(data, 0, sizeof(float) * num_timesteps * num_channels);
+}
+
 // Inefficient but useful for testing
 void FilterbankBuffer::setValue(int time, int channel, float value) {
   assert(0 <= time && time < num_timesteps);

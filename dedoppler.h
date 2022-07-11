@@ -21,6 +21,8 @@ struct DedopplerHit {
 
   // The signal-to-noise ratio for the hit
   float snr;
+
+  string toString() const;
 };
 
 
