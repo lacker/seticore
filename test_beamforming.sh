@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+# TODO: maybe deprecate this. Ask Ross if these golden files are still useful
+
 RAW=golden_synthesized_input.0000.raw
 BFR=golden_synthesized_input.bfr5
 

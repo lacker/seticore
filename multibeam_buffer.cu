@@ -30,3 +30,9 @@ float MultibeamBuffer::getFloat(int beam, int time, int channel) {
   int index = (beam * num_timesteps + time) * num_channels + channel;
   return data[index];
 }
+
+void MultibeamBuffer::zeroAsync() {
+  size_t data_size = sizeof(float) * num_beams * num_timesteps * num_channels;
+  cudaMemsetAsync(data, 0, data_size);
+  checkCuda("MultibeamBuffer zeroAsync");
+}

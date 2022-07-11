@@ -28,4 +28,7 @@ class MultibeamBuffer {
   FilterbankBuffer getBeam(int beam);
 
   float getFloat(int beam, int time, int channel);
+
+  // Zero out all the data as an asynchronous GPU operation
+  void zeroAsync();
 };

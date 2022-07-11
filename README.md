@@ -76,6 +76,20 @@ using this Docker environment with:
 ./test_docker.sh
 ```
 
+## Debugging
+
+To get a binary with debug symbols, so you can run gdb:
+
+```
+meson configure --buildtype=debug build
+```
+
+When you're done, configure it back:
+
+```
+meson configure --buildtype=release build
+```
+
 ## Selecting a Specific GPU Device ID
 
 Reference: https://shawnliu.me/post/nvidia-gpu-id-enumeration-in-linux/

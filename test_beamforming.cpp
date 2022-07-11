@@ -79,13 +79,14 @@ int main(int argc, char* argv[]) {
   int fft_size = 131072;
   int telescope_id = 64;
   int nblocks = 128;
-  float snr = 8.0;
+  float snr = 7.0;
   float max_drift = 0.01;
   float min_drift = 0.01;
 
   // Specifying the input files
   vector<string> filenames;
   filenames.push_back(RAW_FILE_0);
+  filenames.push_back(RAW_FILE_1);
   RawFileGroup file_group(filenames, nbands);
   RecipeFile recipe(RECIPE_FILE);
 
@@ -97,9 +98,16 @@ int main(int argc, char* argv[]) {
 
   // Create a buffer large enough to hold all beamformer runs for one band  
   int beamformer_runs = file_group.num_blocks / beamformer.nblocks;
+  int valid_num_timesteps = beamformer.numOutputTimesteps() * beamformer_runs;
+  int rounded_num_timesteps = roundUpToPowerOfTwo(valid_num_timesteps);
   MultibeamBuffer multibeam(beamformer.nbeams,
-                            beamformer.numOutputTimesteps() * beamformer_runs,
+                            rounded_num_timesteps,
                             beamformer.numOutputChannels());
+
+  if (valid_num_timesteps != rounded_num_timesteps) {
+    // Zero out the buffer, because it has some extra area
+    multibeam.zeroAsync();
+  }
   
   // Hardcoded for now
   int band = 0;
@@ -107,6 +115,7 @@ int main(int argc, char* argv[]) {
   FilterbankFile metadata = combineMetadata(file_group, beamformer, band,
                                             telescope_id);
   file_group.resetBand(band);
+  cout << endl;
   
   for (int run = 0; run < beamformer_runs; ++run) {
     if (run > 0) {
@@ -116,9 +125,9 @@ int main(int argc, char* argv[]) {
 
     for (int block = 0; block < beamformer.nblocks; ++block) {
       file_group.read(beamformer.inputPointer(block));
-    }
+    } 
   
-    cout << "\nbeamforming band " << band << " run " << run << "...\n";
+    cout << "beamforming band " << band << " run " << run << "...\n";
     
     int block_right_after_mid = run * beamformer.nblocks + beamformer.nblocks / 2;
     double mid_time = file_group.getStartTime(block_right_after_mid);
@@ -141,17 +150,18 @@ int main(int argc, char* argv[]) {
        << metadata.num_timesteps << " timesteps\n";
   
   FilterbankBuffer buffer = multibeam.getBeam(0);
-  Dedopplerer dedopplerer(beamformer.numOutputTimesteps(),
+  Dedopplerer dedopplerer(valid_num_timesteps,
                           beamformer.numOutputChannels(),
                           metadata.foff, metadata.tsamp, false);
   vector<DedopplerHit> hits;
   dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
 
   // Spot check the hits
-  assert(69884 == hits[0].index);
-  assert(-2 == hits[1].drift_steps);
-  assertFloatEq(8.20315, hits[0].snr);
-  assertFloatEq(-0.847396, hits[1].drift_rate);
+  assert(3 == hits.size());
+  assert(61685 == hits[0].index);
+  assert(-1 == hits[1].drift_steps);
+  assertFloatEq(7.22453, hits[2].snr);
+  assertFloatEq(1.08951, hits[0].drift_rate);
   
   // Write hits to output
   auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
