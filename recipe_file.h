@@ -39,6 +39,7 @@ class RecipeFile {
   const int nchans;
   
   RecipeFile(const string& filename);
+  RecipeFile(const string& directory, const string& obsid);
   ~RecipeFile();
 
   int getTimeArrayIndex(double time) const;

@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <assert.h>
+#include <fmt/core.h>
 #include "hdf5.h"
 #include <iostream>
 #include <math.h>
@@ -37,6 +39,17 @@ RecipeFile::RecipeFile(const string& filename) :
   nants(evenlyDivide(delays.size(), nbeams * time_array.size())),
   nchans(evenlyDivide(cal_all.size(), nants * npol))
 { }
+
+string makeRecipeFilename(const string& directory, const string& obsid) {
+  string fixed_obsid = obsid;
+  // Someone changed their mind and all the colons should actually
+  // be hyphens in obsid's
+  replace(fixed_obsid.begin(), fixed_obsid.end(), ':', '-');
+  return fmt::format("{}/{}.bfr5", directory, fixed_obsid);
+}
+
+RecipeFile::RecipeFile(const string& directory, const string& obsid)
+  : RecipeFile(makeRecipeFilename(directory, obsid)) {}
 
 RecipeFile::~RecipeFile() {
   H5Fclose(file);

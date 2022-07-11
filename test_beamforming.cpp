@@ -36,11 +36,7 @@ void assertFloatEq(float a, float b) {
   }
 }
 
-const string& RAW_FILE_0 = "/d/mubf/guppi_59712_16307_003760_J1939-6342_0001.0000.raw";
-const string& RAW_FILE_1 = "/d/mubf/guppi_59712_16307_003760_J1939-6342_0001.0001.raw";
-const string& RECIPE_FILE = "/d/mubf/MeerKAT-array_1-20220513T043147Z.bfr5";
 const string& OUTPUT_HITS = "./data/beamforming.hits";
-
 
 // Construct metadata for the data that would be created by a given
 // file group and beamformer, running the beamform as many times as
@@ -89,7 +85,7 @@ int main(int argc, char* argv[]) {
 
   // Specifying the input files
   RawFileGroup file_group(groups[0], nbands);
-  RecipeFile recipe(RECIPE_FILE);
+  RecipeFile recipe("/d/mubf", file_group.obsid);
 
   int num_coarse_channels = file_group.num_coarse_channels / nbands;
   int nsamp = file_group.timesteps_per_block * nblocks;
