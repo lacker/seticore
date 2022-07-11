@@ -27,4 +27,6 @@ class FilterbankBuffer {
   FilterbankBuffer(int num_timesteps, int num_channels, float* data);
   
   ~FilterbankBuffer();
+
+  void setValue(int time, int channel, float value);
 };

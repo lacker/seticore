@@ -2,6 +2,7 @@
 
 #include "cuda_util.h"
 
+#include <assert.h>
 #include <iostream>
 
 using namespace std;
@@ -22,3 +23,10 @@ FilterbankBuffer::~FilterbankBuffer() {
   }
 }
 
+// Inefficient but useful for testing
+void FilterbankBuffer::setValue(int time, int channel, float value) {
+  assert(0 <= time && time < num_timesteps);
+  assert(0 <= channel && channel < num_channels);
+  int index = time * num_channels + channel;
+  data[index] = value;
+}
