@@ -12,7 +12,11 @@ cmake = import('cmake')
 fmt_subproj = cmake.subproject('fmt')
 fmt_dep = fmt_subproj.dependency('fmt')
 
-boost_dep = dependency('boost', modules: ['program_options'])
+boost_dep = dependency('boost', modules: [
+    'filesystem',
+    'program_options',
+    'system',
+])
 
 hdf5_dep = dependency('hdf5', language: 'c')
 

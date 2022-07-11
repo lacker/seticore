@@ -2,11 +2,13 @@
 
 #include <memory>
 #include <string>
-#include <vector>
+#include <vector> 
 
 #include "raw/raw.h"
 
 using namespace std;
+
+vector<vector<string> > scanForRawFileGroups(const string& directory);
 
 /*
   This class provides a unified interface to open a group of
@@ -34,7 +36,7 @@ class RawFileGroup {
   
  public:
   const vector<string> filenames;
-
+  
   // Defining a sub-band of the files we are reading in
   int band;
   const int num_bands;

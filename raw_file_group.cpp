@@ -1,7 +1,10 @@
 #include "raw_file_group.h"
 
 #include <assert.h>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 #include <iostream>
+#include <vector> 
 
 using namespace std;
 
@@ -48,6 +51,71 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
 }
 
 RawFileGroup::~RawFileGroup() {}
+
+/*
+  Group up raw files of the form:
+    <prefix>.<sequence-identifier>.raw
+
+  Each prefix defines one group of raw files.
+  The groups are sorted by prefix.
+  Within the group, they are sorted by sequence identifier.
+  Each of these sorts are *string* sorting, so if you provide raw files
+  with numerical ids, be sure that they are the same length.
+ */
+vector<vector<string> > scanForRawFileGroups(const string& directory) {
+  boost::filesystem::path dir{directory};
+  vector<string> filenames;
+  boost::filesystem::directory_iterator it{dir};
+  while (it != boost::filesystem::directory_iterator{}) {
+    filenames.push_back(it->path().c_str());
+    ++it;
+  }
+  sort(filenames.begin(), filenames.end());
+
+  // Gather filenames that share the group_prefix in group
+  vector<string> group;
+  string group_prefix("");
+  vector<vector<string> > answer;
+
+  for (string filename : filenames) {
+    if (!boost::algorithm::ends_with(filename, ".raw")) {
+      continue;
+    }
+    string no_suffix = filename.substr(0, filename.size() - 4);
+    auto index = no_suffix.find_last_of(".");
+    if (index >= no_suffix.size()) {
+      // We can't find a prefix
+      continue;
+    }
+    string prefix = no_suffix.substr(0, index);
+
+    if (group.empty()) {
+      // This file is the first one overall
+      group.push_back(filename);
+      group_prefix = prefix;
+      continue;
+    }
+
+    if (prefix == group_prefix) {
+      // This file is a continuation of the current group
+      group.push_back(filename);
+      continue;
+    }
+
+    // This file represents a new group
+    answer.push_back(group);
+    group.clear();
+    group.push_back(filename);
+    group_prefix = prefix;
+  }
+
+  if (!group.empty()) {
+    // We have to add the last group to our answer
+    answer.push_back(group);
+  }
+  
+  return answer;
+}
 
 void RawFileGroup::resetBand(int new_band) {
   assert(new_band < num_bands);

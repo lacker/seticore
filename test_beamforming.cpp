@@ -74,6 +74,10 @@ FilterbankFile combineMetadata(const RawFileGroup& file_group,
 
 
 int main(int argc, char* argv[]) {
+  auto groups = scanForRawFileGroups("/d/onlytwo");
+  assert(groups.size() == 1);
+  assert(groups[0].size() == 2);
+  
   // Specifying the non-file parameters
   int nbands = 32;
   int fft_size = 131072;
@@ -84,10 +88,7 @@ int main(int argc, char* argv[]) {
   float min_drift = 0.01;
 
   // Specifying the input files
-  vector<string> filenames;
-  filenames.push_back(RAW_FILE_0);
-  filenames.push_back(RAW_FILE_1);
-  RawFileGroup file_group(filenames, nbands);
+  RawFileGroup file_group(groups[0], nbands);
   RecipeFile recipe(RECIPE_FILE);
 
   int num_coarse_channels = file_group.num_coarse_channels / nbands;
