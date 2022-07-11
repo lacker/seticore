@@ -43,13 +43,12 @@ const string& OUTPUT_HITS = "./data/beamforming.hits";
 // it can be filled by the file group.
 FilterbankFile combineMetadata(const RawFileGroup& file_group,
                                const Beamformer& beamformer,
-                               int band, int telescope_id) {
+                               int telescope_id) {
   FilterbankFile metadata("");
   metadata.has_dc_spike = false;
   metadata.source_name = file_group.source_name;
+  metadata.fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
   double output_bandwidth = file_group.obsbw / file_group.num_bands;
-  double file_group_fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
-  metadata.fch1 = band * output_bandwidth + file_group_fch1;
   metadata.foff = output_bandwidth / beamformer.numOutputChannels();
   int beamformer_runs = file_group.num_blocks / beamformer.nblocks;
   double time_per_block = file_group.tbin * file_group.timesteps_per_block;
@@ -63,7 +62,7 @@ FilterbankFile combineMetadata(const RawFileGroup& file_group,
   // purposes of seti search. This might not be the right way to do it.
   // TODO: figure out if we should split up seti searching
   metadata.coarse_channel_size = metadata.num_freqs;
-  metadata.num_coarse_channels = 1;
+  metadata.num_coarse_channels = file_group.num_bands;
 
   return metadata;
 }
@@ -109,8 +108,7 @@ int main(int argc, char* argv[]) {
   // Hardcoded for now
   int band = 0;
   
-  FilterbankFile metadata = combineMetadata(file_group, beamformer, band,
-                                            telescope_id);
+  FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
   file_group.resetBand(band);
   cout << endl;
   
@@ -137,11 +135,6 @@ int main(int argc, char* argv[]) {
     beamformer.processInput(multibeam, time_offset);
   }
   
-  // Spot check the beamformed power
-  float power = multibeam.getFloat(0, 0, 0);
-  cout << "power[0]: " << power << endl;
-  assertFloatEq(power / 1.0e14, 1.87708);
-  
   // Search beam zero
   cout << "\ndedoppler searching " << metadata.num_freqs << " channels, "
        << metadata.num_timesteps << " timesteps\n";
@@ -153,6 +146,11 @@ int main(int argc, char* argv[]) {
   vector<DedopplerHit> hits;
   dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
 
+  // Spot check the beamformed power
+  float power = multibeam.getFloat(0, 0, 0);
+  cout << "power[0]: " << power << endl;
+  assertFloatEq(power / 1.0e14, 1.87708);
+  
   // Spot check the hits
   assert(3 == hits.size());
   assert(61685 == hits[0].index);
@@ -165,7 +163,7 @@ int main(int argc, char* argv[]) {
   for (DedopplerHit hit : hits) {
     cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
          << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
-    recorder.recordHit(0, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
+    recorder.recordHit(band, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
   }
   cout << "wrote " << hits.size() << " hits to " << OUTPUT_HITS << endl;  
   return 0;
