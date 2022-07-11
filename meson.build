@@ -45,8 +45,15 @@ srcs = [
     'util.cpp',
 ]
 
+tests = [
+    'dedoppler_test.cpp',
+]
+
 executable('seticore', srcs + ['main.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
 executable('test_beamforming', srcs + ['test_beamforming.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
+
+executable('tests', srcs + tests + ['tests.cpp'],
            dependencies: deps, cuda_args: cuda_args)
