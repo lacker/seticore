@@ -104,67 +104,70 @@ int main(int argc, char* argv[]) {
     // Zero out the buffer, because it has some extra area
     multibeam.zeroAsync();
   }
-  
-  // Hardcoded for now
-  int band = 0;
-  
-  FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
-  file_group.resetBand(band);
-  cout << endl;
-  
-  for (int run = 0; run < beamformer_runs; ++run) {
-    if (run > 0) {
-      // We need to sync so that we don't overwrite on reads
-      cudaDeviceSynchronize();
-    }
 
-    for (int block = 0; block < beamformer.nblocks; ++block) {
-      file_group.read(beamformer.inputPointer(block));
-    } 
-  
-    cout << "beamforming band " << band << " run " << run << "...\n";
-    
-    int block_right_after_mid = run * beamformer.nblocks + beamformer.nblocks / 2;
-    double mid_time = file_group.getStartTime(block_right_after_mid);
-    int time_array_index = recipe.getTimeArrayIndex(mid_time);
-    recipe.generateCoefficients(time_array_index, file_group.schan,
-                                beamformer.num_coarse_channels,
-                                file_group.obsfreq, file_group.obsbw,
-                                beamformer.coefficients);
-    int time_offset = beamformer.numOutputTimesteps() * run;
-    beamformer.processInput(multibeam, time_offset);
-  }
-  
-  // Search beam zero
-  cout << "\ndedoppler searching " << metadata.num_freqs << " channels, "
-       << metadata.num_timesteps << " timesteps\n";
-  
-  FilterbankBuffer buffer = multibeam.getBeam(0);
+  FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
+  auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
   Dedopplerer dedopplerer(valid_num_timesteps,
                           beamformer.numOutputChannels(),
                           metadata.foff, metadata.tsamp, false);
-  vector<DedopplerHit> hits;
-  dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
+  
+  for (int band = 0; band < 1; ++band) {
+    file_group.resetBand(band);
+    cout << endl;
+  
+    for (int run = 0; run < beamformer_runs; ++run) {
+      if (run > 0) {
+        // We need to sync so that we don't overwrite on reads
+        cudaDeviceSynchronize();
+      }
 
-  // Spot check the beamformed power
-  float power = multibeam.getFloat(0, 0, 0);
-  cout << "power[0]: " << power << endl;
-  assertFloatEq(power / 1.0e14, 1.87708);
+      for (int block = 0; block < beamformer.nblocks; ++block) {
+        file_group.read(beamformer.inputPointer(block));
+      } 
   
-  // Spot check the hits
-  assert(3 == hits.size());
-  assert(61685 == hits[0].index);
-  assert(-1 == hits[1].drift_steps);
-  assertFloatEq(7.22453, hits[2].snr);
-  assertFloatEq(1.08951, hits[0].drift_rate);
+      cout << "beamforming band " << band << " run " << run << "...\n";
+    
+      int block_right_after_mid = run * beamformer.nblocks + beamformer.nblocks / 2;
+      double mid_time = file_group.getStartTime(block_right_after_mid);
+      int time_array_index = recipe.getTimeArrayIndex(mid_time);
+      recipe.generateCoefficients(time_array_index, file_group.schan,
+                                  beamformer.num_coarse_channels,
+                                  file_group.obsfreq, file_group.obsbw,
+                                  beamformer.coefficients);
+      int time_offset = beamformer.numOutputTimesteps() * run;
+      beamformer.processInput(multibeam, time_offset);
+    }
   
-  // Write hits to output
-  auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
-  for (DedopplerHit hit : hits) {
-    cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
-         << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
-    recorder.recordHit(band, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
+    // Search beam zero
+    cout << "\nband " << band << ": dedoppler searching " << metadata.num_freqs
+         << " channels, " << metadata.num_timesteps << " timesteps\n";
+  
+    FilterbankBuffer buffer = multibeam.getBeam(0);
+    vector<DedopplerHit> hits;
+    dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
+
+    if (band == 0) {
+      // Spot check the beamformed power
+      float power = multibeam.getFloat(0, 0, 0);
+      cout << "power[0]: " << power << endl;
+      assertFloatEq(power / 1.0e14, 1.87708);
+  
+      // Spot check the hits
+      assert(3 == hits.size());
+      assert(61685 == hits[0].index);
+      assert(-1 == hits[1].drift_steps);
+      assertFloatEq(7.22453, hits[2].snr);
+      assertFloatEq(1.08951, hits[0].drift_rate);
+    }
+  
+    // Write hits to output
+    for (DedopplerHit hit : hits) {
+      cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
+           << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
+      recorder.recordHit(band, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
+    }
+    cout << "wrote " << hits.size() << " hits to " << OUTPUT_HITS << endl;
+
   }
-  cout << "wrote " << hits.size() << " hits to " << OUTPUT_HITS << endl;  
   return 0;
 }
