@@ -5,7 +5,12 @@
 #include <string>
 
 using namespace std;
- 
+
+/*
+  This integration test involves the hardcoded location of about 40G of testing
+  files. That makes it implausible to use in any more than one location.
+  TODO: make this based on smaller files which are generally available
+ */
 int main(int argc, char* argv[]) {
   // Specifying parameters
   string input_dir = "/d/onlytwo";
