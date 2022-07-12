@@ -1,6 +1,8 @@
 #include "util.h"
 
+#include <assert.h>
 #include <fmt/core.h>
+#include <iostream>
 
 using namespace std;
 
@@ -25,3 +27,27 @@ string stripAnyTrailingSlash(const string& s) {
   }
   return s;
 }
+
+void assertComplexEq(thrust::complex<float> c, float real, float imag) {
+  if (abs(c.real() - real) > 0.001) {
+    cerr << "c.real() = " << c.real() << " but real = " << real << endl;
+    exit(1);
+  }
+  if (abs(c.imag() - imag) > 0.001) {
+    cerr << "c.imag() = " << c.imag() << " but imag = " << imag << endl;
+    exit(1);
+  }
+}
+
+void assertFloatEq(float a, float b) {
+  while (a > 100) {
+    a /= 2.0;
+    b /= 2.0;
+  }
+  if (abs(a - b) > 0.001) {
+    cerr << a << " != " << b << endl;
+    exit(1);
+  }
+}
+
+
