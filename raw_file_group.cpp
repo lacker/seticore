@@ -8,9 +8,36 @@
 
 using namespace std;
 
+// Extracts the prefix from a file name of the format:
+//  <prefix>.<sequence-identifier>.raw
+// This will include the directory.
+// Returns the empty string if the filename doesn't match the format.
+string getRawFilePrefix(const string& filename) {
+  if (!boost::algorithm::ends_with(filename, ".raw")) {
+    return "";
+  }
+  string no_suffix = filename.substr(0, filename.size() - 4);
+  auto index = no_suffix.find_last_of(".");
+  if (index >= no_suffix.size()) {
+    // We can't find a prefix
+    return "";
+  }
+  return no_suffix.substr(0, index);
+}
+
+// Given /foo/bar/baz, returns baz
+string getBasename(const string& filename) {
+  auto index = filename.find_last_of("/");
+  if (index > filename.size()) {
+    return filename;
+  }
+  return filename.substr(index);
+}
+
 RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   : current_file(-1), filenames(filenames), band(0), num_bands(num_bands) {
   assert(!filenames.empty());
+  prefix = getBasename(getRawFilePrefix(filenames[0]));
 
   // Get metadata from the first file
   raw::Reader first_reader(filenames[0]);
@@ -79,16 +106,10 @@ vector<vector<string> > scanForRawFileGroups(const string& directory) {
   vector<vector<string> > answer;
 
   for (string filename : filenames) {
-    if (!boost::algorithm::ends_with(filename, ".raw")) {
+    string prefix = getRawFilePrefix(filename);
+    if (prefix.empty()) {
       continue;
     }
-    string no_suffix = filename.substr(0, filename.size() - 4);
-    auto index = no_suffix.find_last_of(".");
-    if (index >= no_suffix.size()) {
-      // We can't find a prefix
-      continue;
-    }
-    string prefix = no_suffix.substr(0, index);
 
     if (group.empty()) {
       // This file is the first one overall

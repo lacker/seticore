@@ -163,7 +163,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   Every polarity and every window of STI adjacent timesteps gets reduced to a single
   power value, by adding the norm of each complex voltage.
 
-  The input voltages have format:
+  The input voltages have format: 
     voltage[time][frequency][beam][polarity]
 
   and the output power has format:

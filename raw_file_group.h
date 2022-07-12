@@ -36,6 +36,9 @@ class RawFileGroup {
   
  public:
   const vector<string> filenames;
+
+  // Has the directory name stripped
+  string prefix;
   
   // Defining a sub-band of the files we are reading in
   int band;

@@ -6,6 +6,7 @@
 #include "hit_file_writer.h"
 #include "filterbank_buffer.h"
 #include "filterbank_file.h"
+#include <fmt/core.h>
 #include "multibeam_buffer.h"
 #include "raw/raw.h"
 #include "raw_file_group.h"
@@ -69,27 +70,32 @@ FilterbankFile combineMetadata(const RawFileGroup& file_group,
 
 
 int main(int argc, char* argv[]) {
-  auto groups = scanForRawFileGroups("/d/onlytwo");
-  assert(groups.size() == 1);
-  assert(groups[0].size() == 2);
-  
-  // Specifying the non-file parameters
-  int nbands = 32;
+  // Specifying parameters
+  string input_dir = "/d/onlytwo";
+  string output_dir = "./data";
+  string recipe_dir = "/d/mubf";
+  int num_bands = 32;
   int fft_size = 131072;
   int telescope_id = 64;
-  int nblocks = 128;
   float snr = 7.0;
   float max_drift = 0.01;
   float min_drift = 0.01;
 
-  // Specifying the input files
-  RawFileGroup file_group(groups[0], nbands);
-  RecipeFile recipe("/d/mubf", file_group.obsid);
+  auto groups = scanForRawFileGroups(input_dir);
+  assert(groups.size() == 1);
+  assert(groups[0].size() == 2);
 
-  int num_coarse_channels = file_group.num_coarse_channels / nbands;
-  int nsamp = file_group.timesteps_per_block * nblocks;
+  RawFileGroup file_group(groups[0], num_bands);
+  RecipeFile recipe(recipe_dir, file_group.obsid);
 
-  Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, nblocks,
+  // Do enough blocks per beamformer run to handle one STI block
+  assert((STI * fft_size) % file_group.timesteps_per_block == 0);
+  int blocks_per_run = (STI * fft_size) / file_group.timesteps_per_block;
+  
+  int num_coarse_channels = file_group.num_coarse_channels / num_bands;
+  int nsamp = file_group.timesteps_per_block * blocks_per_run;
+
+  Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_run,
                         num_coarse_channels, file_group.npol, nsamp);
 
   // Create a buffer large enough to hold all beamformer runs for one band  
@@ -106,7 +112,8 @@ int main(int argc, char* argv[]) {
   }
 
   FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
-  auto recorder = HitFileWriter(OUTPUT_HITS, metadata);
+  string output_filename = fmt::format("{}/{}.hits", output_dir, file_group.prefix);
+  auto recorder = HitFileWriter(output_filename, metadata);
   Dedopplerer dedopplerer(valid_num_timesteps,
                           beamformer.numOutputChannels(),
                           metadata.foff, metadata.tsamp, false);
@@ -150,14 +157,14 @@ int main(int argc, char* argv[]) {
       // Spot check the beamformed power
       float power = multibeam.getFloat(0, 0, 0);
       cout << "power[0]: " << power << endl;
-      assertFloatEq(power / 1.0e14, 1.87708);
+      assertFloatEq(power / 1.0e14, 4.82461);
   
       // Spot check the hits
-      assert(3 == hits.size());
-      assert(61685 == hits[0].index);
-      assert(-1 == hits[1].drift_steps);
-      assertFloatEq(7.22453, hits[2].snr);
-      assertFloatEq(1.08951, hits[0].drift_rate);
+      assert(1 == hits.size());
+      assert(114049 == hits[0].index);
+      assert(-1 == hits[0].drift_steps);
+      assertFloatEq(7.05269, hits[0].snr);
+      assertFloatEq(-0.317774, hits[0].drift_rate);
     }
   
     // Write hits to output
@@ -167,7 +174,7 @@ int main(int argc, char* argv[]) {
       recorder.recordHit(band, hit.index, hit.drift_steps, hit.drift_rate, hit.snr, beamformer.power);
     }
     cout << "wrote " << hits.size() << " hits to " << OUTPUT_HITS << endl;
-
+ 
   }
   return 0;
 }

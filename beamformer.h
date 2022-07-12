@@ -8,7 +8,7 @@ using namespace std;
 
 // Factor to reduce the time dimension by in our output
 // TODO: make this a runtime parameter
-const int STI = 2;
+const int STI = 8;
 
 /*
   The beamformer metadata is confusing because it's constantly reshaping the data it's
