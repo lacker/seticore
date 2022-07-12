@@ -75,9 +75,9 @@ int main(int argc, char* argv[]) {
     int num_bands = vm["num_bands"].as<int>();
     int fft_size = vm["fft_size"].as<int>();
     int telescope_id = vm["telescope_id"].as<int>();
-    float snr = vm["snr"].as<float>();
-    float max_drift = vm["max_drift"].as<float>();
-    float min_drift = vm["min_drift"].as<float>();
+    float snr = vm["snr"].as<double>();
+    float max_drift = vm["max_drift"].as<double>();
+    float min_drift = vm["min_drift"].as<double>();
 
     auto groups = scanForRawFileGroups(input_dir);
     cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
