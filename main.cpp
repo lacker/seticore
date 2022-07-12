@@ -1,18 +1,20 @@
 #include <assert.h>
+#include "beamforming_config.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <fmt/core.h>
 #include <iostream>
+#include "raw_file_group.h"
+#include "run_dedoppler.h"
 #include <string>
 #include <time.h>
-
-#include "run_dedoppler.h"
+#include "util.h"
 
 using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.0.6";
+const string VERSION = "0.1.0";
 
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
@@ -20,11 +22,33 @@ int main(int argc, char* argv[]) {
   po::options_description desc("seticore options");
   desc.add_options()
     ("help,h", "produce help message")
-    ("input", po::value<string>(), "alternate way of setting the input .h5 file")
-    ("output", po::value<string>(), "the output .dat file. if not provided, uses the input filename but replaces its suffix with .dat")
-    ("max_drift,M", po::value<double>()->default_value(10.0), "maximum drift in Hz/sec")
-    ("min_drift,m", po::value<double>()->default_value(0.0001), "minimum drift in Hz/sec")
-    ("snr,s", po::value<double>()->default_value(25.0), "minimum SNR to report a hit")
+
+    ("input", po::value<string>(),
+     "alternate way of setting the input file or directory")
+
+    ("output", po::value<string>(),
+     "the output as .dat file, .hits file, or directory. defaults to <input>.dat")
+
+    ("max_drift,M", po::value<double>()->default_value(10.0),
+     "maximum drift in Hz/sec")
+
+    ("min_drift,m", po::value<double>()->default_value(0.0001),
+     "minimum drift in Hz/sec")
+
+    ("snr,s", po::value<double>()->default_value(25.0),
+     "minimum SNR to report a hit")
+
+    ("recipe_dir", po::value<string>(),
+     "the directory to find beamforming recipes in. set this to beamform.")
+
+    ("num_bands", po::value<int>()->default_value(1),
+     "number of bands to break input into. raise this to lower GPU memory use.")
+
+    ("fft_size", po::value<int>(),
+     "size of the fft for upchannelization.")
+
+    ("telescope_id", po::value<int>(),
+     "SIGPROC standard id for the telescope that provided this data")
     ;
 
   po::positional_options_description p;
@@ -41,6 +65,31 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  cout << "welcome to seticore, version " << VERSION << endl;
+
+  if (vm.count("recipes")) {
+    cout << "running in beamforming mode.\n";
+    string input_dir = vm["input"].as<string>();
+    string output_dir = vm["output"].as<string>();
+    string recipe_dir = vm["recipe_dir"].as<string>();
+    int num_bands = vm["num_bands"].as<int>();
+    int fft_size = vm["fft_size"].as<int>();
+    int telescope_id = vm["telescope_id"].as<int>();
+    float snr = vm["snr"].as<float>();
+    float max_drift = vm["max_drift"].as<float>();
+    float min_drift = vm["min_drift"].as<float>();
+
+    auto groups = scanForRawFileGroups(input_dir);
+    cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
+    for (auto group : groups) {
+      BeamformingConfig config(group, output_dir, recipe_dir, num_bands,
+                               fft_size, telescope_id, snr, max_drift, min_drift);
+      config.run();
+    }
+    return 0;
+  }
+  
+  cout << "running in dedoppler mode.\n";
   string input = vm["input"].as<string>();
   string output;
   if (!vm.count("output")) {
@@ -59,7 +108,6 @@ int main(int argc, char* argv[]) {
   double snr = vm["snr"].as<double>();
   double min_drift = vm["min_drift"].as<double>();
 
-  cout << "welcome to seticore, version " << VERSION << endl;
   cout << "loading input from " << input << endl;
   cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} snr={:.2f}\n",
                       max_drift, min_drift, snr);

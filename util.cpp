@@ -50,4 +50,9 @@ void assertFloatEq(float a, float b) {
   }
 }
 
-
+string pluralize(int n, const string& noun) {
+  if (n == 1) {
+    return fmt::format("1 {}", noun);
+  }
+  return fmt::format("{} {}s", n, noun);
+}
