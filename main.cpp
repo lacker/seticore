@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 
   cout << "welcome to seticore, version " << VERSION << endl;
 
-  if (vm.count("recipes")) {
+  if (vm.count("recipe_dir")) {
     cout << "running in beamforming mode.\n";
     string input_dir = vm["input"].as<string>();
     string output_dir = vm["output"].as<string>();
