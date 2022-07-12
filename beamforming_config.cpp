@@ -123,20 +123,6 @@ void BeamformingConfig::run() {
     vector<DedopplerHit> hits;
     dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
 
-    if (band == 0) {
-      // Spot check the beamformed power
-      float power = multibeam.getFloat(0, 0, 0);
-      cout << "power[0]: " << power << endl;
-      assertFloatEq(power / 1.0e14, 4.82461);
-  
-      // Spot check the hits
-      assert(1 == hits.size());
-      assert(114049 == hits[0].index);
-      assert(-1 == hits[0].drift_steps);
-      assertFloatEq(7.05269, hits[0].snr);
-      assertFloatEq(-0.317774, hits[0].drift_rate);
-    }
-  
     // Write hits to output
     for (DedopplerHit hit : hits) {
       cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps

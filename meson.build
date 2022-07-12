@@ -48,6 +48,7 @@ srcs = [
     'recipe_file.cpp',
     'run_dedoppler.cpp',
     'util.cpp',
+    'vector_hit_recorder.cpp',
 ]
 
 tests = [

@@ -1,5 +1,6 @@
 #include "beamforming_config.h"
 #include "raw_file_group.h"
+#include "vector_hit_recorder.h"
 
 #include <string>
 
@@ -24,7 +25,16 @@ int main(int argc, char* argv[]) {
   BeamformingConfig config(groups[0], output_dir, recipe_dir, num_bands,
                            fft_size, telescope_id, snr, max_drift, min_drift);
   config.num_bands_to_process = 1;
+  VectorHitRecorder* recorder = new VectorHitRecorder();
+  config.hit_recorder.reset(recorder);
+
   config.run();
+
+  assert(1 == recorder->hits.size());
+  assert(114049 == recorder->hits[0].index);
+  assert(-1 == recorder->hits[0].drift_steps);
+  assertFloatEq(7.05269, recorder->hits[0].snr);
+  assertFloatEq(-0.317774, recorder->hits[0].drift_rate);
   
   return 0;
 }
