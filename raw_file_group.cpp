@@ -31,7 +31,7 @@ string getBasename(const string& filename) {
   if (index > filename.size()) {
     return filename;
   }
-  return filename.substr(index);
+  return filename.substr(index + 1);
 }
 
 RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)

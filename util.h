@@ -7,4 +7,4 @@ using namespace std;
 
 int roundUpToPowerOfTwo(int n);
 string cToS(thrust::complex<float> c);
- 
+string stripAnyTrailingSlash(const string& s);

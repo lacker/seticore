@@ -15,3 +15,13 @@ int roundUpToPowerOfTwo(int n) {
 string cToS(thrust::complex<float> c) {
   return fmt::format("{:.6f} + {:.6f} i", c.real(), c.imag());
 }
+
+string stripAnyTrailingSlash(const string& s) {
+  if (s.empty()) {
+    return s;
+  }
+  if (s[s.size() - 1] == '/') {
+    return s.substr(0, s.size() - 1);
+  }
+  return s;
+}
