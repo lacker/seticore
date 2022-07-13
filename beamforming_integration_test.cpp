@@ -2,6 +2,7 @@
 #include "raw_file_group.h"
 #include "vector_hit_recorder.h"
 
+#include <iostream>
 #include <string>
 
 using namespace std;
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]) {
 
   config.run();
 
-  assert(1 == recorder->hits.size());
+  assert(46 == recorder->hits.size());
   assert(114049 == recorder->hits[0].index);
   assert(-1 == recorder->hits[0].drift_steps);
   assertFloatEq(7.05269, recorder->hits[0].snr);
