@@ -29,9 +29,16 @@ void FilterbankBuffer::zero() {
 }
 
 // Inefficient but useful for testing
-void FilterbankBuffer::setValue(int time, int channel, float value) {
+void FilterbankBuffer::set(int time, int channel, float value) {
   assert(0 <= time && time < num_timesteps);
   assert(0 <= channel && channel < num_channels);
   int index = time * num_channels + channel;
   data[index] = value;
+}
+
+float FilterbankBuffer::get(int time, int channel) {
+  cudaDeviceSynchronize();
+  checkCuda("FilterbankBuffer get");
+  int index = time * num_channels + channel;
+  return data[index];
 }

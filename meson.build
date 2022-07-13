@@ -54,6 +54,7 @@ srcs = [
 
 tests = [
     'dedoppler_test.cpp',
+    'multibeam_buffer_test.cpp',
 ]
 
 executable('seticore', srcs + ['main.cpp'],

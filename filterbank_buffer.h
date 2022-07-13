@@ -29,5 +29,6 @@ class FilterbankBuffer {
   ~FilterbankBuffer();
 
   void zero();
-  void setValue(int time, int channel, float value);
+  void set(int time, int channel, float value);
+  float get(int time, int channel);
 };

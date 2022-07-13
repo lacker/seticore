@@ -27,8 +27,13 @@ class MultibeamBuffer {
 
   FilterbankBuffer getBeam(int beam);
 
-  float getFloat(int beam, int time, int channel);
+  void set(int beam, int time, int channel, float value);
+  
+  float get(int beam, int time, int channel);
 
   // Zero out all the data as an asynchronous GPU operation
   void zeroAsync();
+
+  // Asynchronously copy out some data to a separate buffer
+  void copyRegionAsync(int beam, int channel_offset, FilterbankBuffer* output);
 };
