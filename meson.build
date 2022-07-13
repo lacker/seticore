@@ -35,6 +35,7 @@ srcs = [
     'beamforming_config.cpp',
     'cuda_util.cu',
     'dedoppler.cu',
+    'dedoppler_hit.cpp',
     'dat_file_writer.cpp',
     'filterbank_buffer.cu',
     'filterbank_file.cpp',

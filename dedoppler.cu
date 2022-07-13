@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <assert.h>
 #include <cuda.h>
-#include <fmt/core.h>
 #include <functional>
 #include <iostream>
 #include <math.h>
@@ -12,12 +11,6 @@
 #include "dedoppler.h"
 #include "util.h"
 
-using namespace std;
-
-string DedopplerHit::toString() const {
-  return fmt::format("index = {}, snr = {:.6f}, drift rate = {:.6f} ({} bins)",
-                     index, snr, drift_rate, drift_steps);
-}
 
 /*
   Kernel to runs one round of the Taylor tree algorithm, calculating the sums
