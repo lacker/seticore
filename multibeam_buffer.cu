@@ -46,7 +46,7 @@ void MultibeamBuffer::zeroAsync() {
 
 void MultibeamBuffer::copyRegionAsync(int beam, int channel_offset,
                                       FilterbankBuffer* output) {
-  float* region_start = data + (beam * num_timesteps * num_channels);
+  float* region_start = data + (beam * num_timesteps * num_channels) + channel_offset;
   size_t source_pitch = sizeof(float) * num_channels;
   size_t width = sizeof(float) * output->num_channels;
   size_t dest_pitch = width;

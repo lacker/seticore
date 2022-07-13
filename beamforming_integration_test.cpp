@@ -36,10 +36,10 @@ int main(int argc, char* argv[]) {
 
   config.run();
 
-  assert(46 == recorder->hits.size());
+  assert(45 == recorder->hits.size());
   assert(114049 == recorder->hits[0].index);
   assert(-1 == recorder->hits[0].drift_steps);
-  assertFloatEq(7.05269, recorder->hits[0].snr);
+  assertFloatEq(7.03593, recorder->hits[0].snr);
   assertFloatEq(-0.317774, recorder->hits[0].drift_rate);
   
   return 0;

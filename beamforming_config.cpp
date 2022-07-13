@@ -16,9 +16,8 @@
 #include "recipe_file.h"
 #include "util.h"
 
-// Construct metadata for the data that would be created by a given
-// file group and beamformer, running the beamform as many times as
-// it can be filled by the file group.
+// Construct metadata for the data created by a RawFileGroup and Beamformer.
+// This metadata should apply to the entire span of channels, not just one band.
 FilterbankFile combineMetadata(const RawFileGroup& file_group,
                                const Beamformer& beamformer,
                                int telescope_id) {
@@ -33,14 +32,10 @@ FilterbankFile combineMetadata(const RawFileGroup& file_group,
   double time_per_beamform = time_per_block * beamformer.nblocks;
   metadata.tsamp = time_per_beamform / beamformer.numOutputTimesteps();
   metadata.num_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
-  metadata.num_freqs = beamformer.numOutputChannels();
+  metadata.num_freqs = beamformer.numOutputChannels() * file_group.num_bands;
   metadata.telescope_id = telescope_id;
-
-  // Currently, we treat every band as a single coarse channel for the
-  // purposes of seti search. This might not be the right way to do it.
-  // TODO: figure out if we should split up seti searching
-  metadata.coarse_channel_size = metadata.num_freqs;
-  metadata.num_coarse_channels = file_group.num_bands;
+  metadata.coarse_channel_size = beamformer.fft_size;
+  metadata.num_coarse_channels = metadata.num_freqs / metadata.coarse_channel_size;
 
   return metadata;
 }
@@ -71,11 +66,11 @@ void BeamformingConfig::run() {
   assert((STI * fft_size) % file_group.timesteps_per_block == 0);
   int blocks_per_batch = (STI * fft_size) / file_group.timesteps_per_block;
   
-  int num_coarse_channels = file_group.num_coarse_channels / num_bands;
+  int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
   Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_batch,
-                        num_coarse_channels, file_group.npol, nsamp);
+                        coarse_channels_per_band, file_group.npol, nsamp);
 
   // Create a buffer large enough to hold all beamformer batches for one band  
   int beamformer_batches = file_group.num_blocks / beamformer.nblocks;
@@ -84,9 +79,9 @@ void BeamformingConfig::run() {
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels());
 
-  // Create a buffer for dedoppler input, padding with zeros
-  FilterbankBuffer buffer(roundUpToPowerOfTwo(multibeam.num_timesteps),
-                          multibeam.num_channels);
+  // Create a buffer for dedopplering a single coarse channel, padding
+  // timesteps with zeros.
+  FilterbankBuffer buffer(roundUpToPowerOfTwo(multibeam.num_timesteps), fft_size);
   buffer.zero();
   
   FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
@@ -101,6 +96,14 @@ void BeamformingConfig::run() {
   Dedopplerer dedopplerer(multibeam.num_timesteps,
                           buffer.num_channels,
                           metadata.foff, metadata.tsamp, false);
+
+  cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
+       << pluralize(num_bands_to_process, "band") << endl;
+  cout << "each band has "
+       << pluralize(beamformer.num_coarse_channels, "coarse channel")
+       << ", for a total of " << file_group.num_coarse_channels << endl;
+  cout << "dedoppler input is " << buffer.num_timesteps << " timesteps x "
+       << buffer.num_channels << " fine channels\n";
   
   for (int band = 0; band < num_bands_to_process; ++band) {
     file_group.resetBand(band);
@@ -129,34 +132,41 @@ void BeamformingConfig::run() {
       beamformer.processInput(multibeam, time_offset);
     }
 
-    cout << "band " << band << ": dedoppler searching "
-         << beamformer.nbeams << " beams, " << metadata.num_freqs << " channels, "
-         << metadata.num_timesteps << " timesteps\n";
-    
+    cout << endl;
     int total_hits = 0;
     for (int beam = 0; beam < beamformer.nbeams; ++beam) {
-      // TODO: this is setting coarse channel to zero
-      multibeam.copyRegionAsync(beam, 0, &buffer);
-      vector<DedopplerHit> hits;
-      dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
+
+      // local_coarse_channel is the index of the coarse channel within the band
+      for (int local_coarse_channel = 0;
+           local_coarse_channel < coarse_channels_per_band;
+           ++local_coarse_channel) {
+        int coarse_channel = band * coarse_channels_per_band + local_coarse_channel;
+
+        multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &buffer);
+
+        vector<DedopplerHit> hits;
+        dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
       
-      // Write hits to output
-      if (hits.empty()) {
-        continue;
-      }
-      total_hits += hits.size();
-      cout << "found " << pluralize(hits.size(), "hit") << " in beam " << beam << endl;
-      int display_limit = 5;
-      for (int i = 0; i < (int) hits.size(); ++i) {
-        const DedopplerHit& hit = hits[i];
-        if (i < display_limit) {
-          cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
-               << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
+        if (hits.empty()) {
+          continue;
         }
-        hit_recorder->recordHit(hit, beam, band, beamformer.power);
-      }
-      if ((int) hits.size() > display_limit) {
-        cout << "  (and " << ((int) hits.size() - display_limit) << " more)\n";
+
+        // Write hits to output
+        total_hits += hits.size();
+        cout << "found " << pluralize(hits.size(), "hit") << " in beam " << beam
+             << ", coarse channel " << coarse_channel << endl;
+        int display_limit = 5;
+        for (int i = 0; i < (int) hits.size(); ++i) {
+          const DedopplerHit& hit = hits[i];
+          if (i < display_limit) {
+            cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
+                 << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
+          }
+          hit_recorder->recordHit(hit, beam, band, beamformer.power);
+        }
+        if ((int) hits.size() > display_limit) {
+          cout << "  (and " << ((int) hits.size() - display_limit) << " more)\n";
+        }
       }
     }
     cout << "recorded " << total_hits << " hits in band " << band << endl;
