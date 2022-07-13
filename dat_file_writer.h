@@ -22,5 +22,5 @@ class DatFileWriter: public HitRecorder {
   DatFileWriter(const string& filename, const FilterbankFile& metadata, double max_drift);
   ~DatFileWriter();
 
-  void recordHit(DedopplerHit hit, int coarse_channel, const float* input);
+  void recordHit(DedopplerHit hit, int beam, int coarse_channel, const float* input);
 };

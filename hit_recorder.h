@@ -7,9 +7,12 @@
 
 using namespace std;
 
+const int NO_BEAM = -1;
+
 class HitRecorder {
  public:
-  virtual void recordHit(DedopplerHit hit, int coarse_channel, const float* input) = 0;
+  virtual void recordHit(DedopplerHit hit, int beam, int coarse_channel,
+                         const float* input) = 0;
 
   virtual ~HitRecorder() {}
 };

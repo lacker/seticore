@@ -19,7 +19,7 @@ HitFileWriter::~HitFileWriter() {
   close(fd);
 }
 
-void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int coarse_channel,
+void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_channel,
                               const float* input) {
   ::capnp::MallocMessageBuilder message;
 
@@ -35,8 +35,12 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int coarse_channel,
   signal.setDriftSteps(dedoppler_hit.drift_steps);
   signal.setDriftRate(dedoppler_hit.drift_rate);
   signal.setSnr(dedoppler_hit.snr);
+  signal.setCoarseChannel(coarse_channel);
+  if (beam != NO_BEAM) {
+    signal.setBeam(beam);
+  }
 
-  // This metadata is just copied over from the input
+  // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
   filterbank.setSourceName(metadata.source_name);
   filterbank.setRa(metadata.src_raj);
@@ -46,6 +50,10 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int coarse_channel,
   filterbank.setTsamp(metadata.tsamp);
   filterbank.setTstart(metadata.tstart);
   filterbank.setNumTimesteps(metadata.num_timesteps);
+  filterbank.setCoarseChannel(coarse_channel);
+  if (beam != NO_BEAM) {
+    filterbank.setBeam(beam);
+  }
   
   // Extract the subset of columns near the hit
   // final_index is the index of the signal at the last point in time we dedopplered for
@@ -69,6 +77,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int coarse_channel,
   int num_channels = end_index - begin_index;
   filterbank.setNumChannels(num_channels);
   filterbank.setFch1(metadata.fch1 + (coarse_offset + begin_index) * metadata.foff);
+  filterbank.setChannelOffset(begin_index);
   filterbank.initData(metadata.num_timesteps * num_channels);
   auto data = filterbank.getData();
   

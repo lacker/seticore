@@ -53,7 +53,8 @@ DatFileWriter::~DatFileWriter() {
 }
 
 
-void DatFileWriter::recordHit(DedopplerHit hit, int coarse_channel,
+// Ignores the beam
+void DatFileWriter::recordHit(DedopplerHit hit, int beam, int coarse_channel,
                               const float* input) {
   ++hit_count;
 

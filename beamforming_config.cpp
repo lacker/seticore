@@ -114,22 +114,23 @@ void BeamformingConfig::run() {
       int time_offset = beamformer.numOutputTimesteps() * run;
       beamformer.processInput(multibeam, time_offset);
     }
-  
-    // Search beam zero
-    cout << "\nband " << band << ": dedoppler searching " << metadata.num_freqs
-         << " channels, " << metadata.num_timesteps << " timesteps\n";
-  
-    FilterbankBuffer buffer = multibeam.getBeam(0);
-    vector<DedopplerHit> hits;
-    dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
 
-    // Write hits to output
-    for (DedopplerHit hit : hits) {
-      cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
-           << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
-      hit_recorder->recordHit(hit, band, beamformer.power);
+    for (int beam = 0; beam < 1; ++beam) {
+      cout << "\nband " << band << ", beam " << beam << ": dedoppler searching "
+           << metadata.num_freqs << " channels, " << metadata.num_timesteps
+           << " timesteps\n";
+  
+      FilterbankBuffer buffer = multibeam.getBeam(beam);
+      vector<DedopplerHit> hits;
+      dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
+
+      // Write hits to output
+      for (DedopplerHit hit : hits) {
+        cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
+             << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
+        hit_recorder->recordHit(hit, beam, band, beamformer.power);
+      }
+      cout << "recorded " << hits.size() << " hits" << endl;
     }
-    cout << "recorded " << hits.size() << " hits" << endl;
- 
   }
 }

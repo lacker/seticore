@@ -18,6 +18,6 @@ class VectorHitRecorder: public HitRecorder {
   VectorHitRecorder() {}
   ~VectorHitRecorder() {}
 
-  void recordHit(DedopplerHit hit, int coarse_channel, const float* input);
+  void recordHit(DedopplerHit hit, int beam, int coarse_channel, const float* input);
 
 };

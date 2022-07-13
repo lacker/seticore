@@ -32,7 +32,7 @@ struct Signal {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(9082a6567e4a8bf5, 4, 0)
+    CAPNP_DECLARE_STRUCT_HEADER(9082a6567e4a8bf5, 5, 0)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -47,7 +47,7 @@ struct Filterbank {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(a37f657dc27bfaaa, 8, 2)
+    CAPNP_DECLARE_STRUCT_HEADER(a37f657dc27bfaaa, 9, 2)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -98,6 +98,10 @@ public:
 
   inline float getSnr() const;
 
+  inline  ::int32_t getCoarseChannel() const;
+
+  inline  ::int32_t getBeam() const;
+
 private:
   ::capnp::_::StructReader _reader;
   template <typename, ::capnp::Kind>
@@ -140,6 +144,12 @@ public:
 
   inline float getSnr();
   inline void setSnr(float value);
+
+  inline  ::int32_t getCoarseChannel();
+  inline void setCoarseChannel( ::int32_t value);
+
+  inline  ::int32_t getBeam();
+  inline void setBeam( ::int32_t value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -207,6 +217,12 @@ public:
 
   inline bool hasData() const;
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Reader getData() const;
+
+  inline  ::int32_t getCoarseChannel() const;
+
+  inline  ::int32_t getChannelOffset() const;
+
+  inline  ::int32_t getBeam() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -277,6 +293,15 @@ public:
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Builder initData(unsigned int size);
   inline void adoptData(::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>>&& value);
   inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> disownData();
+
+  inline  ::int32_t getCoarseChannel();
+  inline void setCoarseChannel( ::int32_t value);
+
+  inline  ::int32_t getChannelOffset();
+  inline void setChannelOffset( ::int32_t value);
+
+  inline  ::int32_t getBeam();
+  inline void setBeam( ::int32_t value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -467,6 +492,34 @@ inline float Signal::Builder::getSnr() {
 inline void Signal::Builder::setSnr(float value) {
   _builder.setDataField<float>(
       ::capnp::bounded<6>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Signal::Reader::getCoarseChannel() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<7>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Signal::Builder::getCoarseChannel() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<7>() * ::capnp::ELEMENTS);
+}
+inline void Signal::Builder::setCoarseChannel( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<7>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Signal::Reader::getBeam() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<8>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Signal::Builder::getBeam() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<8>() * ::capnp::ELEMENTS);
+}
+inline void Signal::Builder::setBeam( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<8>() * ::capnp::ELEMENTS, value);
 }
 
 inline bool Filterbank::Reader::hasSourceName() const {
@@ -665,6 +718,48 @@ inline void Filterbank::Builder::adoptData(
 inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> Filterbank::Builder::disownData() {
   return ::capnp::_::PointerHelpers< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>>::disown(_builder.getPointerField(
       ::capnp::bounded<1>() * ::capnp::POINTERS));
+}
+
+inline  ::int32_t Filterbank::Reader::getCoarseChannel() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<15>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Filterbank::Builder::getCoarseChannel() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<15>() * ::capnp::ELEMENTS);
+}
+inline void Filterbank::Builder::setCoarseChannel( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<15>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Filterbank::Reader::getChannelOffset() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<16>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Filterbank::Builder::getChannelOffset() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<16>() * ::capnp::ELEMENTS);
+}
+inline void Filterbank::Builder::setChannelOffset( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<16>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Filterbank::Reader::getBeam() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Filterbank::Builder::getBeam() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
+}
+inline void Filterbank::Builder::setBeam( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<17>() * ::capnp::ELEMENTS, value);
 }
 
 inline bool Hit::Reader::hasSignal() const {

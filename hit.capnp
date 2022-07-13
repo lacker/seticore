@@ -23,6 +23,12 @@ struct Signal {
 
   # The signal-to-noise ratio for the hit
   snr @4 :Float32;
+
+  # Which coarse channel this hit is in
+  coarseChannel @5 :Int32;
+
+  # Which beam this hit is in. Only included when beamforming
+  beam @6 :Int32;
 }
 
 # The Filterbank contains a smaller slice of the larger filterbank that we originally
@@ -44,6 +50,17 @@ struct Filterbank {
   # Storing both of those is slightly redundant but more convenient.
   # The format is a row-major array, indexed by [timestep][channel].
   data @10 :List(Float32);
+
+  # Additional fields that don't correspond to FBH5 headers
+
+  # Which of the coarse channels in the file this hit is in
+  coarseChannel @11 :Int32;
+
+  # Column zero in the data corresponds to this column in the whole coarse channel
+  channelOffset @12 :Int32;
+
+  # Which beam this data is from. Only included when beamforming
+  beam @13 :Int32;
 }
 
 # A hit without a signal indicates that we looked for a hit here and didn't find one.
