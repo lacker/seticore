@@ -79,17 +79,16 @@ void BeamformingConfig::run() {
 
   // Create a buffer large enough to hold all beamformer batches for one band  
   int beamformer_batches = file_group.num_blocks / beamformer.nblocks;
-  int valid_num_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
-  int rounded_num_timesteps = roundUpToPowerOfTwo(valid_num_timesteps);
+  int num_multibeam_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
   MultibeamBuffer multibeam(beamformer.nbeams,
-                            rounded_num_timesteps,
+                            num_multibeam_timesteps,
                             beamformer.numOutputChannels());
 
-  if (valid_num_timesteps != rounded_num_timesteps) {
-    // Zero out the buffer, because it has some extra area
-    multibeam.zeroAsync();
-  }
-
+  // Create a buffer for dedoppler input, padding with zeros
+  FilterbankBuffer buffer(roundUpToPowerOfTwo(multibeam.num_timesteps),
+                          multibeam.num_channels);
+  buffer.zero();
+  
   FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
 
   if (hit_recorder == NULL) {
@@ -99,8 +98,8 @@ void BeamformingConfig::run() {
     hit_recorder.reset(new HitFileWriter(output_filename, metadata));
   }
 
-  Dedopplerer dedopplerer(valid_num_timesteps,
-                          beamformer.numOutputChannels(),
+  Dedopplerer dedopplerer(multibeam.num_timesteps,
+                          buffer.num_channels,
                           metadata.foff, metadata.tsamp, false);
   
   for (int band = 0; band < num_bands_to_process; ++band) {
@@ -136,8 +135,8 @@ void BeamformingConfig::run() {
     
     int total_hits = 0;
     for (int beam = 0; beam < beamformer.nbeams; ++beam) {
-  
-      FilterbankBuffer buffer = multibeam.getBeam(beam);
+      // TODO: this is setting coarse channel to zero
+      multibeam.copyRegionAsync(beam, 0, &buffer);
       vector<DedopplerHit> hits;
       dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
       

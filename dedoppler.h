@@ -26,7 +26,8 @@ public:
 
   // Whether the data we receive has a DC spike
   const bool has_dc_spike;
-  
+
+  // Do not round num_timesteps before creating the Dedopplerer
   Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
   ~Dedopplerer();
 
