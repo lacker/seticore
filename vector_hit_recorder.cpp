@@ -1,7 +1,6 @@
 #include "vector_hit_recorder.h"
 
-void VectorHitRecorder::recordHit(int coarse_channel, int freq_index, int drift_bins,
-                                  double drift_rate, double snr,
+void VectorHitRecorder::recordHit(DedopplerHit hit, int coarse_channel,
                                   const float* input) {
-  hits.push_back(DedopplerHit{freq_index, drift_bins, drift_rate, (float) snr});
+  hits.push_back(hit);
 }

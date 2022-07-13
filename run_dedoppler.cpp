@@ -45,8 +45,7 @@ void runDedoppler(const string& input_filename, const string& output_filename,
       cout << "hit: coarse channel = " << coarse_channel << ", "
            << hit.toString() << endl;
         
-      recorder->recordHit(coarse_channel, hit.index, hit.drift_steps, hit.drift_rate,
-                          hit.snr, buffer.data);
+      recorder->recordHit(hit, coarse_channel, buffer.data);
     }
   }
 }

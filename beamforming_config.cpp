@@ -127,8 +127,7 @@ void BeamformingConfig::run() {
     for (DedopplerHit hit : hits) {
       cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
            << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
-      hit_recorder->recordHit(band, hit.index, hit.drift_steps, hit.drift_rate,
-                              hit.snr, beamformer.power);
+      hit_recorder->recordHit(hit, band, beamformer.power);
     }
     cout << "recorded " << hits.size() << " hits" << endl;
  

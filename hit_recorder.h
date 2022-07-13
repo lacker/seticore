@@ -2,17 +2,18 @@
 
 #include <memory>
 
+#include "dedoppler_hit.h"
 #include "filterbank_file.h"
 
 using namespace std;
 
 class HitRecorder {
  public:
-  virtual void recordHit(int coarse_channel, int freq_index, int drift_bins,
-                         double drift_rate, double snr, const float* input) = 0;
+  virtual void recordHit(DedopplerHit hit, int coarse_channel, const float* input) = 0;
 
   virtual ~HitRecorder() {}
 };
 
 unique_ptr<HitRecorder> makeHitRecorder(const string& filename,
-                                        const FilterbankFile& metadata, double max_drift);
+                                        const FilterbankFile& metadata,
+                                        double max_drift);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dedoppler.h"
+#include "dedoppler_hit.h"
 #include "hit_recorder.h"
 
 #include <vector>
@@ -17,6 +18,6 @@ class VectorHitRecorder: public HitRecorder {
   VectorHitRecorder() {}
   ~VectorHitRecorder() {}
 
-  void recordHit(int coarse_channel, int freq_index, int drift_bins,
-                 double drift_rate, double snr, const float* input);
+  void recordHit(DedopplerHit hit, int coarse_channel, const float* input);
+
 };

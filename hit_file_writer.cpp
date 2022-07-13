@@ -19,22 +19,22 @@ HitFileWriter::~HitFileWriter() {
   close(fd);
 }
 
-void HitFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins,
-                              double drift_rate, double snr, const float* input) {
+void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int coarse_channel,
+                              const float* input) {
   ::capnp::MallocMessageBuilder message;
 
   Hit::Builder hit = message.initRoot<Hit>();
 
-  // We know most of the signal, we just have to calculate the frequency.
+  // Most of the signal is just copied from the dedoppler hit
   Signal::Builder signal = hit.getSignal();
   int coarse_offset = coarse_channel * metadata.coarse_channel_size;
-  int global_index = coarse_offset + freq_index;
+  int global_index = coarse_offset + dedoppler_hit.index;
   double frequency = metadata.fch1 + global_index * metadata.foff;
   signal.setFrequency(frequency);
-  signal.setIndex(freq_index);
-  signal.setDriftSteps(drift_bins);
-  signal.setDriftRate(drift_rate);
-  signal.setSnr(snr);
+  signal.setIndex(dedoppler_hit.index);
+  signal.setDriftSteps(dedoppler_hit.drift_steps);
+  signal.setDriftRate(dedoppler_hit.drift_rate);
+  signal.setSnr(dedoppler_hit.snr);
 
   // This metadata is just copied over from the input
   Filterbank::Builder filterbank = hit.getFilterbank();
@@ -50,15 +50,15 @@ void HitFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins
   // Extract the subset of columns near the hit
   // final_index is the index of the signal at the last point in time we dedopplered for
   // This could be extra if we padded the signal; if that looks weird then fix it
-  int final_index = freq_index + drift_bins;
+  int final_index = dedoppler_hit.index + dedoppler_hit.drift_steps;
   int leftmost_index, rightmost_index;
-  if (final_index < freq_index) {
+  if (final_index < dedoppler_hit.index) {
     // The hit is drifting left
     leftmost_index = final_index;
-    rightmost_index = freq_index;
+    rightmost_index = dedoppler_hit.index;
   } else {
     // The hit is drifting right
-    leftmost_index = freq_index;
+    leftmost_index = dedoppler_hit.index;
     rightmost_index = final_index;
   }
 
