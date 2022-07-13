@@ -25,12 +25,13 @@ void HitFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins
 
   Hit::Builder hit = message.initRoot<Hit>();
 
-  // We know most of the signal. The index is relative to the filterbank we save, though.
+  // We know most of the signal, we just have to calculate the frequency.
   Signal::Builder signal = hit.getSignal();
   int coarse_offset = coarse_channel * metadata.coarse_channel_size;
   int global_index = coarse_offset + freq_index;
   double frequency = metadata.fch1 + global_index * metadata.foff;
   signal.setFrequency(frequency);
+  signal.setIndex(freq_index);
   signal.setDriftSteps(drift_bins);
   signal.setDriftRate(drift_rate);
   signal.setSnr(snr);
@@ -66,7 +67,6 @@ void HitFileWriter::recordHit(int coarse_channel, int freq_index, int drift_bins
   int begin_index = max(leftmost_index - EXTRA_COLUMNS, 0);
   int end_index = min(rightmost_index + EXTRA_COLUMNS, metadata.coarse_channel_size) - 1;
   int num_channels = end_index - begin_index;
-  signal.setIndex(freq_index - begin_index);
   filterbank.setNumChannels(num_channels);
   filterbank.setFch1(metadata.fch1 + (coarse_offset + begin_index) * metadata.foff);
   filterbank.initData(metadata.num_timesteps * num_channels);
