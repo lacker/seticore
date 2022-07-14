@@ -169,6 +169,6 @@ void BeamformingConfig::run() {
         }
       }
     }
-    cout << "recorded " << total_hits << " hits in band " << band << endl;
+    cout << "recorded " << total_hits << " hits from band " << band << endl;
   }
 }

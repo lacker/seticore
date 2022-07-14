@@ -1,8 +1,10 @@
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
+#include <errno.h>
 #include "hit.capnp.h"
 #include "hit_file_writer.h"
 #include <fcntl.h>
+#include <iostream>
 #include <unistd.h>
 
 using namespace std;
@@ -13,6 +15,11 @@ const int EXTRA_COLUMNS = 40;
 HitFileWriter::HitFileWriter(const string& filename, const FilterbankFile& metadata)
   : metadata(metadata) {
   fd = open(filename.c_str(), O_WRONLY | O_CREAT, 0664);
+  if (fd < 0) {
+    int err = errno;
+    cerr << "could not open " << filename << " for writing. errno = " << err << endl;
+    exit(1);
+  }
 }
 
 HitFileWriter::~HitFileWriter() {

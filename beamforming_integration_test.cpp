@@ -15,7 +15,7 @@ using namespace std;
 int main(int argc, char* argv[]) {
   // Specifying parameters
   string input_dir = "/d/onlytwo";
-  string output_dir = "./data";
+  string output_dir = "mocked";
   string recipe_dir = "/d/mubf";
   int num_bands = 32;
   int fft_size = 131072;

@@ -18,5 +18,5 @@ TEST_CASE("copyRegionAsync", "[multibeam_buffer]") {
   // Copy with an offset of 3 should take [7][7] to [7][4]
   mb.copyRegionAsync(5, 3, &fb);
   float value = fb.get(7, 4);
-  REQUIRE(value == Approx(574.0));
+  REQUIRE(value == Approx(577.0));
 }
