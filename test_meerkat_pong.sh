@@ -1,6 +1,11 @@
 #!/bin/bash -e
 
-INPUT_DIR="/buf0/20220512/0009/Unknown/GUPPI/"
+# The full five minutes
+# INPUT_DIR="/buf0/20220512/0009/Unknown/GUPPI/"
+
+# Just one target
+INPUT_DIR="/home/lacker/benchmark"
+
 OUTPUT_DIR="/mydatag/test/lacker/"
 RECIPE_DIR="/home/davidm/bfr5.test/"
 
