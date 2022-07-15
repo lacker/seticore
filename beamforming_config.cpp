@@ -69,8 +69,11 @@ void BeamformingConfig::run() {
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
-  RawBuffer raw_buffer(blocks_per_batch, file_group.nants, coarse_channels_per_band,
-                       file_group.timesteps_per_block, file_group.npol);
+  RawBuffer raw_buffer_1(blocks_per_batch, file_group.nants, coarse_channels_per_band,
+                         file_group.timesteps_per_block, file_group.npol);
+  RawBuffer raw_buffer_2(blocks_per_batch, file_group.nants, coarse_channels_per_band,
+                         file_group.timesteps_per_block, file_group.npol);
+
   Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_batch,
                         coarse_channels_per_band, file_group.npol, nsamp);
 
@@ -83,8 +86,8 @@ void BeamformingConfig::run() {
 
   // Create a buffer for dedopplering a single coarse channel, padding
   // timesteps with zeros.
-  FilterbankBuffer buffer(roundUpToPowerOfTwo(multibeam.num_timesteps), fft_size);
-  buffer.zero();
+  FilterbankBuffer fb_buffer(roundUpToPowerOfTwo(multibeam.num_timesteps), fft_size);
+  fb_buffer.zero();
   
   FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
 
@@ -96,7 +99,7 @@ void BeamformingConfig::run() {
   }
 
   Dedopplerer dedopplerer(multibeam.num_timesteps,
-                          buffer.num_channels,
+                          fb_buffer.num_channels,
                           metadata.foff, metadata.tsamp, false);
 
   cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
@@ -104,21 +107,21 @@ void BeamformingConfig::run() {
   cout << "each band has "
        << pluralize(beamformer.num_coarse_channels, "coarse channel")
        << ", for a total of " << file_group.num_coarse_channels << endl;
-  cout << "dedoppler input is " << buffer.num_timesteps << " timesteps x "
-       << buffer.num_channels << " fine channels\n";
+  cout << "dedoppler input is " << fb_buffer.num_timesteps << " timesteps x "
+       << fb_buffer.num_channels << " fine channels\n";
   
   for (int band = 0; band < num_bands_to_process; ++band) {
     file_group.resetBand(band);
     cout << endl;
-  
-    for (int batch = 0; batch < beamformer_batches; ++batch) {
-      if (batch > 0) {
-        // We need to sync so that we don't overwrite on reads.
-        cudaDeviceSynchronize();
-      }
 
-      for (int block = 0; block < raw_buffer.num_blocks; ++block) {
-        file_group.read(raw_buffer.blockPointer(block));
+    // We read data into the read buffer, and do GPU work on the work buffer.
+    // At the start of this loop, neither buffer is being used, because
+    // dedoppler analysis for any previous loop synchronized cuda devices.
+    RawBuffer* read_buffer = &raw_buffer_1;
+    RawBuffer* work_buffer = &raw_buffer_2;
+    for (int batch = 0; batch < beamformer_batches; ++batch) {
+      for (int block = 0; block < read_buffer->num_blocks; ++block) {
+        file_group.read(read_buffer->blockPointer(block));
       } 
   
       cout << "beamforming band " << band << ", batch " << batch << "...\n";
@@ -131,7 +134,15 @@ void BeamformingConfig::run() {
                                   file_group.obsfreq, file_group.obsbw,
                                   beamformer.coefficients);
       int time_offset = beamformer.numOutputTimesteps() * batch;
-      beamformer.run(raw_buffer, multibeam, time_offset);
+
+      if (batch > 0) {
+        // The beamformer could still be doing work on the work buffer.
+        // So we have to wait for it to complete.
+        cudaDeviceSynchronize();
+      }
+      
+      swap(read_buffer, work_buffer);
+      beamformer.run(*work_buffer, multibeam, time_offset);
     }
 
     cout << endl;
@@ -144,10 +155,10 @@ void BeamformingConfig::run() {
            ++local_coarse_channel) {
         int coarse_channel = band * coarse_channels_per_band + local_coarse_channel;
 
-        multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &buffer);
+        multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &fb_buffer);
 
         vector<DedopplerHit> hits;
-        dedopplerer.search(buffer, max_drift, min_drift, snr, &hits);
+        dedopplerer.search(fb_buffer, max_drift, min_drift, snr, &hits);
       
         if (hits.empty()) {
           continue;
