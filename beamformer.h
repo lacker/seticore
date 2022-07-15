@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cufft.h>
 #include <thrust/complex.h>
 
 #include "multibeam_buffer.h"
@@ -72,7 +73,6 @@ class Beamformer {
   size_t coefficients_size;
 
   // The beamformed data, as power.
-  //
   float* power;
   size_t power_size;
   
@@ -100,4 +100,7 @@ class Beamformer {
   //   prebeam[time][channel][polarity][antenna]
   thrust::complex<float>* prebeam;
   size_t prebeam_size;  
+
+  // The plan for the fft.
+  cufftHandle plan;
 };

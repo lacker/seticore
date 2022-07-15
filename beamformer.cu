@@ -9,26 +9,6 @@
 
 using namespace std;
 
-// Helper to calculate a 3d row-major index, ie for:
-//   arr[a][b][c]
-__host__ __device__ int index3d(int a, int b, int b_end, int c, int c_end) {
-  return ((a * b_end) + b) * c_end + c;
-}
-
-// Helper to calculate a 4d row-major index, ie for:
-//   arr[a][b][c][d]
-__host__ __device__ int index4d(int a, int b, int b_end, int c, int c_end, int d, int d_end) {
-  return index3d(a, b, b_end, c, c_end) * d_end + d;
-}
-
-// Helper to calculate a 5d row-major index, ie for:
-//   arr[a][b][c][d][e]
-__host__ __device__ int index5d(int a, int b, int b_end, int c, int c_end, int d, int d_end,
-                                int e, int e_end) {
-  return index4d(a, b, b_end, c, c_end, d, d_end) * e_end + e;
-}
-
-
 /*
   We convert from int8 input with format:
     input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
@@ -249,6 +229,10 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
   power_size = nbeams * frame_size / STI;
   cudaMallocManaged(&power, power_size * sizeof(float));
   checkCuda("Beamformer power malloc");
+
+  int batch_size = nants * npol;
+  cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
+  checkCuda("Beamformer fft planning");
 }
 
 Beamformer::~Beamformer() {
@@ -256,6 +240,7 @@ Beamformer::~Beamformer() {
   cudaFree(buffer);
   cudaFree(prebeam);
   cudaFree(power);
+  cufftDestroy(plan);
 }
 
 int Beamformer::numOutputChannels() const {
@@ -293,14 +278,10 @@ void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset)
   int num_ffts = nants * npol * num_coarse_channels * nsamp / fft_size;
   int batch_size = nants * npol;
   int num_batches = num_ffts / batch_size;
-  cufftHandle plan;
-  cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
-  checkCuda("Beamformer fft planning");
   for (int i = 0; i < num_batches; ++i) {
     cuComplex* pointer = (cuComplex*) buffer + i * batch_size * fft_size;
     cufftExecC2C(plan, pointer, pointer, CUFFT_FORWARD);
   }
-  cufftDestroy(plan);
   checkCuda("Beamformer fft operation");
 
   dim3 shift_block(1, nants, npol);
