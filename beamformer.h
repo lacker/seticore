@@ -3,6 +3,7 @@
 #include <thrust/complex.h>
 
 #include "multibeam_buffer.h"
+#include "raw_buffer.h"
 
 using namespace std;
 
@@ -56,11 +57,8 @@ class Beamformer {
   int numOutputChannels() const;
   int numOutputTimesteps() const;
   
-  void processInput(MultibeamBuffer& output, int time_offset);
+  void run(RawBuffer& input, MultibeamBuffer& output, int time_offset);
 
-  // Returns a point for the given block where input can be read to
-  char* inputPointer(int block);
-  
   // These cause a cuda sync so they are slow, only useful for debugging or testing
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int coarse_channel) const;
   thrust::complex<float> getFFTBuffer(int pol, int antenna, int coarse_channel,
@@ -80,14 +78,6 @@ class Beamformer {
   
  private:
 
-  // The input array is unified to the GPU, used to accept data from the previous step
-  // in the data processing pipeline.
-  //
-  // Its format is row-major:
-  //   input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
-  int8_t *input;
-  size_t input_size;
-  
   // The buffer is reused for a few different stages of the pipeline.
   //
   // The convertRaw kernel populates this buffer with row-major:

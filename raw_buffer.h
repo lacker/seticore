@@ -11,6 +11,7 @@ using namespace std;
 */
 
 class RawBuffer {
+ public:
   const int num_blocks;
   const int num_antennas;
   const int num_coarse_channels;

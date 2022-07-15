@@ -232,14 +232,10 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
 
   int frame_size = num_coarse_channels * nsamp;
   
-  input_size = 2 * nants * npol * frame_size;
-  cudaMallocManaged(&input, input_size * sizeof(int8_t));
-  checkCuda("Beamformer input malloc");
-
   coefficients_size = 2 * nants * nbeams * num_coarse_channels * npol;
   cudaMallocManaged(&coefficients, coefficients_size * sizeof(float));
   checkCuda("Beamformer coefficients malloc");
-
+ 
   size_t fft_buffer_size = nants * npol * frame_size;
   size_t voltage_size = nbeams * npol * frame_size;
   buffer_size = max(fft_buffer_size, voltage_size);
@@ -256,7 +252,6 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
 }
 
 Beamformer::~Beamformer() {
-  cudaFree(input);
   cudaFree(coefficients);
   cudaFree(buffer);
   cudaFree(prebeam);
@@ -271,32 +266,25 @@ int Beamformer::numOutputTimesteps() const {
   return nsamp / (fft_size * STI); 
 }
 
-char* Beamformer::inputPointer(int block) {
-  assert(block < nblocks);
-
-  int total_bytes = nants * num_coarse_channels * nsamp * npol * 2;
-  int bytes_per_block = total_bytes / nblocks;
-
-  return ((char*) input) + (block * bytes_per_block);
-}
-
 /*
-  The caller should first put the data into *input and *coefficients.
+  Power from beamforming the input is written into output, with an offset
+  of time_offset.
 
-  Power from beamforming is written into output, with an offset of time_offset.
+  The format of the input is row-major:
+    input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
 
   The format of the output is row-major:
      power[beam][time][channel]
   but its time resolution has been reduced by a factor of (fft_size * STI).
  */
-void Beamformer::processInput(MultibeamBuffer& output, int time_offset) {
+void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset) {
   int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
   dim3 convert_raw_block(CUDA_MAX_THREADS, 1, 1);
   dim3 convert_raw_grid(cuda_blocks_per_block, nblocks, nants * num_coarse_channels);
   convertRaw<<<convert_raw_grid, convert_raw_block>>>
-    (input, input_size,
+    (input.data, input.data_size,
      buffer, buffer_size,
      nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");

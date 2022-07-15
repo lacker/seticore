@@ -12,7 +12,7 @@
 #include <fmt/core.h>
 #include "multibeam_buffer.h"
 #include "raw_file_group.h"
-#include "raw/raw.h"
+#include "raw_buffer.h"
 #include "recipe_file.h"
 #include "util.h"
 
@@ -69,6 +69,8 @@ void BeamformingConfig::run() {
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
+  RawBuffer raw_buffer(blocks_per_batch, file_group.nants, coarse_channels_per_band,
+                       file_group.timesteps_per_block, file_group.npol);
   Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_batch,
                         coarse_channels_per_band, file_group.npol, nsamp);
 
@@ -115,8 +117,8 @@ void BeamformingConfig::run() {
         cudaDeviceSynchronize();
       }
 
-      for (int block = 0; block < beamformer.nblocks; ++block) {
-        file_group.read(beamformer.inputPointer(block));
+      for (int block = 0; block < raw_buffer.num_blocks; ++block) {
+        file_group.read(raw_buffer.blockPointer(block));
       } 
   
       cout << "beamforming band " << band << ", batch " << batch << "...\n";
@@ -129,7 +131,7 @@ void BeamformingConfig::run() {
                                   file_group.obsfreq, file_group.obsbw,
                                   beamformer.coefficients);
       int time_offset = beamformer.numOutputTimesteps() * batch;
-      beamformer.processInput(multibeam, time_offset);
+      beamformer.run(raw_buffer, multibeam, time_offset);
     }
 
     cout << endl;
