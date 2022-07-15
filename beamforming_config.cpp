@@ -111,7 +111,7 @@ void BeamformingConfig::run() {
   
     for (int batch = 0; batch < beamformer_batches; ++batch) {
       if (batch > 0) {
-        // We need to sync so that we don't overwrite on reads
+        // We need to sync so that we don't overwrite on reads.
         cudaDeviceSynchronize();
       }
 

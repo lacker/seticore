@@ -6,4 +6,4 @@
 
 docker build -t seticore .
 
-docker run --gpus all --volume=$(pwd)/data:/seticore/data -it seticore ./test_dedoppler.sh
+docker run --gpus all --volume=$(pwd)/data:/seticore/data -it seticore ./run_tests.sh

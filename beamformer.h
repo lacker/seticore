@@ -62,8 +62,6 @@ class Beamformer {
   char* inputPointer(int block);
   
   // These cause a cuda sync so they are slow, only useful for debugging or testing
-  thrust::complex<float> getInput(int block, int antenna, int coarse_channel,
-                                  int time_within_block, int pol) const;
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int coarse_channel) const;
   thrust::complex<float> getFFTBuffer(int pol, int antenna, int coarse_channel,
                                       int time, int last_index) const;
@@ -87,9 +85,7 @@ class Beamformer {
   //
   // Its format is row-major:
   //   input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
-  //
-  // The signed chars should be interpreted as int8.
-  signed char *input;
+  int8_t *input;
   size_t input_size;
   
   // The buffer is reused for a few different stages of the pipeline.

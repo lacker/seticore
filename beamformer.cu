@@ -38,7 +38,7 @@ __host__ __device__ int index5d(int a, int b, int b_end, int c, int c_end, int d
 
   block and time-within-block combine to form a single time index.
  */
-__global__ void convertRaw(const signed char* input, int input_size,
+__global__ void convertRaw(const int8_t* input, int input_size,
                            thrust::complex<float>* buffer, int buffer_size,
                            int nants, int nblocks, int num_coarse_channels, int npol, int nsamp,
                            int time_per_block) {
@@ -233,7 +233,7 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
   int frame_size = num_coarse_channels * nsamp;
   
   input_size = 2 * nants * npol * frame_size;
-  cudaMallocManaged(&input, input_size * sizeof(signed char));
+  cudaMallocManaged(&input, input_size * sizeof(int8_t));
   checkCuda("Beamformer input malloc");
 
   coefficients_size = 2 * nants * nbeams * num_coarse_channels * npol;
@@ -334,21 +334,6 @@ void Beamformer::processInput(MultibeamBuffer& output, int time_offset) {
     (buffer, output.data, nbeams, numOutputChannels(), npol, numOutputTimesteps(),
      time_offset);
   checkCuda("Beamformer calculatePower");
-}
-
-thrust::complex<float> Beamformer::getInput(int block, int antenna, int coarse_channel,
-                                            int time_within_block, int pol) const {
-  cudaDeviceSynchronize();
-  checkCuda("Beamformer getInput");
-  assert(block < nblocks);
-  assert(antenna < nants);
-  assert(coarse_channel < num_coarse_channels);
-  assert(pol < npol);
-  int i = index5d(block, antenna, nants, coarse_channel, num_coarse_channels,
-                  time_within_block, nsamp / nblocks, pol, npol);
-  float real = input[2*i];
-  float imag = input[2*i + 1];
-  return thrust::complex<float>(real, imag);
 }
 
 thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam,

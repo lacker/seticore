@@ -237,7 +237,6 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
   drift_timesteps = rounded_num_timesteps - 1;
 
   drift_rate_resolution = 1e6 * foff / (drift_timesteps * tsamp);
-  cout << "drift rate resolution: " << drift_rate_resolution << endl;
     
   // Allocate everything we need for GPU processing
 
