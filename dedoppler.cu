@@ -240,32 +240,40 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
     
   // Allocate everything we need for GPU processing
 
-  cudaMallocManaged(&buffer1, num_channels * rounded_num_timesteps * sizeof(float));
+  cudaMalloc(&buffer1, num_channels * rounded_num_timesteps * sizeof(float));
   checkCuda("Dedopplerer buffer1 malloc");
 
-  cudaMallocManaged(&buffer2, num_channels * rounded_num_timesteps * sizeof(float));
+  cudaMalloc(&buffer2, num_channels * rounded_num_timesteps * sizeof(float));
   checkCuda("Dedopplerer buffer2 malloc");
   
-  cudaMallocManaged(&column_sums, num_channels * sizeof(float));
+  cudaMalloc(&gpu_column_sums, num_channels * sizeof(float));
+  cudaMallocHost(&cpu_column_sums, num_channels * sizeof(float));
   checkCuda("Dedopplerer column_sums malloc");
   
-  cudaMallocManaged(&top_path_sums, num_channels * sizeof(float));
+  cudaMalloc(&gpu_top_path_sums, num_channels * sizeof(float));
+  cudaMallocHost(&cpu_top_path_sums, num_channels * sizeof(float));
   checkCuda("Dedopplerer top_path_sums malloc");
    
-  cudaMallocManaged(&top_drift_blocks, num_channels * sizeof(int));
+  cudaMalloc(&gpu_top_drift_blocks, num_channels * sizeof(int));
+  cudaMallocHost(&cpu_top_drift_blocks, num_channels * sizeof(int));
   checkCuda("Dedopplerer top_drift_blocks malloc");
   
-  cudaMallocManaged(&top_path_offsets, num_channels * sizeof(int));
+  cudaMalloc(&gpu_top_path_offsets, num_channels * sizeof(int));
+  cudaMallocHost(&cpu_top_path_offsets, num_channels * sizeof(int));
   checkCuda("Dedopplerer top_path_offsets malloc");
 }
 
 Dedopplerer::~Dedopplerer() {
   cudaFree(buffer1);
   cudaFree(buffer2);
-  cudaFree(column_sums);
-  cudaFree(top_path_sums);
-  cudaFree(top_drift_blocks);
-  cudaFree(top_path_offsets);
+  cudaFree(gpu_column_sums);
+  cudaFreeHost(cpu_column_sums);
+  cudaFree(gpu_top_path_sums);
+  cudaFreeHost(cpu_top_path_sums);
+  cudaFree(gpu_top_drift_blocks);
+  cudaFreeHost(cpu_top_drift_blocks);
+  cudaFree(gpu_top_path_offsets);
+  cudaFreeHost(cpu_top_path_offsets);
 }
 
 /*
@@ -294,15 +302,10 @@ void Dedopplerer::search(const FilterbankBuffer& input,
 
   // Zero out the path sums in between each coarse channel because
   // we pick the top hits separately for each coarse channel
-  memset(top_path_sums, 0, num_channels * sizeof(float));
+  cudaMemsetAsync(gpu_top_path_sums, 0, num_channels * sizeof(float));
 
-  // We shouldn't need to zero out the index trackers, but the time
-  // should be negligible and maybe it helps avoid bugs.
-  memset(top_drift_blocks, 0, num_channels * sizeof(int));
-  memset(top_path_offsets, 0, num_channels * sizeof(int));
-
-  sumColumns<<<grid_size, CUDA_MAX_THREADS>>>(input.data, column_sums,
-                                             rounded_num_timesteps, num_channels);
+  sumColumns<<<grid_size, CUDA_MAX_THREADS>>>(input.data, gpu_column_sums,
+                                              rounded_num_timesteps, num_channels);
   checkCuda("sumColumns");
   
   int mid = num_channels / 2;
@@ -325,8 +328,8 @@ void Dedopplerer::search(const FilterbankBuffer& input,
 
       // Invoke cuda kernel
       taylorTree<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, target_buffer,
-                                                 rounded_num_timesteps, num_channels,
-                                                 path_length, drift_block);
+                                                  rounded_num_timesteps, num_channels,
+                                                  path_length, drift_block);
       checkCuda("taylorTree");
       
       // Swap buffer aliases to make the old target the new source
@@ -346,33 +349,42 @@ void Dedopplerer::search(const FilterbankBuffer& input,
     // The final path sums are in source_buffer because we did one last alias-swap
     findTopPathSums<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, rounded_num_timesteps,
                                                      num_channels, drift_block,
-                                                     top_path_sums, top_drift_blocks,
-                                                     top_path_offsets);
+                                                     gpu_top_path_sums,
+                                                     gpu_top_drift_blocks,
+                                                     gpu_top_path_offsets);
     checkCuda("findTopPathSums");
   }
 
   // Now that we have done all the GPU processing for one coarse
   // channel, we can copy the data back to host memory.
-  cudaDeviceSynchronize();
-  checkCuda("dedoppler synchronize");
+  // These copies are not async, so they will synchronize to the default stream.
+  cudaMemcpy(cpu_column_sums, gpu_column_sums,
+             num_channels * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(cpu_top_path_sums, gpu_top_path_sums,
+             num_channels * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(cpu_top_drift_blocks, gpu_top_drift_blocks,
+             num_channels * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(cpu_top_path_offsets, gpu_top_path_offsets,
+             num_channels * sizeof(int), cudaMemcpyDeviceToHost);
+  checkCuda("dedoppler d->h memcpy");
   
   // Use the central 90% of the column sums to calculate standard deviation.
   // We don't need to do a full sort; we can just calculate the 5th,
   // 50th, and 95th percentiles
-  auto column_sums_end = column_sums + num_channels;
-  std::nth_element(column_sums, column_sums + mid, column_sums_end);
+  auto column_sums_end = cpu_column_sums + num_channels;
+  std::nth_element(cpu_column_sums, cpu_column_sums + mid, column_sums_end);
   int first = ceil(0.05 * num_channels);
   int last = floor(0.95 * num_channels);
-  std::nth_element(column_sums, column_sums + first,
-                   column_sums + mid - 1);
-  std::nth_element(column_sums + mid + 1, column_sums + last,
+  std::nth_element(cpu_column_sums, cpu_column_sums + first,
+                   cpu_column_sums + mid - 1);
+  std::nth_element(cpu_column_sums + mid + 1, cpu_column_sums + last,
                    column_sums_end);
-  float median = column_sums[mid];
+  float median = cpu_column_sums[mid];
     
-  float sum = std::accumulate(column_sums + first, column_sums + last + 1, 0.0);
+  float sum = std::accumulate(cpu_column_sums + first, cpu_column_sums + last + 1, 0.0);
   float m = sum / (last + 1 - first);
   float accum = 0.0;
-  std::for_each(column_sums + first, column_sums + last + 1,
+  std::for_each(cpu_column_sums + first, cpu_column_sums + last + 1,
                 [&](const float f) {
                   accum += (f - m) * (f - m);
                 });
@@ -398,10 +410,10 @@ void Dedopplerer::search(const FilterbankBuffer& input,
       if (freq >= num_channels) {
         break;
       }
-      if (top_path_sums[freq] > candidate_path_sum) {
+      if (cpu_top_path_sums[freq] > candidate_path_sum) {
         // This is the new best candidate of the window
         candidate_freq = freq;
-        candidate_path_sum = top_path_sums[freq];
+        candidate_path_sum = cpu_top_path_sums[freq];
       }
     }
     if (candidate_freq < 0) {
@@ -412,15 +424,15 @@ void Dedopplerer::search(const FilterbankBuffer& input,
     int window_end = min(num_channels, candidate_freq + window_size);
     bool found_larger_path_sum = false;
     for (int freq = max(0, candidate_freq - window_size + 1); freq < window_end; ++freq) {
-      if (top_path_sums[freq] > candidate_path_sum) {
+      if (cpu_top_path_sums[freq] > candidate_path_sum) {
         found_larger_path_sum = true;
         break;
       }
     }
     if (!found_larger_path_sum) {
       // The candidate frequency is the best within its window
-      int drift_bins = top_drift_blocks[candidate_freq] * drift_timesteps +
-        top_path_offsets[candidate_freq];
+      int drift_bins = cpu_top_drift_blocks[candidate_freq] * drift_timesteps +
+        cpu_top_path_offsets[candidate_freq];
       double drift_rate = drift_bins * drift_rate_resolution;
       float snr = (candidate_path_sum - median) / std_dev;
 

@@ -36,7 +36,7 @@ public:
               vector<DedopplerHit>* output);
   
 private:
-  // For computing Taylor sums, we use three unified memory arrays,
+  // For computing Taylor sums, we use three on-gpu arrays,
   // each the size of one coarse channel. The input array is to read the source
   // data, and these two buffers are to use for Taylor tree calculations.
   float *buffer1, *buffer2;
@@ -46,14 +46,15 @@ private:
   int rounded_num_timesteps;
   
   // For normalization, we sum each column.
-  float *column_sums;
+  float *gpu_column_sums, *cpu_column_sums;
 
   // For aggregating top hits, we use three arrays, each the size of
   // one row of the coarse channel. One array to store the largest
   // path sum, one to store which drift block it came from, and one to
   // store its path offset.
-  float *top_path_sums;
-  int *top_drift_blocks, *top_path_offsets;
+  float *gpu_top_path_sums, *cpu_top_path_sums;
+  int *gpu_top_drift_blocks, *cpu_top_drift_blocks;
+  int *gpu_top_path_offsets, *cpu_top_path_offsets;
 
   // How many timesteps the signal drifts in our data
   int drift_timesteps;
