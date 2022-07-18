@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int BUFFER_QUEUE_MAX_SIZE = 2;
+const int BUFFER_QUEUE_MAX_SIZE = 4;
 
 /*
   This class provides an efficient reader to loop through a RawFileGroup.
