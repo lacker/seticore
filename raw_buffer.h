@@ -4,7 +4,7 @@ using namespace std;
 
 /*
   The RawBuffer stores data from a raw file, or perhaps just a sub-band of it,
-  in either GPU memory or CPU RAM.
+  in either GPU memory or CPU pinned memory.
 
   Its format is row-major:
     input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]

@@ -15,17 +15,17 @@ RawBuffer::RawBuffer(bool gpu, int num_blocks, int num_antennas,
     timesteps_per_block * npol * 2;
   if (gpu) {
     cudaMallocManaged(&data, data_size);
-    checkCuda("RawBuffer malloc");
   } else {
-    data = (int8_t*) malloc(data_size);
+    cudaMallocHost(&data, data_size);
   }
+  checkCuda("RawBuffer malloc");
 }
 
 RawBuffer::~RawBuffer() {
   if (gpu) {
     cudaFree(data);
   } else {
-    free(data);
+    cudaFreeHost(data);
   }
 }
 
