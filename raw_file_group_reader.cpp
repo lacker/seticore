@@ -24,7 +24,15 @@ RawFileGroupReader::~RawFileGroupReader() {
   }
 }
 
-shared_ptr<RawBuffer> RawFileGroupReader::makeBuffer(bool gpu) const {
+shared_ptr<RawBuffer> RawFileGroupReader::makeBuffer(bool gpu) {
+  unique_lock<mutex> lock(m);
+  if (!extra_buffers.empty()) {
+    auto buffer = extra_buffers.front();
+    extra_buffers.pop();
+    return buffer;
+  }
+  lock.unlock();
+
   int coarse_channels_per_band = file_group.num_coarse_channels / file_group.num_bands;  
   return shared_ptr<RawBuffer>(new RawBuffer(gpu, blocks_per_batch,
                                              file_group.nants,
@@ -43,6 +51,16 @@ shared_ptr<RawBuffer> RawFileGroupReader::read() {
   lock.unlock();
   cv.notify_one();
   return buffer;
+}
+
+void RawFileGroupReader::returnBuffer(shared_ptr<RawBuffer> buffer) {
+  // We might want to check it's the right size
+  if (buffer.get() == NULL) {
+    return;
+  }
+  assert(!buffer->gpu);
+  unique_lock<mutex> lock(m);
+  extra_buffers.push(buffer);
 }
 
 // Returns false if the reader gets destroyed before a new item is pushed

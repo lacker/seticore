@@ -38,11 +38,14 @@ class RawFileGroupReader {
                      int blocks_per_batch);
   ~RawFileGroupReader();
 
-  // Just makes a buffer of the correct size
-  shared_ptr<RawBuffer> makeBuffer(bool gpu) const;
+  // Makes a buffer of the correct size, reusing our pool of extra buffers if possible
+  shared_ptr<RawBuffer> makeBuffer(bool gpu);
   
   shared_ptr<RawBuffer> read();
-  
+
+  // The caller can return ownership of extra buffers to avoid future mallocs
+  void returnBuffer(shared_ptr<RawBuffer> buffer);
+
  private:
   mutex m;
   condition_variable cv;
@@ -56,4 +59,6 @@ class RawFileGroupReader {
   
   // Outputs
   queue<shared_ptr<RawBuffer> > buffer_queue;
+
+  queue<shared_ptr<RawBuffer> > extra_buffers;
 };

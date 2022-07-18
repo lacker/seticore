@@ -121,9 +121,6 @@ void BeamformingConfig::run() {
     // At the start of this loop, neither buffer is being used, because
     // dedoppler analysis for any previous loop synchronized cuda devices.
     for (int batch = 0; batch < num_batches; ++batch) {
-
-      auto input_buffer = reader.read();
-  
       cout << "beamforming band " << band << ", batch " << batch << "...\n";
     
       int block_after_mid = batch * beamformer.nblocks + beamformer.nblocks / 2;
@@ -138,8 +135,9 @@ void BeamformingConfig::run() {
       // The beamformer could still be using the work buffers.
       // So we have to wait for it to complete.
       cudaDeviceSynchronize();
-      
-      cpu_work_buffer = input_buffer;
+
+      reader.returnBuffer(cpu_work_buffer);
+      cpu_work_buffer = reader.read();
       gpu_work_buffer->copyFromAsync(*cpu_work_buffer);
       beamformer.run(*gpu_work_buffer, multibeam, time_offset);
     }
