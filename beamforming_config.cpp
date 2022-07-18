@@ -12,6 +12,7 @@
 #include <fmt/core.h>
 #include "multibeam_buffer.h"
 #include "raw_file_group.h"
+#include "raw_file_group_reader.h"
 #include "raw_buffer.h"
 #include "recipe_file.h"
 #include "util.h"
@@ -69,22 +70,18 @@ void BeamformingConfig::run() {
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
-  RawBuffer cpu_buffer_1(false, blocks_per_batch, file_group.nants,
-                         coarse_channels_per_band,
-                         file_group.timesteps_per_block, file_group.npol);
-  RawBuffer cpu_buffer_2 = cpu_buffer_1.makeSameSize(false);
-  RawBuffer gpu_buffer = cpu_buffer_1.makeSameSize(true);
-
   Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_batch,
                         coarse_channels_per_band, file_group.npol, nsamp);
 
   // Create a buffer large enough to hold all beamformer batches for one band  
-  int beamformer_batches = file_group.num_blocks / beamformer.nblocks;
-  int num_multibeam_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
+  int num_batches = file_group.num_blocks / beamformer.nblocks;
+  int num_multibeam_timesteps = beamformer.numOutputTimesteps() * num_batches;
   MultibeamBuffer multibeam(beamformer.nbeams,
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels());
 
+  RawFileGroupReader reader(file_group, num_batches, blocks_per_batch);
+  
   // Create a buffer for dedopplering a single coarse channel, padding
   // timesteps with zeros.
   FilterbankBuffer fb_buffer(roundUpToPowerOfTwo(multibeam.num_timesteps), fft_size);
@@ -110,21 +107,21 @@ void BeamformingConfig::run() {
        << ", for a total of " << file_group.num_coarse_channels << endl;
   cout << "dedoppler input is " << fb_buffer.num_timesteps << " timesteps x "
        << fb_buffer.num_channels << " fine channels\n";
+
+  // These buffers hold data we have read from raw input while we are working on them
+  shared_ptr<RawBuffer> cpu_work_buffer;
+  shared_ptr<RawBuffer> gpu_work_buffer = reader.makeBuffer(true);
   
   for (int band = 0; band < num_bands_to_process; ++band) {
-    file_group.resetBand(band);
     cout << endl;
 
     // We read data into the read buffer, and copy data to the GPU from the
     // work buffer.
     // At the start of this loop, neither buffer is being used, because
     // dedoppler analysis for any previous loop synchronized cuda devices.
-    RawBuffer* read_buffer = &cpu_buffer_1;
-    RawBuffer* work_buffer = &cpu_buffer_2;
-    for (int batch = 0; batch < beamformer_batches; ++batch) {
-      for (int block = 0; block < read_buffer->num_blocks; ++block) {
-        file_group.read(read_buffer->blockPointer(block));
-      } 
+    for (int batch = 0; batch < num_batches; ++batch) {
+
+      auto input_buffer = reader.read();
   
       cout << "beamforming band " << band << ", batch " << batch << "...\n";
     
@@ -137,15 +134,13 @@ void BeamformingConfig::run() {
                                   beamformer.coefficients);
       int time_offset = beamformer.numOutputTimesteps() * batch;
 
-      if (batch > 0) {
-        // The beamformer could still be doing work on the work buffer.
-        // So we have to wait for it to complete.
-        cudaDeviceSynchronize();
-      }
+      // The beamformer could still be using the work buffers.
+      // So we have to wait for it to complete.
+      cudaDeviceSynchronize();
       
-      swap(read_buffer, work_buffer);
-      gpu_buffer.copyFromAsync(*work_buffer);
-      beamformer.run(gpu_buffer, multibeam, time_offset);
+      cpu_work_buffer = input_buffer;
+      gpu_work_buffer->copyFromAsync(*cpu_work_buffer);
+      beamformer.run(*gpu_work_buffer, multibeam, time_offset);
     }
 
     cout << endl;

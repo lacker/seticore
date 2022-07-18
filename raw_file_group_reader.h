@@ -27,6 +27,9 @@ class RawFileGroupReader {
   RawFileGroupReader(RawFileGroup& file_group, int num_batches, int blocks_per_batch);
   ~RawFileGroupReader();
 
+  // Just makes a buffer of the correct size
+  shared_ptr<RawBuffer> makeBuffer(bool gpu);
+  
   shared_ptr<RawBuffer> read();
   
  private:
