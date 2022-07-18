@@ -69,10 +69,11 @@ void BeamformingConfig::run() {
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
-  RawBuffer raw_buffer_1(blocks_per_batch, file_group.nants, coarse_channels_per_band,
+  RawBuffer cpu_buffer_1(false, blocks_per_batch, file_group.nants,
+                         coarse_channels_per_band,
                          file_group.timesteps_per_block, file_group.npol);
-  RawBuffer raw_buffer_2(blocks_per_batch, file_group.nants, coarse_channels_per_band,
-                         file_group.timesteps_per_block, file_group.npol);
+  RawBuffer cpu_buffer_2 = cpu_buffer_1.makeSameSize(false);
+  RawBuffer gpu_buffer = cpu_buffer_1.makeSameSize(true);
 
   Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_batch,
                         coarse_channels_per_band, file_group.npol, nsamp);
@@ -114,11 +115,12 @@ void BeamformingConfig::run() {
     file_group.resetBand(band);
     cout << endl;
 
-    // We read data into the read buffer, and do GPU work on the work buffer.
+    // We read data into the read buffer, and copy data to the GPU from the
+    // work buffer.
     // At the start of this loop, neither buffer is being used, because
     // dedoppler analysis for any previous loop synchronized cuda devices.
-    RawBuffer* read_buffer = &raw_buffer_1;
-    RawBuffer* work_buffer = &raw_buffer_2;
+    RawBuffer* read_buffer = &cpu_buffer_1;
+    RawBuffer* work_buffer = &cpu_buffer_2;
     for (int batch = 0; batch < beamformer_batches; ++batch) {
       for (int block = 0; block < read_buffer->num_blocks; ++block) {
         file_group.read(read_buffer->blockPointer(block));
@@ -126,8 +128,8 @@ void BeamformingConfig::run() {
   
       cout << "beamforming band " << band << ", batch " << batch << "...\n";
     
-      int block_right_after_mid = batch * beamformer.nblocks + beamformer.nblocks / 2;
-      double mid_time = file_group.getStartTime(block_right_after_mid);
+      int block_after_mid = batch * beamformer.nblocks + beamformer.nblocks / 2;
+      double mid_time = file_group.getStartTime(block_after_mid);
       int time_array_index = recipe.getTimeArrayIndex(mid_time);
       recipe.generateCoefficients(time_array_index, file_group.schan,
                                   beamformer.num_coarse_channels,
@@ -142,7 +144,8 @@ void BeamformingConfig::run() {
       }
       
       swap(read_buffer, work_buffer);
-      beamformer.run(*work_buffer, multibeam, time_offset);
+      gpu_buffer.copyFromAsync(*work_buffer);
+      beamformer.run(gpu_buffer, multibeam, time_offset);
     }
 
     cout << endl;
@@ -172,8 +175,9 @@ void BeamformingConfig::run() {
         for (int i = 0; i < (int) hits.size(); ++i) {
           const DedopplerHit& hit = hits[i];
           if (i < display_limit) {
-            cout << "  index = " << hit.index << ", drift steps = " << hit.drift_steps
-                 << ", snr = " << hit.snr << ", drift rate = " << hit.drift_rate << endl;
+            cout << "  index = " << hit.index << ", drift steps = "
+                 << hit.drift_steps << ", snr = " << hit.snr << ", drift rate = "
+                 << hit.drift_rate << endl;
           }
           hit_recorder->recordHit(hit, beam, band, beamformer.power);
         }
