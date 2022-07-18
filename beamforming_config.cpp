@@ -173,7 +173,7 @@ void BeamformingConfig::run() {
                  << hit.drift_steps << ", snr = " << hit.snr << ", drift rate = "
                  << hit.drift_rate << endl;
           }
-          hit_recorder->recordHit(hit, beam, band, beamformer.power);
+          hit_recorder->recordHit(hit, beam, coarse_channel, fb_buffer.data);
         }
         if ((int) hits.size() > display_limit) {
           cout << "  (and " << ((int) hits.size() - display_limit) << " more)\n";
