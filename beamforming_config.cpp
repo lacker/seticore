@@ -80,7 +80,8 @@ void BeamformingConfig::run() {
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels());
 
-  RawFileGroupReader reader(file_group, num_batches, blocks_per_batch);
+  RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
+                            blocks_per_batch);
   
   // Create a buffer for dedopplering a single coarse channel, padding
   // timesteps with zeros.
