@@ -47,6 +47,7 @@ srcs = [
     'multibeam_buffer.cu',
     'raw_buffer.cu',
     'raw_file_group.cpp',
+    'raw_file_group_reader.cpp',
     'recipe_file.cpp',
     'run_dedoppler.cpp',
     'util.cpp',

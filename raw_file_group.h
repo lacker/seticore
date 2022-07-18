@@ -79,5 +79,5 @@ class RawFileGroup {
 
   void read(char* buffer);
 
-  double getStartTime(int block);
+  double getStartTime(int block) const;
 };

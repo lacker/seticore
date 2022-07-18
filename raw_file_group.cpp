@@ -206,9 +206,10 @@ void RawFileGroup::read(char* buffer) {
   next_pktidx += piperblk;
 }
 
+// Threadsafe.
 // We can't calculate the time from the actual block, because we
 // might have missed that block.
-double RawFileGroup::getStartTime(int block) {
+double RawFileGroup::getStartTime(int block) const {
   assert(block < num_blocks);
   double time_per_block = tbin * timesteps_per_block;
   return synctime + block * time_per_block;
