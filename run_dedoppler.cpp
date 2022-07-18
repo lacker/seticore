@@ -36,7 +36,8 @@ void runDedoppler(const string& input_filename, const string& output_filename,
   
   // Load and process one coarse channel at a time from the filterbank file
   vector<DedopplerHit> hits;
-  for (int coarse_channel = 0; coarse_channel < file->num_coarse_channels; ++coarse_channel) {
+  for (int coarse_channel = 0; coarse_channel < file->num_coarse_channels;
+       ++coarse_channel) {
     file->loadCoarseChannel(coarse_channel, &buffer);
     hits.clear();
     dedopplerer.search(buffer, max_drift, min_drift, snr_threshold, &hits);
