@@ -80,10 +80,10 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
     prebeam[time][coarse-channel][fine-channel][polarity][antenna]
 
   with the coefficient data, format:
-    coefficients[coarse-channel][beam][polarity][antenna][real or imag]
+    coefficients[coarse-channel][beam][polarity][antenna]
 
   to generate output beams with format:
-    buffer[time][coarse-channel][fine-channel][beam][polarity]
+    voltage[time][coarse-channel][fine-channel][beam][polarity]
 
   We combine prebeam with coefficients according to the indices they have in common,
   not conjugating the coefficients because we expect them to already be in the
@@ -148,11 +148,13 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
 
   A = coefficients
   B = prebeam
-  C = buffer
+  C = voltage
   m = beam
   n = fine channel
   p = coarse channel
   k = antenna
+  alpha = 1.0
+  beta = 0.0
 
   We are converting five-dimensional data plus four-dimensional data into
   five-dimensional output, so we fix time and polarity for each call to cublas.
@@ -162,7 +164,23 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   not even begun to test all the ways it could work.
  */
 void Beamformer::runCublasBeamform(int time, int pol) {
-  // TODO: implement
+  /*
+  // Calculate where the matrices start
+  int coefficient_offset = index4d(0, 0, nbeams, pol, npol, 0, nants);
+  const thrust::complex<float>* coefficient_start = coefficients + coefficient_offset;
+  int prebeam_offset = index5d(time, 0, num_coarse_channels, 0, fft_size, pol, npol,
+                               0, nants);
+  const thrust::complex<float>* prebeam_start = prebeam + prebeam_offset;
+  int voltage_offset = index5d(time, 0, num_coarse_channels, 0, fft_size, 0, nbeams,
+                               pol, npol);
+  thrust::complex<float>* voltage_start = voltage + voltage_offset;
+
+  // Calculate strides
+  // ldA, the A-k stride
+  int coefficient_antenna_stride = index4d(0, 0, nbeams, 0, npol, 1, nants);
+  // strideA, the A-p stride
+  int coefficient_coarse_stride = index4d(1, 0, nbeams, 0, npol, 0, nants);
+  */
 }
 
 /*
