@@ -103,4 +103,6 @@ class Beamformer {
 
   // The plan for the fft.
   cufftHandle plan;
+
+  void runCublasBeamform(int time, int pol);
 };

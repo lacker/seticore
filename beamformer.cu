@@ -86,10 +86,8 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
     buffer[time][coarse-channel][fine-channel][beam][polarity]
 
   We combine prebeam with coefficients according to the indices they have in common,
-  conjugating the coefficients, and then sum along antenna dimension to reduce.
-
-  TODO: this seems equivalent to a batch matrix multiplication, could we do this with
-  a cublas routine?
+  not conjugating the coefficients because we expect them to already be in the
+  correct conjugation for multiplying, and then sum along antenna dimension to reduce.
 */
 __global__ void beamform(const thrust::complex<float>* prebeam,
                          const float* coefficients,
@@ -110,7 +108,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
     int coeff_index = index4d(coarse_chan, beam, nbeams, pol, npol, antenna, nants);
     assert(2 * coeff_index + 1 < coefficients_size);
     thrust::complex<float> conjugated = thrust::complex<float>
-      (coefficients[2 * coeff_index], -coefficients[2 * coeff_index + 1]);
+      (coefficients[2 * coeff_index], coefficients[2 * coeff_index + 1]);
     for (int time = 0; time < num_timesteps; ++time) {
       int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
                                   fft_size, pol, npol, antenna, nants);
@@ -129,13 +127,43 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
       }
 
       if (antenna == 0) {
-        int voltage_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan, fft_size,
-                                    beam, nbeams, pol, npol);
+        int voltage_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
+                                    fft_size, beam, nbeams, pol, npol);
         assert(voltage_index < voltage_size);
         voltage[voltage_index] = reduced[0];
       }
     }
   }
+}
+
+/*
+  Runs beamforming just for the provided time and polarity, using cublas batch
+  matrix multiplication.
+  See the comment on the beamform kernel.
+
+  This API is not immediately intuitive. See this blog post:
+    https://developer.nvidia.com/blog/cublas-strided-batched-matrix-multiply/
+  in particular their explanation of gemmStridedBatched.
+
+  To convert into the notation used by the blog post:
+
+  A = coefficients
+  B = prebeam
+  C = buffer
+  m = beam
+  n = fine channel
+  p = coarse channel
+  k = antenna
+
+  We are converting five-dimensional data plus four-dimensional data into
+  five-dimensional output, so we fix time and polarity for each call to cublas.
+  We could have fixed fine channel instead of time, or coarse channel instead of
+  polarity, but it seems better to fix the smaller dimensions.
+  Honestly, there are so many possibilities for how to arrange this data, I have
+  not even begun to test all the ways it could work.
+ */
+void Beamformer::runCublasBeamform(int time, int pol) {
+  // TODO: implement
 }
 
 /*
