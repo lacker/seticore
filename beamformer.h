@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cublas_v2.h"
 #include <cufft.h>
 #include <thrust/complex.h>
 
@@ -104,5 +105,7 @@ class Beamformer {
   // The plan for the fft.
   cufftHandle plan;
 
+  cublasHandle_t cublas_handle;
+  
   void runCublasBeamform(int time, int pol);
 };

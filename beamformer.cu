@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cublas_v2.h"
 #include <cuda.h>
 #include <cufft.h>
 #include <iostream>
@@ -8,6 +9,9 @@
 #include "util.h"
 
 using namespace std;
+
+const cuComplex COMPLEX_ONE = make_cuComplex(1.0, 0.0);
+const cuComplex COMPLEX_ZERO = make_cuComplex(0.0, 0.0);
 
 /*
   We convert from int8 input with format:
@@ -83,7 +87,7 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
     coefficients[coarse-channel][beam][polarity][antenna]
 
   to generate output beams with format:
-    voltage[time][coarse-channel][fine-channel][beam][polarity]
+    voltage[time][polarity][coarse-channel][fine-channel][beam]
 
   We combine prebeam with coefficients according to the indices they have in common,
   not conjugating the coefficients because we expect them to already be in the
@@ -146,7 +150,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
 
   To convert into the notation used by the blog post:
 
-  A = coefficients
+  A = coefficients (which we will transpose)
   B = prebeam
   C = voltage
   m = beam
@@ -164,23 +168,45 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   not even begun to test all the ways it could work.
  */
 void Beamformer::runCublasBeamform(int time, int pol) {
-  /*
   // Calculate where the matrices start
-  int coefficient_offset = index4d(0, 0, nbeams, pol, npol, 0, nants);
-  const thrust::complex<float>* coefficient_start = coefficients + coefficient_offset;
+  int coeff_offset = index4d(0, 0, nbeams, pol, npol, 0, nants);
+  auto coeff_start = (const cuComplex*) (coefficients + coeff_offset);
   int prebeam_offset = index5d(time, 0, num_coarse_channels, 0, fft_size, pol, npol,
                                0, nants);
-  const thrust::complex<float>* prebeam_start = prebeam + prebeam_offset;
-  int voltage_offset = index5d(time, 0, num_coarse_channels, 0, fft_size, 0, nbeams,
-                               pol, npol);
-  thrust::complex<float>* voltage_start = voltage + voltage_offset;
+  auto prebeam_start = (const cuComplex*) (prebeam + prebeam_offset);
+  int voltage_offset = index5d(time, pol, npol, 0, num_coarse_channels, 0, fft_size,
+                               0, nbeams);
+  auto voltage_start = (cuComplex*) (buffer + voltage_offset);
 
   // Calculate strides
-  // ldA, the A-k stride
-  int coefficient_antenna_stride = index4d(0, 0, nbeams, 0, npol, 1, nants);
+  // ldA, the A-m stride (since we are transposing. normally it would be A-k)
+  int coeff_beam_stride = index4d(0, 1, nbeams, 0, npol, 0, nants);
   // strideA, the A-p stride
-  int coefficient_coarse_stride = index4d(1, 0, nbeams, 0, npol, 0, nants);
-  */
+  int coeff_coarse_stride = index4d(1, 0, nbeams, 0, npol, 0, nants);
+  // ldB, the B-n stride
+  int prebeam_fine_stride = index5d(0, 0, num_coarse_channels, 1, fft_size,
+                                    0, npol, 0, nants);
+  // strideB, the B-p stride
+  int prebeam_coarse_stride = index5d(0, 1, num_coarse_channels, 0, fft_size,
+                                      0, npol, 0, nants);
+  // ldC, the C-n stride
+  int voltage_fine_stride = index5d(0, 0, npol, 0, num_coarse_channels,
+                                    1, fft_size, 0, nbeams);
+  // strideC, the C-p stride
+  int voltage_coarse_stride = index5d(0, 0, npol, 1, num_coarse_channels,
+                                      0, fft_size, 0, nbeams);
+
+  cublasCgemm3mStridedBatched
+    (cublas_handle, 
+     CUBLAS_OP_T, CUBLAS_OP_N,
+     nbeams, fft_size, nants,
+     &COMPLEX_ONE,
+     coeff_start, coeff_beam_stride, coeff_coarse_stride, 
+     prebeam_start, prebeam_fine_stride, prebeam_coarse_stride,
+     &COMPLEX_ZERO,
+     voltage_start, voltage_fine_stride, voltage_coarse_stride,
+     num_coarse_channels);
+  checkCuda("Beamformer runCublasBeamform");
 }
 
 /*
@@ -283,6 +309,9 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks,
   cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
   checkCuda("Beamformer fft planning");
 
+  cublasCreate(&cublas_handle);
+  checkCuda("Beamformer cublas handle");
+  
   size_t total_bytes = coefficients_bytes + buffer_bytes + prebeam_bytes + power_bytes;
   cout << "beamformer memory: " << prettyBytes(total_bytes) << endl;
 }
@@ -293,6 +322,7 @@ Beamformer::~Beamformer() {
   cudaFree(prebeam);
   cudaFree(power);
   cufftDestroy(plan);
+  cublasDestroy(cublas_handle);
 }
 
 int Beamformer::numOutputChannels() const {
