@@ -94,8 +94,8 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
 __global__ void beamform(const thrust::complex<float>* prebeam,
                          const float* coefficients,
                          thrust::complex<float>* voltage,
-                         int fft_size, int nants, int nbeams, int num_coarse_channels, int npol,
-                         int num_timesteps,
+                         int fft_size, int nants, int nbeams, int num_coarse_channels,
+                         int npol, int num_timesteps,
                          int prebeam_size, int voltage_size, int coefficients_size) {
   int antenna = threadIdx.x;
   int fine_chan = blockIdx.x;
@@ -112,8 +112,8 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
     thrust::complex<float> conjugated = thrust::complex<float>
       (coefficients[2 * coeff_index], -coefficients[2 * coeff_index + 1]);
     for (int time = 0; time < num_timesteps; ++time) {
-      int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan, fft_size,
-                                  pol, npol, antenna, nants);
+      int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
+                                  fft_size, pol, npol, antenna, nants);
       assert(prebeam_index < prebeam_size);
       assert(antenna < MAX_ANTS);
       reduced[antenna] = prebeam[prebeam_index] * conjugated;
@@ -199,11 +199,11 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   The workflow is to create a beamformer for a particular set of dimensions,
   use it to form many beams, and then destruct it when we want to free the memory.
 
-  TODO: nants and npol are specified twice, one by the recipe file and one by the raw input.
-  We should really check to ensure they are the same and handle it cleanly if they aren't.
+  TODO: nants and npol are specified twice, once by the recipe file and once by the input.
+  We should check to ensure they are the same and handle it cleanly if they aren't.
  */
-Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num_coarse_channels,
-                       int npol, int nsamp)
+Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks,
+                       int num_coarse_channels, int npol, int nsamp)
   : fft_size(fft_size), nants(nants), nbeams(nbeams), nblocks(nblocks),
     num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp) {
   assert(0 == nsamp % (STI * fft_size));
