@@ -55,7 +55,7 @@ H5File::H5File(const string& filename) : FilterbankFile(filename) {
   }
   num_timesteps = dims[0];
   num_freqs = dims[2];
-
+  
   telescope_id = getLongAttr("telescope_id");
 
   if (attrExists("nfpc")) {

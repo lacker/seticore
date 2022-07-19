@@ -11,7 +11,7 @@ using namespace std;
 */
 class FilterbankFile {
  public:
-  FilterbankFile(const string& filename) : filename(filename) {}
+  FilterbankFile(const string& filename) : filename(filename), coarse_channel_size(0) {}
   
   const string filename;
   bool has_dc_spike;
