@@ -94,13 +94,16 @@ void BeamformingConfig::run() {
     string output_filename = fmt::format("{}/{}.hits", output_dir,
                                          file_group.prefix);
     cout << "recording hits to " << output_filename << endl;
-    hit_recorder.reset(new HitFileWriter(output_filename, metadata));
+    auto hfw = new HitFileWriter(output_filename, metadata);
+    hfw->verbose = false;
+    hit_recorder.reset(hfw);
   }
 
   Dedopplerer dedopplerer(multibeam.num_timesteps,
                           fb_buffer.num_channels,
                           metadata.foff, metadata.tsamp, false);
-
+  dedopplerer.print_hit_summary = true;
+  
   cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
        << pluralize(num_bands_to_process, "band") << endl;
   cout << "each band has "
@@ -143,7 +146,6 @@ void BeamformingConfig::run() {
     }
 
     cout << endl;
-    int total_hits = 0;
     for (int beam = 0; beam < beamformer.nbeams; ++beam) {
 
       // local_coarse_channel is the index of the coarse channel within the band
@@ -155,31 +157,12 @@ void BeamformingConfig::run() {
         multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &fb_buffer);
 
         vector<DedopplerHit> hits;
-        dedopplerer.search(fb_buffer, max_drift, min_drift, snr, &hits);
-      
-        if (hits.empty()) {
-          continue;
-        }
-
-        // Write hits to output
-        total_hits += hits.size();
-        cout << "found " << pluralize(hits.size(), "hit") << " in beam " << beam
-             << ", coarse channel " << coarse_channel << endl;
-        int display_limit = 5;
-        for (int i = 0; i < (int) hits.size(); ++i) {
-          const DedopplerHit& hit = hits[i];
-          if (i < display_limit) {
-            cout << "  index = " << hit.index << ", drift steps = "
-                 << hit.drift_steps << ", snr = " << hit.snr << ", drift rate = "
-                 << hit.drift_rate << endl;
-          }
+        dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, min_drift, snr,
+                           &hits);
+        for (DedopplerHit hit : hits) {
           hit_recorder->recordHit(hit, beam, coarse_channel, fb_buffer.data);
-        }
-        if ((int) hits.size() > display_limit) {
-          cout << "  (and " << ((int) hits.size() - display_limit) << " more)\n";
         }
       }
     }
-    cout << "recorded " << total_hits << " hits from band " << band << endl;
   }
 }

@@ -5,6 +5,7 @@
 
 #include "dedoppler_hit.h"
 #include "filterbank_buffer.h"
+#include "hit_recorder.h"
 
 using namespace std;
 
@@ -27,11 +28,14 @@ public:
   // Whether the data we receive has a DC spike
   const bool has_dc_spike;
 
+  bool print_hits;
+  bool print_hit_summary;
+  
   // Do not round num_timesteps before creating the Dedopplerer
   Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
   ~Dedopplerer();
 
-  void search(const FilterbankBuffer& input,
+  void search(const FilterbankBuffer& input, int beam, int coarse_channel,
               double max_drift, double min_drift, double snr_threshold,
               vector<DedopplerHit>* output);
   

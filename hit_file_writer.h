@@ -18,6 +18,8 @@ class HitFileWriter: public HitRecorder {
   int fd;
 
  public:
+  bool verbose;
+  
   HitFileWriter(const string& filename, const FilterbankFile& metadata);
   ~HitFileWriter();
 

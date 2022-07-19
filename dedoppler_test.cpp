@@ -33,7 +33,7 @@ TEST_CASE("basic functionality", "[dedoppler]") {
 
   Dedopplerer dedopplerer(num_timesteps, num_channels, 1.0, 1.0, false);
   vector<DedopplerHit> hits;
-  dedopplerer.search(buffer, 0.01, 0.01, 200.0, &hits);
+  dedopplerer.search(buffer, NO_BEAM, 555, 0.01, 0.01, 200.0, &hits);
   REQUIRE(hits.size() == 1);
   REQUIRE(hits[0].index == 70);
   REQUIRE(hits[0].drift_steps == 3);

@@ -11,12 +11,14 @@
 using namespace std;
 
 /*
-  Runs a dedoppler algorithm, reading data from an input file, writing the results to a .dat file.
+  Runs a dedoppler algorithm, reading data from an input file, writing the results to a
+  .dat file or a .hits file.
 
   input_filename is assumed to be in the .h5 format
   output_filename is where a .dat file will be written with results
   max_drift is the maximum drift we are looking for, in Hz/sec
-  min_drift is the minimum drift we are looking for. Set to 0 if zero-drift signals are okay
+  min_drift is the minimum drift we are looking for.
+    If it's set to zero, we report zero-drift signals.
   snr_threshold is the minimum SNR we require to report a signal
 
   Note that this algorithm does require an input file. In particular, the hit recorder
@@ -32,7 +34,9 @@ void runDedoppler(const string& input_filename, const string& output_filename,
 
   Dedopplerer dedopplerer(file->num_timesteps, file->coarse_channel_size, file->foff,
                           file->tsamp, file->has_dc_spike);
-  FilterbankBuffer buffer(roundUpToPowerOfTwo(file->num_timesteps), file->coarse_channel_size);
+  dedopplerer.print_hits = true;
+  FilterbankBuffer buffer(roundUpToPowerOfTwo(file->num_timesteps),
+                          file->coarse_channel_size);
   
   // Load and process one coarse channel at a time from the filterbank file
   vector<DedopplerHit> hits;
@@ -40,12 +44,9 @@ void runDedoppler(const string& input_filename, const string& output_filename,
        ++coarse_channel) {
     file->loadCoarseChannel(coarse_channel, &buffer);
     hits.clear();
-    dedopplerer.search(buffer, max_drift, min_drift, snr_threshold, &hits);
-    for (DedopplerHit hit : hits) {
-
-      cout << "hit: coarse channel = " << coarse_channel << ", "
-           << hit.toString() << endl;
-        
+    dedopplerer.search(buffer, NO_BEAM, coarse_channel, max_drift, min_drift,
+                       snr_threshold, &hits);
+    for (DedopplerHit hit : hits) {        
       recorder->recordHit(hit, NO_BEAM, coarse_channel, buffer.data);
     }
   }
