@@ -50,6 +50,16 @@ void assertFloatEq(float a, float b) {
   }
 }
 
+void assertStringEq(const string& lhs, const string& rhs) {
+  if (lhs == rhs) {
+    return;
+  }
+  cerr << "assertStringEq failed:\n";
+  cerr << "lhs: " << lhs << endl;
+  cerr << "rhs: " << rhs << endl;
+  exit(1);
+}
+
 string pluralize(int n, const string& noun) {
   if (n == 1) {
     return fmt::format("1 {}", noun);

@@ -371,14 +371,24 @@ void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset)
   shift<<<shift_grid, shift_block>>>(buffer, prebeam, fft_size, nants, npol,
                                      num_coarse_channels, nsamp / fft_size);
   checkCuda("Beamformer shift");
-  
-  dim3 beamform_block(nants, 1, 1);
-  dim3 beamform_grid(fft_size, num_coarse_channels, nbeams);
-  beamform<<<beamform_grid, beamform_block>>>(prebeam, coefficients, buffer, fft_size,
-                                              nants, nbeams, num_coarse_channels, npol,
-                                              nsamp / fft_size, prebeam_size, buffer_size,
-                                              coefficients_size);
 
+  bool use_cublas = true;
+  if (use_cublas) {
+    for (int time = 0; time < nsamp / fft_size; ++time) {
+      for (int pol = 0; pol < npol; ++pol) {
+        runCublasBeamform(time, pol);
+      }
+    }
+  } else {
+    dim3 beamform_block(nants, 1, 1);
+    dim3 beamform_grid(fft_size, num_coarse_channels, nbeams);
+    beamform<<<beamform_grid, beamform_block>>>(prebeam, coefficients, buffer, fft_size,
+                                                nants, nbeams, num_coarse_channels, npol,
+                                                nsamp / fft_size, prebeam_size,
+                                                buffer_size,
+                                                coefficients_size);
+  }
+  
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block>>>

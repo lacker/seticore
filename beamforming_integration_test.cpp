@@ -42,12 +42,12 @@ int main(int argc, char* argv[]) {
   assertFloatEq(7.03593, recorder->hits[0].snr);
   assertFloatEq(-0.317774, recorder->hits[0].drift_rate);
 
-  assert(recorder->hits[10].toString()
-         == "index = 109421, snr = 11.650423, drift rate = 0.317774 (1 bins)");
-  assert(recorder->hits[20].toString()
-         == "index = 25380, snr = 9.481710, drift rate = -0.317774 (-1 bins)");
-  assert(recorder->hits[30].toString()
-         == "index = 98132, snr = 8.078032, drift rate = 0.317774 (1 bins)");
+  assertStringEq(recorder->hits[10].toString(),
+                 "index = 109421, snr = 11.65042, drift rate = 0.31777 (1 bins)");
+  assertStringEq(recorder->hits[20].toString(),
+                 "index = 25380, snr = 9.48171, drift rate = -0.31777 (-1 bins)");
+  assertStringEq(recorder->hits[30].toString(),
+                 "index = 98132, snr = 8.07803, drift rate = 0.31777 (1 bins)");
   
   return 0;
 }
