@@ -11,3 +11,4 @@ string stripAnyTrailingSlash(const string& s);
 void assertComplexEq(thrust::complex<float> c, float real, float imag);
 void assertFloatEq(float a, float b);
 string pluralize(int n, const string& noun);
+string prettyBytes(size_t n);

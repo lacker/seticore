@@ -276,6 +276,12 @@ Dedopplerer::~Dedopplerer() {
   cudaFreeHost(cpu_top_path_offsets);
 }
 
+// This implementation is an ugly hack
+size_t Dedopplerer::memoryUsage() const {
+  return num_channels * rounded_num_timesteps * sizeof(float) * 2
+    + num_channels * (2 * sizeof(float) + 2 * sizeof(int));
+}
+
 /*
   Runs dedoppler search on the input buffer.
   Output is appended to the output vector.

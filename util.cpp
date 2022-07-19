@@ -56,3 +56,18 @@ string pluralize(int n, const string& noun) {
   }
   return fmt::format("{} {}s", n, noun);
 }
+
+string prettyBytes(size_t n) {
+  size_t mb = 1024 * 1024;
+  size_t gb = 1024 * mb;
+  if (n >= gb) {
+    return fmt::format("{:.1f} GB", ((float) n) / gb);
+  }
+  if (n >= 10 * mb) {
+    return fmt::format("{} MB", n / mb);
+  }
+  if (n >= mb) {
+    return fmt::format("{:.1f} MB", ((float) n) / mb);
+  }  
+  return fmt::format("{} bytes", n);
+}

@@ -213,26 +213,33 @@ Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num
   int frame_size = num_coarse_channels * nsamp;
   
   coefficients_size = 2 * nants * nbeams * num_coarse_channels * npol;
-  cudaMallocManaged(&coefficients, coefficients_size * sizeof(float));
+  size_t coefficients_bytes = coefficients_size * sizeof(float);
+  cudaMallocManaged(&coefficients, coefficients_bytes);
   checkCuda("Beamformer coefficients malloc");
  
   size_t fft_buffer_size = nants * npol * frame_size;
   size_t voltage_size = nbeams * npol * frame_size;
   buffer_size = max(fft_buffer_size, voltage_size);
-  cudaMallocManaged(&buffer, buffer_size * sizeof(thrust::complex<float>));
+  size_t buffer_bytes = buffer_size * sizeof(thrust::complex<float>);
+  cudaMallocManaged(&buffer, buffer_bytes);
   checkCuda("Beamformer buffer malloc");
 
   prebeam_size = nants * npol * frame_size;
-  cudaMallocManaged(&prebeam, prebeam_size * sizeof(thrust::complex<float>));
+  size_t prebeam_bytes = prebeam_size * sizeof(thrust::complex<float>);
+  cudaMallocManaged(&prebeam, prebeam_bytes);
   checkCuda("Beamformer prebeam malloc");
 
   power_size = nbeams * frame_size / STI;
-  cudaMallocManaged(&power, power_size * sizeof(float));
+  size_t power_bytes = power_size * sizeof(float);
+  cudaMallocManaged(&power, power_bytes);
   checkCuda("Beamformer power malloc");
 
   int batch_size = nants * npol;
   cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
   checkCuda("Beamformer fft planning");
+
+  size_t total_bytes = coefficients_bytes + buffer_bytes + prebeam_bytes + power_bytes;
+  cout << "beamformer memory: " << prettyBytes(total_bytes) << endl;
 }
 
 Beamformer::~Beamformer() {

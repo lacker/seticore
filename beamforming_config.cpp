@@ -79,7 +79,7 @@ void BeamformingConfig::run() {
   MultibeamBuffer multibeam(beamformer.nbeams,
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels());
-
+  
   RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
                             blocks_per_batch);
   
@@ -87,6 +87,7 @@ void BeamformingConfig::run() {
   // timesteps with zeros.
   FilterbankBuffer fb_buffer(roundUpToPowerOfTwo(multibeam.num_timesteps), fft_size);
   fb_buffer.zero();
+  cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.data_bytes) << endl;
   
   FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
 
@@ -103,6 +104,12 @@ void BeamformingConfig::run() {
                           fb_buffer.num_channels,
                           metadata.foff, metadata.tsamp, false);
   dedopplerer.print_hit_summary = true;
+  cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
+  
+  // These buffers hold data we have read from raw input while we are working on them
+  shared_ptr<RawBuffer> cpu_work_buffer;
+  shared_ptr<RawBuffer> gpu_work_buffer = reader.makeBuffer(true);
+  cout << "raw buffer memory: " << prettyBytes(gpu_work_buffer->data_size) << endl;
   
   cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
        << pluralize(num_bands_to_process, "band") << endl;
@@ -111,10 +118,6 @@ void BeamformingConfig::run() {
        << ", for a total of " << file_group.num_coarse_channels << endl;
   cout << "dedoppler input is " << fb_buffer.num_timesteps << " timesteps x "
        << fb_buffer.num_channels << " fine channels\n";
-
-  // These buffers hold data we have read from raw input while we are working on them
-  shared_ptr<RawBuffer> cpu_work_buffer;
-  shared_ptr<RawBuffer> gpu_work_buffer = reader.makeBuffer(true);
   
   for (int band = 0; band < num_bands_to_process; ++band) {
     cout << endl;

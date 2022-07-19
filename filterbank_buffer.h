@@ -13,6 +13,9 @@ class FilterbankBuffer {
 
   // Whether the buffer owns its own memory
   const bool managed;
+
+  const int data_size;
+  const size_t data_bytes;
   
   /*
     Row-major indexed by:

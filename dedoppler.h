@@ -38,6 +38,8 @@ public:
   void search(const FilterbankBuffer& input, int beam, int coarse_channel,
               double max_drift, double min_drift, double snr_threshold,
               vector<DedopplerHit>* output);
+
+  size_t memoryUsage() const;
   
 private:
   // For computing Taylor sums, we use three on-gpu arrays,

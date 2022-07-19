@@ -4,12 +4,15 @@
 
 #include "cuda_util.h"
 #include "filterbank_buffer.h"
+#include "util.h"
 
 using namespace std;
 
 MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_channels)
   : num_beams(num_beams), num_timesteps(num_timesteps), num_channels(num_channels) {
-  cudaMallocManaged(&data, sizeof(float) * num_beams * num_timesteps * num_channels);
+  size_t bytes = sizeof(float) * num_beams * num_timesteps * num_channels;
+  cudaMallocManaged(&data, bytes);
+  cout << "multibeam buffer memory: " << prettyBytes(bytes) << endl;
   checkCuda("MultibeamBuffer data malloc");
 }
 
