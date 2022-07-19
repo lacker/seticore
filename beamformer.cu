@@ -90,7 +90,7 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
   correct conjugation for multiplying, and then sum along antenna dimension to reduce.
 */
 __global__ void beamform(const thrust::complex<float>* prebeam,
-                         const float* coefficients,
+                         const thrust::complex<float>* coefficients,
                          thrust::complex<float>* voltage,
                          int fft_size, int nants, int nbeams, int num_coarse_channels,
                          int npol, int num_timesteps,
@@ -107,8 +107,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   for (int pol = 0; pol < npol; ++pol) {
     int coeff_index = index4d(coarse_chan, beam, nbeams, pol, npol, antenna, nants);
     assert(2 * coeff_index + 1 < coefficients_size);
-    thrust::complex<float> conjugated = thrust::complex<float>
-      (coefficients[2 * coeff_index], coefficients[2 * coeff_index + 1]);
+    thrust::complex<float> conjugated = coefficients[coeff_index];
     for (int time = 0; time < num_timesteps; ++time) {
       int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
                                   fft_size, pol, npol, antenna, nants);
@@ -349,7 +348,7 @@ thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam
   assert(beam < nbeams);
   assert(coarse_channel < num_coarse_channels);
   int i = index4d(coarse_channel, beam, nbeams, pol, npol, antenna, nants);
-  return thrust::complex<float>(coefficients[2*i], coefficients[2*i+1]);
+  return coefficients[i];
 }
 
 // The last index can be either time's fine index or the fine channel index, depending

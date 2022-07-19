@@ -69,7 +69,7 @@ class Beamformer {
 
   // Beamforming coefficients, formatted by row-major:
   //   coefficients[coarse-channel][beam][polarity][antenna][real or imag]
-  float *coefficients;
+  thrust::complex<float> *coefficients;
   size_t coefficients_size;
 
   // The beamformed data, as power.

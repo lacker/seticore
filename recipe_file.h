@@ -51,5 +51,5 @@ class RecipeFile {
   void generateCoefficients(int time_array_index,
                             int start_channel, int num_channels,
                             float center_frequency, float bandwidth,
-                            float* coefficients) const;
+                            thrust::complex<float>* coefficients) const;
 };

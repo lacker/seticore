@@ -231,7 +231,7 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
 void RecipeFile::generateCoefficients(int time_array_index,
                                       int start_channel, int num_channels,
                                       float center_frequency, float bandwidth,
-                                      float* coefficients) const {
+                                      thrust::complex<float>* coefficients) const {
   assert(start_channel + num_channels <= nchans);
   
   int output_index = 0;
@@ -259,8 +259,9 @@ void RecipeFile::generateCoefficients(int time_array_index,
           float sin_val = sin(angle);
 
           // Rotate to get the coefficients
-          coefficients[output_index++] = cal.real() * cos_val - cal.imag() * sin_val;
-          coefficients[output_index++] = -cal.real() * sin_val - cal.imag() * cos_val;
+          float real = cal.real() * cos_val - cal.imag() * sin_val;
+          float imag = -cal.real() * sin_val - cal.imag() * cos_val;
+          coefficients[output_index++] = thrust::complex<float>(real, imag);
         }
       }
     }
