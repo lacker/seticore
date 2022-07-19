@@ -65,7 +65,7 @@ class Beamformer {
   thrust::complex<float> getFFTBuffer(int pol, int antenna, int coarse_channel,
                                       int time, int last_index) const;
   thrust::complex<float> getPrebeam(int time, int channel, int pol, int antenna) const;
-  thrust::complex<float> getVoltage(int time, int channel, int beam, int pol) const;
+  thrust::complex<float> getVoltage(int time, int pol, int channel, int beam) const;
 
   // Beamforming coefficients, formatted by row-major:
   //   coefficients[coarse-channel][beam][polarity][antenna][real or imag]
@@ -90,7 +90,7 @@ class Beamformer {
   //   buffer[pol][antenna][coarse-channel][time][fine-channel]
   //
   // After beamforming, the voltage data is also placed here, in row-major:
-  //   voltage[time][channel][beam][polarity]
+  //   voltage[time][polarity][channel][beam]
   thrust::complex<float>* buffer;
   size_t buffer_size;
   

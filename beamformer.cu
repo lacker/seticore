@@ -126,8 +126,8 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
       }
 
       if (antenna == 0) {
-        int voltage_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
-                                    fft_size, beam, nbeams, pol, npol);
+        int voltage_index = index5d(time, pol, npol, coarse_chan, num_coarse_channels,
+                                    fine_chan, fft_size, beam, nbeams);
         assert(voltage_index < voltage_size);
         voltage[voltage_index] = reduced[0];
       }
@@ -189,7 +189,7 @@ void Beamformer::runCublasBeamform(int time, int pol) {
   power value, by adding the norm of each complex voltage.
 
   The input voltages have format: 
-    voltage[time][frequency][beam][polarity]
+    voltage[time][polarity][frequency][beam]
 
   and the output power has format:
     power[beam][time][frequency]
@@ -214,8 +214,8 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   int time = coarse_timestep * STI + fine_timestep;
 
   assert(2 == npol);
-  int pol0_index = index4d(time, chan, num_channels, beam, nbeams, 0, npol);
-  int pol1_index = index4d(time, chan, num_channels, beam, nbeams, 1, npol);
+  int pol0_index = index4d(time, 0, npol, chan, num_channels, beam, nbeams);
+  int pol1_index = index4d(time, 1, npol, chan, num_channels, beam, nbeams);
   int power_index = index3d(beam, output_timestep, num_output_timesteps, chan, num_channels);
 
   __shared__ float reduced[STI];
@@ -396,14 +396,14 @@ thrust::complex<float> Beamformer::getPrebeam(int time, int channel, int pol, in
   return prebeam[i];
 }
 
-thrust::complex<float> Beamformer::getVoltage(int time, int channel, int beam, int pol) const {
+thrust::complex<float> Beamformer::getVoltage(int time, int pol, int channel, int beam) const {
   cudaDeviceSynchronize();
   checkCuda("Beamformer getVoltage");
   assert(time < nsamp);
+  assert(pol < npol);
   assert(channel < numOutputChannels());
   assert(beam < nbeams);
-  assert(pol < npol);
-  int i = index4d(time, channel, numOutputChannels(), beam, nbeams, pol, npol);
+  int i = index4d(time, pol, npol, channel, numOutputChannels(), beam, nbeams);
   return buffer[i];
 }
 
