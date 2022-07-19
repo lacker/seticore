@@ -225,8 +225,6 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   start_channel is the first one of the range, num_channels is the size of the range.
   center_frequency is the center of the subband in MHz. (the OBSFREQ header)
   bandwidth is the width of the subband in MHz, negative for reversed. (the OBSBW header)
-
-  This method conjugates the coefficients that are stored in the file.
  */
 void RecipeFile::generateCoefficients(int time_array_index,
                                       int start_channel, int num_channels,
@@ -260,7 +258,7 @@ void RecipeFile::generateCoefficients(int time_array_index,
 
           // Rotate to get the coefficients
           float real = cal.real() * cos_val - cal.imag() * sin_val;
-          float imag = -cal.real() * sin_val - cal.imag() * cos_val;
+          float imag = cal.real() * sin_val + cal.imag() * cos_val;
           coefficients[output_index++] = thrust::complex<float>(real, imag);
         }
       }

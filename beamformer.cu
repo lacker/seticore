@@ -111,7 +111,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   for (int pol = 0; pol < npol; ++pol) {
     int coeff_index = index4d(coarse_chan, beam, nbeams, pol, npol, antenna, nants);
     assert(2 * coeff_index + 1 < coefficients_size);
-    thrust::complex<float> conjugated = coefficients[coeff_index];
+    thrust::complex<float> conjugated = thrust::conj(coefficients[coeff_index]);
     for (int time = 0; time < num_timesteps; ++time) {
       int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
                                   fft_size, pol, npol, antenna, nants);
@@ -150,7 +150,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
 
   To convert into the notation used by the blog post:
 
-  A = coefficients (which we will transpose)
+  A = coefficients (which we will conjugate and transpose)
   B = prebeam
   C = voltage
   m = beam
@@ -198,7 +198,7 @@ void Beamformer::runCublasBeamform(int time, int pol) {
 
   cublasCgemm3mStridedBatched
     (cublas_handle, 
-     CUBLAS_OP_T, CUBLAS_OP_N,
+     CUBLAS_OP_C, CUBLAS_OP_N,
      nbeams, fft_size, nants,
      &COMPLEX_ONE,
      coeff_start, coeff_beam_stride, coeff_coarse_stride, 
