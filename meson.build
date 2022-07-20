@@ -40,6 +40,7 @@ srcs = [
     'dat_file_writer.cpp',
     'filterbank_buffer.cu',
     'filterbank_file_reader.cpp',
+    'filterbank_metadata.cpp',
     'fil_reader.cpp',
     'h5_reader.cpp',
     'hit.capnp.c++',
