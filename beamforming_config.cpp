@@ -93,6 +93,18 @@ void BeamformingConfig::run() {
   
   FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
 
+  Dedopplerer dedopplerer(multibeam.num_timesteps,
+                          fb_buffer.num_channels,
+                          metadata.foff, metadata.tsamp, false);
+  dedopplerer.print_hit_summary = true;
+  cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
+  
+  // These buffers hold data we have read from raw input while we are working on them
+  shared_ptr<RawBuffer> read_buffer;
+  shared_ptr<DeviceRawBuffer> input_buffer = reader.makeDeviceBuffer();
+  cout << "input buffer memory: " << prettyBytes(input_buffer->data_size) << endl;
+
+  
   if (hit_recorder == NULL) {
     string output_filename = fmt::format("{}/{}.hits", output_dir,
                                          file_group.prefix);
@@ -102,16 +114,6 @@ void BeamformingConfig::run() {
     hit_recorder.reset(hfw);
   }
 
-  Dedopplerer dedopplerer(multibeam.num_timesteps,
-                          fb_buffer.num_channels,
-                          metadata.foff, metadata.tsamp, false);
-  dedopplerer.print_hit_summary = true;
-  cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
-  
-  // These buffers hold data we have read from raw input while we are working on them
-  shared_ptr<RawBuffer> cpu_work_buffer;
-  shared_ptr<RawBuffer> gpu_work_buffer = reader.makeBuffer(true);
-  cout << "raw buffer memory: " << prettyBytes(gpu_work_buffer->data_size) << endl;
   
   cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
        << pluralize(num_bands_to_process, "band") << endl;
@@ -144,10 +146,10 @@ void BeamformingConfig::run() {
       // So we have to wait for it to complete.
       cudaDeviceSynchronize();
 
-      reader.returnBuffer(cpu_work_buffer);
-      cpu_work_buffer = reader.read();
-      gpu_work_buffer->copyFromAsync(*cpu_work_buffer);
-      beamformer.run(*gpu_work_buffer, multibeam, time_offset);
+      reader.returnBuffer(read_buffer);
+      read_buffer = reader.read();
+      input_buffer->copyFromAsync(*read_buffer);
+      beamformer.run(*input_buffer, multibeam, time_offset);
     }
 
     cout << endl;

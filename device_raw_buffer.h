@@ -1,15 +1,17 @@
 #pragma once
 
+#include "raw_buffer.h"
+
 using namespace std;
 
 /*
-  The RawBuffer stores data from a raw file in pinned memory.
+  The DeviceRawBuffer stores data from a raw file in GPU memory.
 
   Its format is row-major:
     input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
-*/
+ */
 
-class RawBuffer {
+class DeviceRawBuffer {
  public:
   const int num_blocks;
   const int num_antennas;
@@ -20,11 +22,11 @@ class RawBuffer {
   int8_t* data;
   size_t data_size;
   
-  RawBuffer(int num_blocks, int num_antennas, int num_coarse_channels,
-            int timesteps_per_block, int npol);
+  DeviceRawBuffer(int num_blocks, int num_antennas, int num_coarse_channels,
+                  int timesteps_per_block, int npol);
 
-  ~RawBuffer();
+  ~DeviceRawBuffer();
 
-  // Returns a pointer to where data for the given block should start
-  char* blockPointer(int block) const;
+  void copyFromAsync(const RawBuffer& source);
+
 };

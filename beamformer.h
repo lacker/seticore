@@ -4,8 +4,8 @@
 #include <cufft.h>
 #include <thrust/complex.h>
 
+#include "device_raw_buffer.h"
 #include "multibeam_buffer.h"
-#include "raw_buffer.h"
 
 using namespace std;
 
@@ -62,7 +62,7 @@ class Beamformer {
   int numOutputChannels() const;
   int numOutputTimesteps() const;
   
-  void run(RawBuffer& input, MultibeamBuffer& output, int time_offset);
+  void run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_offset);
 
   // These cause a cuda sync so they are slow, only useful for debugging or testing
   thrust::complex<float> getCoefficient(int antenna, int pol, int beam, int coarse_channel) const;

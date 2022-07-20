@@ -346,7 +346,7 @@ int Beamformer::numOutputTimesteps() const {
      power[beam][time][channel]
   but its time resolution has been reduced by a factor of (fft_size * STI).
  */
-void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset) {
+void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_offset) {
   int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;

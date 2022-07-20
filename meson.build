@@ -36,6 +36,7 @@ srcs = [
     'cuda_util.cu',
     'dedoppler.cu',
     'dedoppler_hit.cpp',
+    'device_raw_buffer.cu',
     'dat_file_writer.cpp',
     'filterbank_buffer.cu',
     'filterbank_file.cpp',

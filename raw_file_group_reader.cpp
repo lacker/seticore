@@ -24,7 +24,7 @@ RawFileGroupReader::~RawFileGroupReader() {
   }
 }
 
-shared_ptr<RawBuffer> RawFileGroupReader::makeBuffer(bool gpu) {
+shared_ptr<RawBuffer> RawFileGroupReader::makeBuffer() {
   unique_lock<mutex> lock(m);
   if (!extra_buffers.empty()) {
     auto buffer = extra_buffers.front();
@@ -34,11 +34,20 @@ shared_ptr<RawBuffer> RawFileGroupReader::makeBuffer(bool gpu) {
   lock.unlock();
 
   int coarse_channels_per_band = file_group.num_coarse_channels / file_group.num_bands;  
-  return shared_ptr<RawBuffer>(new RawBuffer(gpu, blocks_per_batch,
+  return shared_ptr<RawBuffer>(new RawBuffer(blocks_per_batch,
                                              file_group.nants,
                                              coarse_channels_per_band,
                                              file_group.timesteps_per_block,
                                              file_group.npol));
+}
+
+shared_ptr<DeviceRawBuffer> RawFileGroupReader::makeDeviceBuffer() {
+  int coarse_channels_per_band = file_group.num_coarse_channels / file_group.num_bands;  
+  return shared_ptr<DeviceRawBuffer>(new DeviceRawBuffer(blocks_per_batch,
+                                                         file_group.nants,
+                                                         coarse_channels_per_band,
+                                                         file_group.timesteps_per_block,
+                                                         file_group.npol));
 }
 
 shared_ptr<RawBuffer> RawFileGroupReader::read() {
@@ -58,7 +67,6 @@ void RawFileGroupReader::returnBuffer(shared_ptr<RawBuffer> buffer) {
   if (buffer.get() == NULL) {
     return;
   }
-  assert(!buffer->gpu);
   unique_lock<mutex> lock(m);
   extra_buffers.push(buffer);
 }
@@ -83,7 +91,7 @@ void RawFileGroupReader::runIOThread() {
   for (int band = 0; band < num_bands; ++band) {
     file_group.resetBand(band);
     for (int batch = 0; batch < num_batches; ++batch) {
-      auto buffer = makeBuffer(false);
+      auto buffer = makeBuffer();
 
       for (int block = 0; block < buffer->num_blocks; ++block) {
         file_group.read(buffer->blockPointer(block));

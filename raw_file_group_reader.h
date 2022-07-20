@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 
+#include "device_raw_buffer.h"
 #include "raw_buffer.h"
 #include "raw_file_group.h"
 
@@ -39,7 +40,10 @@ class RawFileGroupReader {
   ~RawFileGroupReader();
 
   // Makes a buffer of the correct size, reusing our pool of extra buffers if possible
-  shared_ptr<RawBuffer> makeBuffer(bool gpu);
+  shared_ptr<RawBuffer> makeBuffer();
+
+  // Makes a buffer of the correct size in GPU memory
+  shared_ptr<DeviceRawBuffer> makeDeviceBuffer();
   
   shared_ptr<RawBuffer> read();
 
