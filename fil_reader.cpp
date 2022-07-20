@@ -44,7 +44,7 @@ FilReader::FilReader(const string& filename) : FilterbankFileReader(filename),
     } else if (attr_name == "nsamples") {
       num_timesteps = readBasic<int>();
     } else if (attr_name == "nchans") {
-      num_freqs = readBasic<int>();
+      num_channels = readBasic<int>();
     } else if (attr_name == "nifs") {
       readBasic<int>();
     } else if (attr_name == "nbeams") {
@@ -96,12 +96,12 @@ FilReader::FilReader(const string& filename) : FilterbankFileReader(filename),
     exit(1);
   }
   long num_floats = num_data_bytes / sizeof(float);
-  if (num_floats % num_freqs != 0) {
-    cerr << "we have " << num_floats << " which does not divide into " << num_freqs
+  if (num_floats % num_channels != 0) {
+    cerr << "we have " << num_floats << " which does not divide into " << num_channels
          << " frequencies\n";
     exit(1);
   }
-  long inferred_num_timesteps = num_floats / num_freqs;
+  long inferred_num_timesteps = num_floats / num_channels;
   if (num_timesteps == 0) {
     num_timesteps = inferred_num_timesteps;
   } else if (num_timesteps != inferred_num_timesteps) {

@@ -23,7 +23,7 @@ class FilterbankMetadata {
   bool has_dc_spike;
   string source_name;
   double fch1, foff, tstart, tsamp, src_dej, src_raj;
-  int num_timesteps, num_freqs, coarse_channel_size, num_coarse_channels, telescope_id;
+  int num_timesteps, num_channels, coarse_channel_size, num_coarse_channels, telescope_id;
   
   virtual ~FilterbankMetadata() {}
 

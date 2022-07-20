@@ -14,14 +14,14 @@ FilterbankMetadata::FilterbankMetadata(): has_dc_spike(false), coarse_channel_si
     num_coarse_channels
  */
 void FilterbankMetadata::inferMetadata() {
-  if (num_timesteps == 16 && num_freqs % 1048576 == 0) {
+  if (num_timesteps == 16 && num_channels % 1048576 == 0) {
     // Looks like Green Bank data
     assert(telescope_id == NO_TELESCOPE_ID || telescope_id == GREEN_BANK);
     if (coarse_channel_size == 0) {
       coarse_channel_size = 1048576;
     }
     has_dc_spike = true;
-  } else if (num_freqs == 50331648) {
+  } else if (num_channels == 50331648) {
     // Looks like ATA data
     assert(telescope_id == NO_TELESCOPE_ID || telescope_id == ATA);
     if (coarse_channel_size == 0) {
@@ -34,9 +34,9 @@ void FilterbankMetadata::inferMetadata() {
     has_dc_spike = (telescope_id == GREEN_BANK);
   } else {
     cerr << "unable to infer coarse channel size for data with dimensions: "
-         << num_timesteps << " x " << num_freqs << ". please set the nfpc header."
+         << num_timesteps << " x " << num_channels << ". please set the nfpc header."
          << endl;
     exit(1);
   }
-  num_coarse_channels = num_freqs / coarse_channel_size;
+  num_coarse_channels = num_channels / coarse_channel_size;
 }

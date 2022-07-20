@@ -54,7 +54,7 @@ H5Reader::H5Reader(const string& filename) : FilterbankFileReader(filename) {
     exit(1);
   }
   num_timesteps = dims[0];
-  num_freqs = dims[2];
+  num_channels = dims[2];
   
   telescope_id = getLongAttr("telescope_id");
 

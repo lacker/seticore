@@ -33,10 +33,10 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   double time_per_beamform = time_per_block * beamformer.nblocks;
   metadata.tsamp = time_per_beamform / beamformer.numOutputTimesteps();
   metadata.num_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
-  metadata.num_freqs = beamformer.numOutputChannels() * file_group.num_bands;
+  metadata.num_channels = beamformer.numOutputChannels() * file_group.num_bands;
   metadata.telescope_id = telescope_id;
   metadata.coarse_channel_size = beamformer.fft_size;
-  metadata.num_coarse_channels = metadata.num_freqs / metadata.coarse_channel_size;
+  metadata.num_coarse_channels = metadata.num_channels / metadata.coarse_channel_size;
 
   return metadata;
 }
