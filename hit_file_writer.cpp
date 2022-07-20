@@ -13,7 +13,7 @@ using namespace std;
 const int EXTRA_COLUMNS = 40;
 
 HitFileWriter::HitFileWriter(const string& filename,
-                             const FilterbankFileReader& metadata)
+                             const FilterbankMetadata& metadata)
   : metadata(metadata), verbose(true) {
   fd = open(filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {

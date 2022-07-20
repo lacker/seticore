@@ -20,11 +20,10 @@
 
 // Construct metadata for the data created by a RawFileGroup and Beamformer.
 // This metadata should apply to the entire span of channels, not just one band.
-FilterbankFileReader combineMetadata(const RawFileGroup& file_group,
+FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
                                      const Beamformer& beamformer,
                                      int telescope_id) {
-  FilterbankFileReader metadata("");
-  metadata.has_dc_spike = false;
+  FilterbankMetadata metadata;
   metadata.source_name = file_group.source_name;
   metadata.fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
   double output_bandwidth = file_group.obsbw / file_group.num_bands;
@@ -91,7 +90,7 @@ void BeamformingConfig::run() {
   fb_buffer.zero();
   cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.data_bytes) << endl;
   
-  FilterbankFileReader metadata = combineMetadata(file_group, beamformer, telescope_id);
+  FilterbankMetadata metadata = combineMetadata(file_group, beamformer, telescope_id);
 
   Dedopplerer dedopplerer(multibeam.num_timesteps,
                           fb_buffer.num_channels,
