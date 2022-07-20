@@ -5,25 +5,84 @@
 
 using namespace std;
 
+
 DeviceRawBuffer::DeviceRawBuffer(int num_blocks, int num_antennas,
-                     int num_coarse_channels,
-                     int timesteps_per_block, int npol)
+                                 int num_coarse_channels,
+                                 int timesteps_per_block, int npol)
   : num_blocks(num_blocks), num_antennas(num_antennas),
     num_coarse_channels(num_coarse_channels),
-    timesteps_per_block(timesteps_per_block), npol(npol) {
+    timesteps_per_block(timesteps_per_block), npol(npol),
+    state(DeviceRawBufferState::unused) {
   data_size = sizeof(int8_t) * num_blocks * num_antennas * num_coarse_channels *
     timesteps_per_block * npol * 2;
   cudaMalloc(&data, data_size);
-  checkCuda("DeviceRawBuffer malloc");
+  cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+  checkCuda("DeviceRawBuffer init");
 }
 
 DeviceRawBuffer::~DeviceRawBuffer() {
   cudaFree(data);
+  cudaStreamDestroy(stream);
 }
 
-// Should work for any combination of gpu and non-gpu
+// Should only be called from the producer thread
 void DeviceRawBuffer::copyFromAsync(const RawBuffer& other) {
   assert(data_size == other.data_size);
-  cudaMemcpyAsync(data, other.data, data_size, cudaMemcpyHostToDevice);
+  waitUntilUnused();
+
+  unique_lock<mutex> lock(m);
+  assert(state == DeviceRawBufferState::unused);
+  state = DeviceRawBufferState::copying;
+  lock.unlock();
+  // Nobody waits on copying state, so no need to notify
+  
+  cudaMemcpyAsync(data, other.data, data_size, cudaMemcpyHostToDevice, stream);
+  cudaStreamAddCallback(stream, DeviceRawBuffer::staticCopyCallback, this, 0);
 }
 
+void DeviceRawBuffer::waitUntilReady() {
+  unique_lock<mutex> lock(m);
+  while (state != DeviceRawBufferState::ready) {
+    cv.wait(lock);
+  }
+}
+
+void DeviceRawBuffer::waitUntilUnused() {
+  unique_lock<mutex> lock(m);
+  while (state != DeviceRawBufferState::unused) {
+    cv.wait(lock);
+  }
+}
+
+void DeviceRawBuffer::release() {
+  unique_lock<mutex> lock(m);
+  assert(state == DeviceRawBufferState::ready);
+  state = DeviceRawBufferState::unused;
+  lock.unlock();
+  cv.notify_all();
+}
+
+void CUDART_CB DeviceRawBuffer::staticCopyCallback(cudaStream_t stream,
+                                                   cudaError_t status,
+                                                   void *device_raw_buffer) {
+  assert(status == cudaSuccess);
+  DeviceRawBuffer* object = (DeviceRawBuffer*) device_raw_buffer;
+  object->copyCallback();
+}
+
+void CUDART_CB DeviceRawBuffer::staticRelease(cudaStream_t stream,
+                                              cudaError_t status,
+                                              void *device_raw_buffer) {
+  assert(status == cudaSuccess);
+  DeviceRawBuffer* object = (DeviceRawBuffer*) device_raw_buffer;
+  object->release();
+}
+
+void DeviceRawBuffer::copyCallback() {
+  // Advance state to "ready"
+  unique_lock<mutex> lock(m);
+  assert(state == DeviceRawBufferState::copying);
+  state = DeviceRawBufferState::ready;
+  lock.unlock();
+  cv.notify_all();
+}

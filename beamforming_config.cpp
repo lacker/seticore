@@ -101,8 +101,8 @@ void BeamformingConfig::run() {
   
   // These buffers hold data we have read from raw input while we are working on them
   shared_ptr<RawBuffer> read_buffer;
-  shared_ptr<DeviceRawBuffer> input_buffer = reader.makeDeviceBuffer();
-  cout << "input buffer memory: " << prettyBytes(input_buffer->data_size) << endl;
+  shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.makeDeviceBuffer();
+  cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->data_size) << endl;
 
   
   if (hit_recorder == NULL) {
@@ -142,14 +142,15 @@ void BeamformingConfig::run() {
                                   beamformer.coefficients);
       int time_offset = beamformer.numOutputTimesteps() * batch;
 
-      // The beamformer could still be using the work buffers.
-      // So we have to wait for it to complete.
-      cudaDeviceSynchronize();
+      // The beamformer could still be using the raw buffers.
+      // So we have to wait for it to finish.
+      device_raw_buffer->waitUntilUnused();
 
       reader.returnBuffer(read_buffer);
       read_buffer = reader.read();
-      input_buffer->copyFromAsync(*read_buffer);
-      beamformer.run(*input_buffer, multibeam, time_offset);
+      device_raw_buffer->copyFromAsync(*read_buffer);
+      device_raw_buffer->waitUntilReady();
+      beamformer.run(*device_raw_buffer, multibeam, time_offset);
     }
 
     cout << endl;

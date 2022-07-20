@@ -345,6 +345,9 @@ int Beamformer::numOutputTimesteps() const {
   The format of the output is row-major:
      power[beam][time][channel]
   but its time resolution has been reduced by a factor of (fft_size * STI).
+
+  The input must be ready to go when run is called. In the future it would be nice
+  if the input could be asynchronously populated.
  */
 void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_offset) {
   int time_per_block = nsamp / nblocks;
@@ -358,6 +361,9 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_o
      nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");
 
+  // Release the input buffer when we're done with it
+  cudaStreamAddCallback(stream, DeviceRawBuffer::staticRelease, &input, 0);
+  
   // Run FFTs. TODO: see if there's a faster way
   int num_ffts = nants * npol * num_coarse_channels * nsamp / fft_size;
   int batch_size = nants * npol;

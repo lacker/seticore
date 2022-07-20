@@ -27,6 +27,7 @@ const int BUFFER_QUEUE_MAX_SIZE = 4;
 
   The file IO is done in a separate IO thread, reading ahead a few batches,
   synchronizing on buffer_queue so the caller can read() on the user thread.
+  read() should only be called from a single thread.
  */
 class RawFileGroupReader {
  public:
