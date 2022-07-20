@@ -52,8 +52,11 @@ class Beamformer {
   // This will be reduced by two multiplicative factors, fft_size and STI.
   const int nsamp;
 
-  Beamformer(int fft_size, int nants, int nbeams, int nblocks, int num_coarse_channels,
-             int npol, int nsamp);
+  // The beamformer runs all its operations on one stream.
+  const cudaStream_t stream;
+  
+  Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
+             int nblocks, int num_coarse_channels, int npol, int nsamp);
   ~Beamformer();
 
   int numOutputChannels() const;

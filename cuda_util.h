@@ -12,6 +12,13 @@ const int CUDA_MAX_THREADS = 1024;
 // Helpers to nicely display cuda errors
 void checkCuda(const string& tag);
 
+// Helper to check errors and clean up
+class Stream {
+public:
+  cudaStream_t stream;
+  Stream();
+  ~Stream();
+};
 
 // Helper to calculate a 3d row-major index, ie for:
 //   arr[a][b][c]

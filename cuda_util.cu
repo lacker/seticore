@@ -12,5 +12,12 @@ void checkCuda(const string& tag) {
   }
 }
 
+Stream::Stream() {
+  cudaStreamCreate(&stream);
+  checkCuda("cudaStreamCreate");
+}
 
- 
+Stream::~Stream() {
+  cudaStreamDestroy(stream);
+  checkCuda("cudaStreamDestroy");
+}

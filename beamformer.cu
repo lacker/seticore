@@ -196,6 +196,7 @@ void Beamformer::runCublasBeamform(int time, int pol) {
   int voltage_coarse_stride = index5d(0, 0, npol, 1, num_coarse_channels,
                                       0, fft_size, 0, nbeams);
 
+  cublasSetStream(cublas_handle, stream);
   cublasCgemm3mStridedBatched
     (cublas_handle, 
      CUBLAS_OP_C, CUBLAS_OP_N,
@@ -273,10 +274,11 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   TODO: nants and npol are specified twice, once by the recipe file and once by the input.
   We should check to ensure they are the same and handle it cleanly if they aren't.
  */
-Beamformer::Beamformer(int fft_size, int nants, int nbeams, int nblocks,
-                       int num_coarse_channels, int npol, int nsamp)
+Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
+                       int nblocks, int num_coarse_channels, int npol, int nsamp)
   : fft_size(fft_size), nants(nants), nbeams(nbeams), nblocks(nblocks),
-    num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp) {
+    num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp),
+    stream(stream) {
   assert(0 == nsamp % (STI * fft_size));
   assert(0 == nsamp % nblocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
@@ -350,7 +352,7 @@ void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset)
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
   dim3 convert_raw_block(CUDA_MAX_THREADS, 1, 1);
   dim3 convert_raw_grid(cuda_blocks_per_block, nblocks, nants * num_coarse_channels);
-  convertRaw<<<convert_raw_grid, convert_raw_block>>>
+  convertRaw<<<convert_raw_grid, convert_raw_block, 0, stream>>>
     (input.data, input.data_size,
      buffer, buffer_size,
      nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
@@ -368,8 +370,8 @@ void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset)
 
   dim3 shift_block(1, nants, npol);
   dim3 shift_grid(fft_size, num_coarse_channels, nsamp / fft_size);
-  shift<<<shift_grid, shift_block>>>(buffer, prebeam, fft_size, nants, npol,
-                                     num_coarse_channels, nsamp / fft_size);
+  shift<<<shift_grid, shift_block, 0, stream>>>
+    (buffer, prebeam, fft_size, nants, npol, num_coarse_channels, nsamp / fft_size);
   checkCuda("Beamformer shift");
 
   bool use_cublas = true;
@@ -382,16 +384,14 @@ void Beamformer::run(RawBuffer& input, MultibeamBuffer& output, int time_offset)
   } else {
     dim3 beamform_block(nants, 1, 1);
     dim3 beamform_grid(fft_size, num_coarse_channels, nbeams);
-    beamform<<<beamform_grid, beamform_block>>>(prebeam, coefficients, buffer, fft_size,
-                                                nants, nbeams, num_coarse_channels, npol,
-                                                nsamp / fft_size, prebeam_size,
-                                                buffer_size,
-                                                coefficients_size);
+    beamform<<<beamform_grid, beamform_block, 0, stream>>>
+      (prebeam, coefficients, buffer, fft_size, nants, nbeams, num_coarse_channels,
+       npol, nsamp / fft_size, prebeam_size, buffer_size, coefficients_size);
   }
   
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
-  calculatePower<<<power_grid, power_block>>>
+  calculatePower<<<power_grid, power_block, 0, stream>>>
     (buffer, output.data, nbeams, numOutputChannels(), npol, numOutputTimesteps(),
      time_offset);
   checkCuda("Beamformer calculatePower");

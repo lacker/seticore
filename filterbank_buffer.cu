@@ -7,6 +7,7 @@
 
 using namespace std;
 
+// Creates a buffer that owns its own memory.
 FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels)
   : num_timesteps(num_timesteps), num_channels(num_channels), managed(true),
     data_size(num_timesteps * num_channels),
@@ -15,6 +16,7 @@ FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels)
   checkCuda("FilterbankBuffer data malloc");
 }
 
+// Creates a buffer that is a view on memory owned by the caller.
 FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels, float* data)
   : num_timesteps(num_timesteps), num_channels(num_channels), managed(false),
     data_size(num_timesteps * num_channels),

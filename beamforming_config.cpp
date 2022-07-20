@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "beamformer.h"
+#include "cuda_util.h"
 #include "dedoppler.h"
 #include "hit_file_writer.h"
 #include "hit_recorder.h"
@@ -70,8 +71,9 @@ void BeamformingConfig::run() {
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
-  Beamformer beamformer(fft_size, file_group.nants, recipe.nbeams, blocks_per_batch,
-                        coarse_channels_per_band, file_group.npol, nsamp);
+  Beamformer beamformer(0, fft_size, file_group.nants, recipe.nbeams,
+                        blocks_per_batch, coarse_channels_per_band, file_group.npol,
+                        nsamp);
 
   // Create a buffer large enough to hold all beamformer batches for one band  
   int num_batches = file_group.num_blocks / beamformer.nblocks;
