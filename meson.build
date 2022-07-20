@@ -43,6 +43,7 @@ srcs = [
     'filterbank_metadata.cpp',
     'fil_reader.cpp',
     'h5_reader.cpp',
+    'h5_writer.cpp',
     'hit.capnp.c++',
     'hit_file_writer.cpp',
     'hit_recorder.cpp',
