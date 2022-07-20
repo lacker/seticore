@@ -2,9 +2,9 @@
 #include <iostream>
 #include <memory>
 
-#include "filterbank_file.h"
-#include "fil_file.h"
-#include "h5_file.h"
+#include "filterbank_file_reader.h"
+#include "fil_reader.h"
+#include "h5_reader.h"
 
 using namespace std;
 
@@ -24,7 +24,7 @@ const int MEERKAT = 64;
     has_dc_spike
     num_coarse_channels
  */
-void FilterbankFile::inferMetadata() {
+void FilterbankFileReader::inferMetadata() {
   if (num_timesteps == 16 && num_freqs % 1048576 == 0) {
     // Looks like Green Bank data
     assert(telescope_id == NO_TELESCOPE_ID || telescope_id == GREEN_BANK);
@@ -51,19 +51,19 @@ void FilterbankFile::inferMetadata() {
   num_coarse_channels = num_freqs / coarse_channel_size;
 }
 
-void FilterbankFile::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
-  cerr << "cannot loadCoarseChannel from a base FilterbankFile: "
+void FilterbankFileReader::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
+  cerr << "cannot loadCoarseChannel from a base FilterbankFileReader: "
        << filename << "\n";
   exit(1);
 }
 
-unique_ptr<FilterbankFile> loadFilterbankFile(const string& filename) {
+unique_ptr<FilterbankFileReader> loadFilterbankFile(const string& filename) {
   if (boost::algorithm::ends_with(filename, ".h5")) {
-    return unique_ptr<FilterbankFile>(new H5File(filename));
+    return unique_ptr<FilterbankFileReader>(new H5Reader(filename));
   }
 
   if (boost::algorithm::ends_with(filename, ".fil")) {
-    return unique_ptr<FilFile>(new FilFile(filename));
+    return unique_ptr<FilterbankFileReader>(new FilReader(filename));
   }
   
   cerr << "could not recognize the file type of " << filename << endl;

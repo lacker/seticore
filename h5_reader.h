@@ -1,6 +1,6 @@
 #pragma once
 
-#include "filterbank_file.h"
+#include "filterbank_file_reader.h"
 #include "hdf5.h"
 
 using namespace std;
@@ -11,7 +11,7 @@ using namespace std;
   particular data from headers.
   Also known as the "FBH5" format.
  */
-class H5File: public FilterbankFile {
+class H5Reader: public FilterbankFileReader {
  private:
   double getDoubleAttr(const string& name) const;
   string getStringAttr(const string& name) const;
@@ -21,8 +21,8 @@ class H5File: public FilterbankFile {
   int hit_count;
   
  public:
-  H5File(const string& filename);
-  ~H5File();
+  H5Reader(const string& filename);
+  ~H5Reader();
 
   void loadCoarseChannel(int i, FilterbankBuffer* buffer) const;
 };

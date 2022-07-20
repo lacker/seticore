@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string.h>
 
-#include "h5_file.h"
+#include "h5_reader.h"
 
 using namespace std;
 
@@ -14,7 +14,7 @@ using namespace std;
   telescope input from one of the known telescopes. If the data is an
   unexpected size or shape we should be conservative and exit.
  */
-H5File::H5File(const string& filename) : FilterbankFile(filename) {
+H5Reader::H5Reader(const string& filename) : FilterbankFileReader(filename) {
   file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file == H5I_INVALID_HID) {
     cerr << "could not open file: " << filename << endl;
@@ -65,7 +65,7 @@ H5File::H5File(const string& filename) : FilterbankFile(filename) {
   inferMetadata();
 }
 
-double H5File::getDoubleAttr(const string& name) const {
+double H5Reader::getDoubleAttr(const string& name) const {
   double output;
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
@@ -80,7 +80,7 @@ double H5File::getDoubleAttr(const string& name) const {
   return output;
 }
 
-long H5File::getLongAttr(const string& name) const {
+long H5Reader::getLongAttr(const string& name) const {
   long output;
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
@@ -95,7 +95,7 @@ long H5File::getLongAttr(const string& name) const {
   return output;  
 }
 
-bool H5File::attrExists(const string& name) const {
+bool H5Reader::attrExists(const string& name) const {
   auto answer = H5Aexists(dataset, name.c_str());
   if (answer < 0) {
     cerr << "existence check for attr " << name << " failed\n";
@@ -111,7 +111,7 @@ bool H5File::attrExists(const string& name) const {
   subtypes, so when we run into attributes with different formats we
   might have to improve this method.
  */
-string H5File::getStringAttr(const string& name) const {
+string H5Reader::getStringAttr(const string& name) const {
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
     cerr << "could not access attr " << name << endl;
@@ -180,7 +180,7 @@ string H5File::getStringAttr(const string& name) const {
 
   This also corrects for the DC spike, if needed.
 */
-void H5File::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
+void H5Reader::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
   assert(num_timesteps <= buffer->num_timesteps);
   assert(coarse_channel_size == buffer->num_channels);
   
@@ -226,7 +226,7 @@ void H5File::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
   }
 }
   
-H5File::~H5File() {
+H5Reader::~H5Reader() {
   H5Sclose(dataspace);
   H5Dclose(dataset);
   H5Fclose(file);

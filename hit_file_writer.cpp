@@ -12,7 +12,8 @@ using namespace std;
 // The number of extra columns on each side of the hit to store
 const int EXTRA_COLUMNS = 40;
 
-HitFileWriter::HitFileWriter(const string& filename, const FilterbankFile& metadata)
+HitFileWriter::HitFileWriter(const string& filename,
+                             const FilterbankFileReader& metadata)
   : metadata(metadata), verbose(true) {
   fd = open(filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "filterbank_file.h"
+#include "filterbank_file_reader.h"
 #include "hit_recorder.h"
 
 using namespace std;
@@ -14,12 +14,13 @@ using namespace std;
 */
 class DatFileWriter: public HitRecorder {
  private:
-  const FilterbankFile& metadata;
+  const FilterbankFileReader& metadata;
   ofstream file;
   int hit_count;
   
  public:
-  DatFileWriter(const string& filename, const FilterbankFile& metadata, double max_drift);
+  DatFileWriter(const string& filename, const FilterbankFileReader& metadata,
+                double max_drift);
   ~DatFileWriter();
 
   void recordHit(DedopplerHit hit, int beam, int coarse_channel, const float* input);

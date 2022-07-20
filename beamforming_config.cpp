@@ -9,7 +9,7 @@
 #include "hit_file_writer.h"
 #include "hit_recorder.h"
 #include "filterbank_buffer.h"
-#include "filterbank_file.h"
+#include "filterbank_file_reader.h"
 #include <fmt/core.h>
 #include "multibeam_buffer.h"
 #include "raw_file_group.h"
@@ -20,10 +20,10 @@
 
 // Construct metadata for the data created by a RawFileGroup and Beamformer.
 // This metadata should apply to the entire span of channels, not just one band.
-FilterbankFile combineMetadata(const RawFileGroup& file_group,
-                               const Beamformer& beamformer,
-                               int telescope_id) {
-  FilterbankFile metadata("");
+FilterbankFileReader combineMetadata(const RawFileGroup& file_group,
+                                     const Beamformer& beamformer,
+                                     int telescope_id) {
+  FilterbankFileReader metadata("");
   metadata.has_dc_spike = false;
   metadata.source_name = file_group.source_name;
   metadata.fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
@@ -91,7 +91,7 @@ void BeamformingConfig::run() {
   fb_buffer.zero();
   cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.data_bytes) << endl;
   
-  FilterbankFile metadata = combineMetadata(file_group, beamformer, telescope_id);
+  FilterbankFileReader metadata = combineMetadata(file_group, beamformer, telescope_id);
 
   Dedopplerer dedopplerer(multibeam.num_timesteps,
                           fb_buffer.num_channels,

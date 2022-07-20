@@ -3,15 +3,14 @@
 #include <fstream>
 #include <iostream>
 
-#include "filterbank_file.h"
-#include "fil_file.h"
+#include "filterbank_file_reader.h"
 
 using namespace std;
 
 /*
   This class reads in sigproc filterbank files, typically ending in the .fil suffix.
  */
-class FilFile: public FilterbankFile {
+class FilReader: public FilterbankFileReader {
  private:
   ifstream file;
 
@@ -21,8 +20,8 @@ class FilFile: public FilterbankFile {
   string readString();
   
  public:
-  FilFile(const string& filename);
-  ~FilFile();
+  FilReader(const string& filename);
+  ~FilReader();
 
   void loadCoarseChannel(int i, FilterbankBuffer* buffer) const;
 };

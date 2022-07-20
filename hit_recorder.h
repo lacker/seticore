@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "dedoppler_hit.h"
-#include "filterbank_file.h"
+#include "filterbank_file_reader.h"
 
 using namespace std;
 
@@ -18,5 +18,5 @@ class HitRecorder {
 };
 
 unique_ptr<HitRecorder> makeHitRecorder(const string& filename,
-                                        const FilterbankFile& metadata,
+                                        const FilterbankFileReader& metadata,
                                         double max_drift);

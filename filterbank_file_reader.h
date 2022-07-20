@@ -7,11 +7,13 @@
 using namespace std;
 
 /*
-  The FilterbankFile is a base class for the different file formats that store filterbank data.
+  The FilterbankFileReader is a base class for the different file formats that store
+  filterbank data.
 */
-class FilterbankFile {
+class FilterbankFileReader {
  public:
-  FilterbankFile(const string& filename) : filename(filename), coarse_channel_size(0) {}
+  FilterbankFileReader(const string& filename) : filename(filename),
+                                                 coarse_channel_size(0) {}
   
   const string filename;
   bool has_dc_spike;
@@ -21,10 +23,10 @@ class FilterbankFile {
   
   virtual void loadCoarseChannel(int i, FilterbankBuffer* buffer) const;
 
-  virtual ~FilterbankFile() {}
+  virtual ~FilterbankFileReader() {}
   
  protected:
   void inferMetadata();
 };
 
-unique_ptr<FilterbankFile> loadFilterbankFile(const string& filename);
+unique_ptr<FilterbankFileReader> loadFilterbankFile(const string& filename);

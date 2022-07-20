@@ -5,14 +5,14 @@ using namespace std;
 #include <iostream>
 #include <vector>
 
-#include "fil_file.h"
+#include "fil_reader.h"
 
 /*
   Opens a sigproc filterbank file for reading.
   This class is not threadsafe.
 */
-FilFile::FilFile(const string& filename) : FilterbankFile(filename),
-                                           file(filename, ifstream::binary) {
+FilReader::FilReader(const string& filename) : FilterbankFileReader(filename),
+                                               file(filename, ifstream::binary) {
   // Read the headers
   // Note: this code will fail on big-endian systems.
   // If this is not working, you may want to compare it to the code at:
@@ -105,15 +105,15 @@ FilFile::FilFile(const string& filename) : FilterbankFile(filename),
   if (num_timesteps == 0) {
     num_timesteps = inferred_num_timesteps;
   } else if (num_timesteps != inferred_num_timesteps) {
-    cerr << "header num timesteps is " << num_timesteps << " but inferred num timesteps is "
-         << inferred_num_timesteps << endl;
+    cerr << "header num timesteps is " << num_timesteps
+         << " but inferred num timesteps is " << inferred_num_timesteps << endl;
     exit(1);
   }
   
   inferMetadata();
 }
 
-template <class T> T FilFile::readBasic() {
+template <class T> T FilReader::readBasic() {
   T answer;
   file.read((char*)&answer, sizeof(answer));
   return answer;
@@ -121,7 +121,7 @@ template <class T> T FilFile::readBasic() {
 
 // Strings are encoded in filterbank headers as first a uint32 containing the string length,
 // then the string data
-string FilFile::readString() {
+string FilReader::readString() {
   uint32_t num_bytes = readBasic<uint32_t>();
   assert(num_bytes < 256);
   vector<char> buffer(num_bytes);
@@ -131,9 +131,9 @@ string FilFile::readString() {
 }
 
 // Loads the data in row-major order.
-void FilFile::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
-  cerr << "TODO: implement FilFile::loadCoarseChannel\n";
+void FilReader::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
+  cerr << "TODO: implement FilReader::loadCoarseChannel\n";
   exit(1);
 }
 
-FilFile::~FilFile() {}
+FilReader::~FilReader() {}

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "dat_file_writer.h"
-#include "h5_file.h"
+#include "h5_reader.h"
 
 using namespace std;
 
@@ -12,7 +12,8 @@ using namespace std;
   Opens a dat file for writing, to log hits that we find.
   Some metadata for headers is copied out from the h5 file.
  */
-DatFileWriter::DatFileWriter(const string& filename, const FilterbankFile& metadata,
+DatFileWriter::DatFileWriter(const string& filename,
+                             const FilterbankFileReader& metadata,
                              double max_drift) : metadata(metadata) {
   hit_count = 0;
   file.open(filename);

@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "dedoppler.h"
-#include "filterbank_file.h"
+#include "filterbank_file_reader.h"
 #include "hit_recorder.h"
 #include "run_dedoppler.h"
 #include "util.h"
