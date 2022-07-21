@@ -68,9 +68,11 @@ void H5Writer::close() {
 }
 
 void H5Writer::setAttr(const string& name, hid_t type, const void* value) {
-  auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
+  auto scalar = H5Screate(H5S_SCALAR);
+  auto attr = H5Acreate2(dataset, name.c_str(), type, scalar,
+                         H5P_DEFAULT, H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
-    cerr << "could not access attr " << name << endl;
+    cerr << "could not create attr " << name << endl;
     exit(1);
   }
   if (H5Awrite(attr, type, value) < 0) {
@@ -78,6 +80,7 @@ void H5Writer::setAttr(const string& name, hid_t type, const void* value) {
     exit(1);
   }
   H5Aclose(attr);
+  H5Sclose(scalar);
 }
 
 void H5Writer::setDoubleAttr(const string& name, double value) {
