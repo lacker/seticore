@@ -3,7 +3,7 @@
 using namespace std;
 
 /*
-  The FilterbankBuffer stores the contents of a filterbank file in GPU memory.
+  The FilterbankBuffer stores the contents of a filterbank file in unified memory.
   Just one beam. This can be a single coarse channel, or the entire file.
  */
 class FilterbankBuffer {
