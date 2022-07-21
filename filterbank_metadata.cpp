@@ -8,6 +8,20 @@ using namespace std;
 FilterbankMetadata::FilterbankMetadata(): has_dc_spike(false), coarse_channel_size(0) {}
 
 /*
+  Gives the slightly altered metadata that you get if you split this file into bands.
+  The coarse channels have to divide evenly into bands.
+ */
+FilterbankMetadata FilterbankMetadata::getBandMetadata(int band, int num_bands) {
+  assert(0 == num_coarse_channels % num_bands);
+
+  FilterbankMetadata answer(*this);
+  answer.num_coarse_channels = num_coarse_channels / num_bands;
+  answer.num_channels = num_channels / num_bands;
+  answer.fch1 = fch1 + (foff * answer.num_channels * band);
+  return answer;
+}
+
+/*
   Guesses some metadata from other metadata:
     coarse_channel_size
     has_dc_spike

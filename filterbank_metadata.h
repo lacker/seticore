@@ -27,6 +27,8 @@ class FilterbankMetadata {
   
   virtual ~FilterbankMetadata() {}
 
+  FilterbankMetadata getBandMetadata(int band, int num_bands);
+  
  protected:
   void inferMetadata();
 };

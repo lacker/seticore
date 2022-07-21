@@ -6,6 +6,7 @@
 #include "beamformer.h"
 #include "cuda_util.h"
 #include "dedoppler.h"
+#include "h5_writer.h"
 #include "hit_file_writer.h"
 #include "hit_recorder.h"
 #include "filterbank_buffer.h"
@@ -164,8 +165,11 @@ void BeamformingConfig::run() {
                       zeroPad(band, numDigits(num_bands)),
                       zeroPad(beam, numDigits(beamformer.nbeams)));
 
-        // TODO: make the metadata
-        // TODO: actually write out the file
+        FilterbankMetadata band_metadata = metadata.getBandMetadata(band, num_bands);
+        FilterbankBuffer output = multibeam.getBeam(beam);
+        H5Writer writer(h5_filename, band_metadata);
+        writer.setData(output.data);
+        writer.close();
       }
       
       // local_coarse_channel is the index of the coarse channel within the band
