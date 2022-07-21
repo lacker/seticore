@@ -14,6 +14,18 @@ int roundUpToPowerOfTwo(int n) {
   return rounded;
 }
 
+int numDigits(int n) {
+  if (n < 10) {
+    return 1;
+  }
+  return 1 + numDigits(n / 10);
+}
+
+string zeroPad(int n, int size) {
+  string formatter = fmt::format("{{:0{}d}}", size);
+  return fmt::format(formatter, n);
+}
+
 string cToS(thrust::complex<float> c) {
   return fmt::format("{:.6f} + {:.6f} i", c.real(), c.imag());
 }

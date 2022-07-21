@@ -5,7 +5,7 @@
 using namespace std;
 
 /*
-  The MultibeamBuffer stores the contents of a filterbank file in GPU memory,
+  The MultibeamBuffer stores the contents of a filterbank file in unified memory,
   for multiple beams. This can be a single coarse channel, or a number of channels.
 */
 class MultibeamBuffer {

@@ -155,6 +155,19 @@ void BeamformingConfig::run() {
     cout << endl;
     for (int beam = 0; beam < beamformer.nbeams; ++beam) {
 
+      if (!output_h5_dir.empty()) {
+        // Write out data for this band and beam to a file
+        string h5_filename =
+          fmt::format("{}/{}.band{}.beam{}.h5",
+                      output_h5_dir,
+                      file_group.prefix,
+                      zeroPad(band, numDigits(num_bands)),
+                      zeroPad(beam, numDigits(beamformer.nbeams)));
+
+        // TODO: make the metadata
+        // TODO: actually write out the file
+      }
+      
       // local_coarse_channel is the index of the coarse channel within the band
       for (int local_coarse_channel = 0;
            local_coarse_channel < coarse_channels_per_band;

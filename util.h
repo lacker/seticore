@@ -6,6 +6,8 @@
 using namespace std;
 
 int roundUpToPowerOfTwo(int n);
+int numDigits(int n);
+string zeroPad(int n, int size);
 string cToS(thrust::complex<float> c);
 string stripAnyTrailingSlash(const string& s);
 void assertComplexEq(thrust::complex<float> c, float real, float imag);

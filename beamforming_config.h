@@ -26,6 +26,9 @@ public:
 
   // If set, use this to record hits instead of writing a file
   unique_ptr<HitRecorder> hit_recorder;
+
+  // If set, save the beamformed filterbanks as h5 files
+  string output_h5_dir;
   
   BeamformingConfig(const vector<string>& raw_files,
                     const string& output_dir,

@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
   BeamformingConfig config(groups[0], output_dir, recipe_dir, num_bands,
                            fft_size, telescope_id, snr, max_drift, min_drift);
   config.num_bands_to_process = 1;
+
   VectorHitRecorder* recorder = new VectorHitRecorder();
   config.hit_recorder.reset(recorder);
 
