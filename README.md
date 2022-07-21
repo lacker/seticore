@@ -7,13 +7,14 @@ dedoppler algorithm that creates .dat files from .h5 files.
 Install dependencies:
 
 ```
-sudo apt-get install cmake libboost-all-dev libhdf5-dev ninja-build pkg-config
+sudo apt-get install cmake libboost-all-dev libhdf5-dev pkg-config
 ```
 
 You will also need a Python environment for your build tools:
 
 ```
-pip install meson
+python3 -m pip install meson
+python3 -m pip install ninja
 ```
 
 Git clone this repo, then update submodules, then run the make scripts:
