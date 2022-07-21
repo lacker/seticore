@@ -156,11 +156,11 @@ void BeamformingConfig::run() {
     cout << endl;
     for (int beam = 0; beam < beamformer.nbeams; ++beam) {
 
-      if (!output_h5_dir.empty()) {
+      if (!h5_dir.empty()) {
         // Write out data for this band and beam to a file
         string h5_filename =
           fmt::format("{}/{}.band{}.beam{}.h5",
-                      output_h5_dir,
+                      h5_dir,
                       file_group.prefix,
                       zeroPad(band, numDigits(num_bands)),
                       zeroPad(beam, numDigits(beamformer.nbeams)));

@@ -14,7 +14,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.1.5";
+const string VERSION = "0.1.6";
 
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
@@ -41,11 +41,14 @@ int main(int argc, char* argv[]) {
     ("recipe_dir", po::value<string>(),
      "the directory to find beamforming recipes in. set this to beamform.")
 
+    ("h5_dir", po::value<string>(),
+     "optional directory to save .h5 files containing post-beamform data")
+    
     ("num_bands", po::value<int>()->default_value(1),
-     "number of bands to break input into. raise this to lower GPU memory use.")
+     "number of bands to break input into")
 
     ("fft_size", po::value<int>(),
-     "size of the fft for upchannelization.")
+     "size of the fft for upchannelization")
 
     ("telescope_id", po::value<int>(),
      "SIGPROC standard id for the telescope that provided this data")
@@ -84,6 +87,9 @@ int main(int argc, char* argv[]) {
     for (auto group : groups) {
       BeamformingConfig config(group, output_dir, recipe_dir, num_bands,
                                fft_size, telescope_id, snr, max_drift, min_drift);
+      if (vm.count("h5_dir")) {
+        config.h5_dir = vm["h5_dir"].as<string>();
+      }
       config.run();
     }
     return 0;
