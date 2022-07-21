@@ -158,6 +158,7 @@ void BeamformingConfig::run() {
 
       if (!h5_dir.empty()) {
         // Write out data for this band and beam to a file
+        cudaDeviceSynchronize();
         string h5_filename =
           fmt::format("{}/{}.band{}.beam{}.h5",
                       h5_dir,
