@@ -18,7 +18,6 @@ class H5Reader: public FilterbankFileReader {
   long getLongAttr(const string& name) const;
   bool attrExists(const string& name) const;
   hid_t file, dataset, dataspace;
-  int hit_count;
   
  public:
   H5Reader(const string& filename);

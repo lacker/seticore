@@ -59,6 +59,7 @@ srcs = [
 
 tests = [
     'dedoppler_test.cpp',
+    'h5_test.cpp',
     'multibeam_buffer_test.cpp',
 ]
 

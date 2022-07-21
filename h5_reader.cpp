@@ -17,7 +17,7 @@ using namespace std;
 H5Reader::H5Reader(const string& filename) : FilterbankFileReader(filename) {
   file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file == H5I_INVALID_HID) {
-    cerr << "could not open file: " << filename << endl;
+    cerr << "could not open file for reading: " << filename << endl;
     exit(1);
   }
   dataset = H5Dopen2(file, "data", H5P_DEFAULT);
