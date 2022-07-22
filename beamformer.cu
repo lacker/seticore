@@ -278,7 +278,7 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
                        int nblocks, int num_coarse_channels, int npol, int nsamp)
   : fft_size(fft_size), nants(nants), nbeams(nbeams), nblocks(nblocks),
     num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp),
-    stream(stream) {
+    stream(stream), use_cublas_beamform(true) {
   assert(0 == nsamp % (STI * fft_size));
   assert(0 == nsamp % nblocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
@@ -350,6 +350,12 @@ int Beamformer::numOutputTimesteps() const {
   if the input could be asynchronously populated.
  */
 void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_offset) {
+  assert(input.num_blocks == nblocks);
+  assert(input.num_antennas == nants);
+  assert(input.num_coarse_channels == num_coarse_channels);
+  assert(input.timesteps_per_block * input.num_blocks == nsamp);
+  assert(input.npol == npol);
+
   int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
@@ -380,8 +386,7 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_o
     (buffer, prebeam, fft_size, nants, npol, num_coarse_channels, nsamp / fft_size);
   checkCuda("Beamformer shift");
 
-  bool use_cublas = true;
-  if (use_cublas) {
+  if (use_cublas_beamform) {
     for (int time = 0; time < nsamp / fft_size; ++time) {
       for (int pol = 0; pol < npol; ++pol) {
         runCublasBeamform(time, pol);

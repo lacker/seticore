@@ -79,6 +79,9 @@ class Beamformer {
   // The beamformed data, as power.
   float* power;
   size_t power_size;
+
+  // Selects which of two alternatives for the beamform kernel to use
+  bool use_cublas_beamform;
   
  private:
 
