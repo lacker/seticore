@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
+#include <fmt/core.h>
 #include <iostream>
 #include <vector> 
 
@@ -76,6 +77,10 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   int pktidx_diff = header.pktidx - start_pktidx;
   assert(0 == pktidx_diff % piperblk);
   num_blocks = (pktidx_diff / piperblk) + 1;
+
+  float total_time = tbin * timesteps_per_block * num_blocks;
+  cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
+                      total_time, prefix);
 }
 
 RawFileGroup::~RawFileGroup() {}

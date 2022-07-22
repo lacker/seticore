@@ -22,6 +22,7 @@ if [ -s data/diff.txt ]; then
     echo output did not match. either fix the bug, or if the new behavior is correct,
     echo update the golden file with:
     echo   cp data/output.txt data/golden.txt
+    exit 1
 else
     echo output matches. regression test looks good
 fi
