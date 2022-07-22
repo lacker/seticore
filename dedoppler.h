@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cublas_v2.h"
 #include <string>
 #include <vector>
 
@@ -30,9 +31,11 @@ public:
 
   bool print_hits;
   bool print_hit_summary;
+  bool use_cublas_taylor_tree;
   
   // Do not round num_timesteps before creating the Dedopplerer
-  Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
+  Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp,
+              bool has_dc_spike);
   ~Dedopplerer();
 
   void search(const FilterbankBuffer& input, int beam, int coarse_channel,
@@ -67,4 +70,9 @@ private:
 
   // The difference in adjacent drift rates that we look for, in Hz/s
   double drift_rate_resolution;  
+
+  cublasHandle_t cublas_handle;
+
+  void runCublasTaylorTree(const float* source_buffer, float* target_buffer,
+                           int path_length, int drift_block);
 };

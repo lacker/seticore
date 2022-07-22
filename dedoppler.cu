@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <assert.h>
+#include "cublas_v2.h"
 #include <cuda.h>
 #include <functional>
 #include <iostream>
@@ -10,7 +11,6 @@
 #include "cuda_util.h"
 #include "dedoppler.h"
 #include "util.h"
-
 
 /*
   Kernel to runs one round of the Taylor tree algorithm, calculating the sums
@@ -108,7 +108,8 @@
     https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
 */
 __global__ void taylorTree(const float* source_buffer, float* target_buffer,
-                           int num_timesteps, int num_freqs, int path_length, int drift_block) {
+                           int num_timesteps, int num_freqs, int path_length,
+                           int drift_block) {
   assert(path_length <= num_timesteps);
   int freq = blockIdx.x * blockDim.x + threadIdx.x;
   if (freq < 0 || freq >= num_freqs) {
@@ -163,6 +164,52 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
   }
 }
 
+/*
+  Cublas-based equivalent to the taylorTree kernel.
+
+  This is best understood not on its own, but by first understanding taylorTree
+  and then understanding how this is a port of that.
+ */
+void Dedopplerer::runCublasTaylorTree(const float* source_buffer, float* target_buffer,
+                                      int path_length, int drift_block) {
+  assert(path_length <= rounded_num_timesteps);
+
+  cublasSetStream(cublas_handle, 0);
+  
+  int num_time_blocks = num_timesteps / path_length;
+  for (int path_offset = 0; path_offset < path_length; ++path_offset) {
+    int half_offset = path_offset / 2;
+    int freq_shift = (path_offset + 1) / 2 + drift_block * path_length / 2;
+
+    // Calculate the range that freq can be in:
+    //   [freq_begin, freq_end)
+    // freq can be any integer for which freq and freq + freq_shift are both in:
+    //   [0, num_channels)
+    // Note that due to drift blocks, freq_shift can be positive or negative.
+    int freq_begin = max(0, -freq_shift);
+    int freq_end = min(num_channels, num_channels - freq_shift);
+
+    // Figure out the starting pointers for the matrices to add.
+    // To get the start point, we plug in time_block = 0, freq = freq_begin
+    // into the array update line in the taylorTree kernel.
+    float* target_start = target_buffer +
+      (path_offset * num_channels + freq_begin);
+    const float* source_start_1 = source_buffer +
+      (half_offset * num_channels + freq_begin);
+    const float* source_start_2 = source_buffer +
+      ((half_offset + path_length / 2) * num_channels + freq_begin + freq_shift);
+
+    // See:
+    //   https://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-geam
+    // The API is column major so m is frequency, n is time block.
+    int stride = path_length * num_channels;
+    cublasSgeam(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                freq_end - freq_begin, num_time_blocks,
+                &FLOAT_ONE, source_start_1, stride,
+                &FLOAT_ONE, source_start_2, stride,
+                target_start, stride);
+  }
+}
 
 /*
   Gather information about the top hits.
@@ -231,7 +278,8 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
 Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp,
                          bool has_dc_spike)
     : num_timesteps(num_timesteps), num_channels(num_channels), foff(foff), tsamp(tsamp),
-      has_dc_spike(has_dc_spike), print_hits(false), print_hit_summary(false) {
+      has_dc_spike(has_dc_spike), print_hits(false), print_hit_summary(false),
+      use_cublas_taylor_tree(false) {
   assert(num_timesteps > 1);
   rounded_num_timesteps = roundUpToPowerOfTwo(num_timesteps);
   drift_timesteps = rounded_num_timesteps - 1;
@@ -261,6 +309,9 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
   cudaMalloc(&gpu_top_path_offsets, num_channels * sizeof(int));
   cudaMallocHost(&cpu_top_path_offsets, num_channels * sizeof(int));
   checkCuda("Dedopplerer top_path_offsets malloc");
+
+  cublasCreate(&cublas_handle);
+  checkCuda("Dedopplerer cublas handle");
 }
 
 Dedopplerer::~Dedopplerer() {
@@ -334,9 +385,13 @@ void Dedopplerer::search(const FilterbankBuffer& input,
     for (int path_length = 2; path_length <= rounded_num_timesteps; path_length *= 2) {
 
       // Invoke cuda kernel
-      taylorTree<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, target_buffer,
-                                                  rounded_num_timesteps, num_channels,
-                                                  path_length, drift_block);
+      if (use_cublas_taylor_tree) {
+        runCublasTaylorTree(source_buffer, target_buffer, path_length, drift_block);
+      } else {
+        taylorTree<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, target_buffer,
+                                                    rounded_num_timesteps, num_channels,
+                                                    path_length, drift_block);
+      }
       checkCuda("taylorTree");
       
       // Swap buffer aliases to make the old target the new source

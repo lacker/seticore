@@ -5,6 +5,8 @@
 
 using namespace std;
 
+const float FLOAT_ONE = 1.0f;
+
 int roundUpToPowerOfTwo(int n);
 int numDigits(int n);
 string zeroPad(int n, int size);
