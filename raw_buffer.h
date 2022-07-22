@@ -27,4 +27,7 @@ class RawBuffer {
 
   // Returns a pointer to where data for the given block should start
   char* blockPointer(int block) const;
+
+  void set(int block, int antenna, int coarse_channel,
+           int timestep, int pol, bool imag, int8_t value);
 };

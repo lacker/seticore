@@ -278,7 +278,7 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
                        int nblocks, int num_coarse_channels, int npol, int nsamp)
   : fft_size(fft_size), nants(nants), nbeams(nbeams), nblocks(nblocks),
     num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp),
-    stream(stream), use_cublas_beamform(true) {
+    stream(stream), use_cublas_beamform(true), release_input(true) {
   assert(0 == nsamp % (STI * fft_size));
   assert(0 == nsamp % nblocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
@@ -367,8 +367,10 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_o
      nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");
 
-  // Release the input buffer when we're done with it
-  cudaStreamAddCallback(stream, DeviceRawBuffer::staticRelease, &input, 0);
+  if (release_input) {
+    // Release the input buffer when we're done with it
+    cudaStreamAddCallback(stream, DeviceRawBuffer::staticRelease, &input, 0);
+  }
   
   // Run FFTs. TODO: see if there's a faster way
   int num_ffts = nants * npol * num_coarse_channels * nsamp / fft_size;

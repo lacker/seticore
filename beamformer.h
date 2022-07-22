@@ -82,6 +82,9 @@ class Beamformer {
 
   // Selects which of two alternatives for the beamform kernel to use
   bool use_cublas_beamform;
+
+  // Whether to release the input buffer when we are done with it
+  bool release_input;
   
  private:
 

@@ -27,3 +27,13 @@ char* RawBuffer::blockPointer(int block) const {
   return ((char*) data) + (block * bytes_per_block);
 }
 
+void RawBuffer::set(int block, int antenna, int coarse_channel,
+                    int timestep, int pol, bool imag, int8_t value) {
+  int index = 2 * index5d(block, antenna, num_antennas,
+                          coarse_channel, num_coarse_channels,
+                          timestep, timesteps_per_block, pol, npol);
+  if (imag) {
+    ++index;
+  }
+  data[index] = value;
+}
