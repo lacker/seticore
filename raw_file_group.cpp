@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 #include <fmt/core.h>
+#include <future>
 #include <iostream>
 #include <vector> 
 
@@ -209,7 +210,10 @@ void RawFileGroup::read(char* buffer) {
   const raw::Header& h(getHeader());
   if (h.pktidx == next_pktidx) {
     // We're pointing at the data we want to return
-    getReader().readBand(h, band, num_bands, buffer);
+    if (!getReader().readBand(h, band, num_bands, buffer)) {
+      cerr << "readBand failed\n";
+      exit(1);
+    }
     next_pktidx += piperblk;
     return;
   }
@@ -219,6 +223,46 @@ void RawFileGroup::read(char* buffer) {
   cout << "missing block with pktidx = " << next_pktidx << endl;
   memset(buffer, 0, read_size);
   next_pktidx += piperblk;
+}
+
+void RawFileGroup::readAsync(char* buffer, vector<future<bool> >* futures) {
+  if (current_file == -1) {
+    openNextFile();
+  }
+
+  const raw::Header& header(getHeader());
+  if (header.pktidx < next_pktidx) {
+    // Advance the header index
+    ++header_index;    
+
+    // Check if the header index is still valid
+    const RawFile& file = getFile();
+    if (header_index >= (int) file.headers().size()) {
+      // We need to move on to the next file
+      openNextFile();
+      const raw::Header& h(getHeader());
+      if (h.pktidx < next_pktidx) {
+        cerr << "first pktidx in " << getFile().filename << " is only "
+             << h.pktidx << " when we expected at least " << next_pktidx
+             << endl;
+        exit(1);
+      }
+    }
+  }
+
+  const raw::Header& h(getHeader());
+  if (h.pktidx == next_pktidx) {
+    // We're pointing at the data we want to return
+    getReader().readBandAsync(h, band, num_bands, buffer, futures);
+    next_pktidx += piperblk;
+    return;
+  }
+
+  // We missed some blocks, so we'll have to return some zeros
+  assert(h.pktidx > next_pktidx);
+  cout << "missing block with pktidx = " << next_pktidx << endl;
+  memset(buffer, 0, read_size);
+  next_pktidx += piperblk;  
 }
 
 // Threadsafe.
