@@ -49,6 +49,7 @@ srcs = [
     'hit_recorder.cpp',
     'multibeam_buffer.cu',
     'raw_buffer.cu',
+    'raw_file.cpp',
     'raw_file_group.cpp',
     'raw_file_group_reader.cpp',
     'recipe_file.cpp',
