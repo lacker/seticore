@@ -93,8 +93,15 @@ void RawFileGroupReader::runIOThread() {
     for (int batch = 0; batch < num_batches; ++batch) {
       auto buffer = makeBuffer();
 
+      vector<future<bool> > futures;
       for (int block = 0; block < buffer->num_blocks; ++block) {
-        file_group.read(buffer->blockPointer(block));
+        file_group.readAsync(buffer->blockPointer(block), &futures);
+      }
+      for (auto& fut : futures) {
+        if (!fut.get()) {
+          cerr << "readAsync failed\n";
+          exit(1);
+        }
       }
 
       if (!push(move(buffer))) {
