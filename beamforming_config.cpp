@@ -100,7 +100,7 @@ void BeamformingConfig::run() {
   cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
   
   // These buffers hold data we have read from raw input while we are working on them
-  shared_ptr<RawBuffer> read_buffer;
+  unique_ptr<RawBuffer> read_buffer;
   shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.makeDeviceBuffer();
   cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->data_size) << endl;
 
@@ -146,7 +146,7 @@ void BeamformingConfig::run() {
       // So we have to wait for it to finish.
       device_raw_buffer->waitUntilUnused();
 
-      reader.returnBuffer(read_buffer);
+      reader.returnBuffer(move(read_buffer));
       read_buffer = reader.read();
       device_raw_buffer->copyFromAsync(*read_buffer);
       device_raw_buffer->waitUntilReady();

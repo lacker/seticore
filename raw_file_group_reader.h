@@ -41,15 +41,15 @@ class RawFileGroupReader {
   ~RawFileGroupReader();
 
   // Makes a buffer of the correct size, reusing our pool of extra buffers if possible
-  shared_ptr<RawBuffer> makeBuffer();
+  unique_ptr<RawBuffer> makeBuffer();
 
   // Makes a buffer of the correct size in GPU memory
   shared_ptr<DeviceRawBuffer> makeDeviceBuffer();
   
-  shared_ptr<RawBuffer> read();
+  unique_ptr<RawBuffer> read();
 
   // The caller can return ownership of extra buffers to avoid future mallocs
-  void returnBuffer(shared_ptr<RawBuffer> buffer);
+  void returnBuffer(unique_ptr<RawBuffer> buffer);
 
  private:
   mutex m;
@@ -60,10 +60,10 @@ class RawFileGroupReader {
   void runIOThread();
 
   // Pushes this buffer onto the output queue, waiting if necessary
-  bool push(shared_ptr<RawBuffer> buffer);
+  bool push(unique_ptr<RawBuffer> buffer);
   
   // Outputs
-  queue<shared_ptr<RawBuffer> > buffer_queue;
+  queue<unique_ptr<RawBuffer> > buffer_queue;
 
-  queue<shared_ptr<RawBuffer> > extra_buffers;
+  queue<unique_ptr<RawBuffer> > extra_buffers;
 };
