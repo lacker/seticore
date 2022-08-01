@@ -10,14 +10,16 @@
 # If not, run:
 #   sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
 
-# The full five minutes
-# INPUT_DIR="/buf0/20220512/0009/Unknown/GUPPI/"
+# Testing the smaller May 12 dataset on blpn129
+# INPUT_DIR="/home/lacker/benchmark"
+# RECIPE_DIR="/home/davidm/bfr5.test/"
 
-# Just one target
-INPUT_DIR="/home/lacker/benchmark"
+# Testing the July 19 dataset on blpn130
+INPUT_DIR="/buf0ro/20220719/0026/Unknown/GUPPI/"
+RECIPE_DIR="/home/obs/bfr5/"
 
 OUTPUT_DIR="/mydatag/test/lacker/"
-RECIPE_DIR="/home/davidm/bfr5.test/"
+
 
 # Remove old reports
 rm -f *qdrep
