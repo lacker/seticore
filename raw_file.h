@@ -15,8 +15,6 @@ class RawFile {
   vector<raw::Header> _headers;
   raw::Reader _reader;
   
-  void readAllHeaders();
-  
  public:
   const string filename;
   const int num_bands;
@@ -26,7 +24,7 @@ class RawFile {
 
   RawFile(const RawFile&) = delete;
   RawFile& operator=(RawFile&) = delete;
-  
-  const vector<raw::Header>& headers();
-  const raw::Reader& reader();
+
+  const vector<raw::Header>& headers() const;
+  const raw::Reader& reader() const;
 };

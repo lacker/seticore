@@ -36,16 +36,14 @@ string getBasename(const string& filename) {
 }
 
 RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
-  : current_file(-1), filenames(filenames), band(0), num_bands(num_bands) {
+  : current_file(-1), filenames(filenames), band(0),
+    num_bands(num_bands) {
   assert(!filenames.empty());
   prefix = getBasename(getRawFilePrefix(filenames[0]));
 
   // Get metadata from the first file
-  raw::Reader first_reader(filenames[0]);
-  if (!first_reader.readHeader(&header)) {
-    cerr << "error reading raw file " << filenames[0] << endl;
-    exit(1);
-  }
+  const RawFile& file(openFile(filenames[0]));
+  const raw::Header& header(file.headers().front());
 
   nants = header.nants;
   num_coarse_channels = header.num_channels;
@@ -72,9 +70,8 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   read_size = nants * channels_per_band * timesteps_per_block * npol * 2;
   
   // Find the last block in the last file
-  raw::Reader last_reader(filenames[filenames.size() - 1]);
-  while(last_reader.readHeader(&header)) {}
-  int pktidx_diff = header.pktidx - start_pktidx;
+  const RawFile& last_file(openFile(filenames[filenames.size() - 1]));
+  int pktidx_diff = last_file.headers().back().pktidx - start_pktidx;
   assert(0 == pktidx_diff % piperblk);
   num_blocks = (pktidx_diff / piperblk) + 1;
 
@@ -151,16 +148,32 @@ void RawFileGroup::resetBand(int new_band) {
   next_pktidx = start_pktidx;
 }
 
+const RawFile& RawFileGroup::getFile() {
+  return openFile(filenames[current_file]);
+}
+
+const raw::Reader& RawFileGroup::getReader() {
+  return getFile().reader();
+}
+
+const raw::Header& RawFileGroup::getHeader() {
+  return getFile().headers()[header_index];
+}
+
+const RawFile& RawFileGroup::openFile(const string& filename) {
+  if (files.find(filename) == files.end()) {
+    files[filename] = make_unique<RawFile>(filename, num_bands);
+  }
+  return *files[filename];
+}
+
 void RawFileGroup::openNextFile() {
   ++current_file;
+  header_index = 0;
   assert(current_file < (int) filenames.size());
-  
-  reader.reset(new raw::Reader(filenames[current_file]));
-  if (!reader->readHeader(&header)) {
-    cerr << "error reading first block in " << filenames[current_file] << endl;
-    exit(1);
-  }
 
+  const raw::Header& header(getHeader());
+  
   // Sanity check some values in this header
   assert(schan == header.getInt("SCHAN", -1));
   assert(nants == header.nants);
@@ -173,39 +186,36 @@ void RawFileGroup::read(char* buffer) {
     openNextFile();
   }
 
+  const raw::Header& header(getHeader());
   if (header.pktidx < next_pktidx) {
-    // We need to advance the header
-    if (reader->readHeader(&header)) {
-      if (header.pktidx < next_pktidx) {
-        cerr << "error in reading " << reader->filename << " - saw pktidx "
-             << header.pktidx << " when expecting at least pktidx "
-             << next_pktidx << endl;
-        exit(1);
-      }
-    } else if (reader->error()) {
-      cerr << "reader error: " << reader->errorMessage() << endl;
-      exit(1);
-    } else {
-      // This is just the end of a file
+    // Advance the header index
+    ++header_index;    
+
+    // Check if the header index is still valid
+    const RawFile& file = getFile();
+    if (header_index >= (int) file.headers().size()) {
+      // We need to move on to the next file
       openNextFile();
-      if (header.pktidx < next_pktidx) {
-        cerr << "first pktidx in " << reader->filename << " is only "
-             << header.pktidx << " when we expected at least " << next_pktidx
+      const raw::Header& h(getHeader());
+      if (h.pktidx < next_pktidx) {
+        cerr << "first pktidx in " << getFile().filename << " is only "
+             << h.pktidx << " when we expected at least " << next_pktidx
              << endl;
         exit(1);
       }
     }
   }
 
-  if (header.pktidx == next_pktidx) {
+  const raw::Header& h(getHeader());
+  if (h.pktidx == next_pktidx) {
     // We're pointing at the data we want to return
-    reader->readBand(header, band, num_bands, buffer);
+    getReader().readBand(h, band, num_bands, buffer);
     next_pktidx += piperblk;
     return;
   }
 
   // We missed some blocks, so we'll have to return some zeros
-  assert(header.pktidx > next_pktidx);
+  assert(h.pktidx > next_pktidx);
   cout << "missing block with pktidx = " << next_pktidx << endl;
   memset(buffer, 0, read_size);
   next_pktidx += piperblk;

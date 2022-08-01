@@ -4,14 +4,7 @@ using namespace std;
 
 RawFile::RawFile(string filename, int num_bands)
   : _reader(filename), filename(filename), num_bands(num_bands) {
-}
 
-// Idempotent
-void RawFile::readAllHeaders() {
-  if (!_headers.empty()) {
-    return;
-  }
-  
   while (true) {
     raw::Header header;
     if (!_reader.readHeader(&header)) {
@@ -19,14 +12,16 @@ void RawFile::readAllHeaders() {
     }
     _headers.push_back(move(header));
   }
+
 }
 
-const vector<raw::Header>& RawFile::headers() {
-  readAllHeaders();
+RawFile::~RawFile() {}
+
+const vector<raw::Header>& RawFile::headers() const {
   return _headers;
 }
 
-const raw::Reader& RawFile::reader() {
+const raw::Reader& RawFile::reader() const {
   return _reader;
 }
 

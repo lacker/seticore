@@ -1,10 +1,11 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector> 
 
-#include "raw/raw.h"
+#include "raw_file.h"
 
 using namespace std;
 
@@ -19,20 +20,27 @@ vector<vector<string> > scanForRawFileGroups(const string& directory);
 */
 class RawFileGroup {
  private:
-  // When current_file is -1, these should not be used.
-  // Otherwise, header contains the last read from reader.
-  raw::Header header;
-  unique_ptr<raw::Reader> reader;
-
   // Index of the current file in filenames that reader is opening.
   // -1 if there is none.
   int current_file;
 
+  // Index of the header in the current file
+  int header_index;
+  
   // The next pktidx that we will return from read()
   int next_pktidx;
 
+  // Helper to open the file with the given name
+  const RawFile& openFile(const string& filename);
+  
   // Helper to advance the reader and header
   void openNextFile();
+
+  const RawFile& getFile();
+  const raw::Reader& getReader();
+  const raw::Header& getHeader();
+  
+  map<string, unique_ptr<RawFile> > files;
   
  public:
   const vector<string> filenames;
