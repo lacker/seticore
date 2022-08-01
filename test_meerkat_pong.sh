@@ -25,7 +25,7 @@ OUTPUT_DIR="/mydatag/test/lacker/"
 rm -f *qdrep
 
 # Use nvidia profiling tools
-nsys profile \
+nsys profile -t nvtx,cuda \
 /home/lacker/seticore/build/seticore \
     --input $INPUT_DIR \
     --output $OUTPUT_DIR \
