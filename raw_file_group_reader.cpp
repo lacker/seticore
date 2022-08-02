@@ -99,8 +99,10 @@ void RawFileGroupReader::runIOThread() {
       for (int block = 0; block < buffer->num_blocks; ++block) {
         file_group.readTasks(buffer->blockPointer(block), &tasks);
       }
-      
-      runInParallel(move(tasks), 8);
+
+      // Testing on meerkat, any more than 4 threads doesn't help
+      int num_threads = 4;
+      runInParallel(move(tasks), num_threads);
 
       if (!push(move(buffer))) {
         return;
