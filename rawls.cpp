@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
     cout << fmt::format("{:.1f} MHz center frequency\n", group.obsfreq);
     cout << pluralize(group.num_coarse_channels, "coarse channel") << endl;
     cout << pluralize(group.timesteps_per_block, "timestep") << " per block\n";
+    cout << (group.read_size / 1024 / 1024) << " MB block size\n";
     cout << pluralize(group.num_blocks, "total block") << endl;
     cout << fmt::format("{:.1f} GB total data\n", group.totalDataGB());
     cout << fmt::format("{:.1f}s total time\n", group.totalTime());
