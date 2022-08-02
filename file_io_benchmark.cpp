@@ -8,10 +8,10 @@
 using namespace std;
 
 /*
-  This benchmark reads the first out of 16 bands for the first raw
+  This benchmark reads the first bands for the first raw
   file group in the ../benchmark directory.
 
-  You have to drop disk caches first for this test to be meaningful:
+  You may have to drop disk caches first for this test to be meaningful:
 
   echo 3 | sudo tee /proc/sys/vm/drop_caches
  */
@@ -28,7 +28,8 @@ int main(int argc, char* argv[]) {
 
   int blocks_per_batch = 128;
   int num_batches = file_group.num_blocks / blocks_per_batch;
-
+  long bytes_read = 0;
+  
   // Only process one band
   int num_bands_to_process = 1;
   RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
@@ -37,11 +38,17 @@ int main(int argc, char* argv[]) {
   for (int band = 0; band < num_bands_to_process; ++band) {
     for (int batch = 0; batch < num_batches; ++batch) {
       auto buffer = reader.read();
+      bytes_read += buffer->data_size;
       reader.returnBuffer(move(buffer));
       cerr << "done band " << band << " batch " << batch << endl;
     }
   }
 
   int tstop = time(NULL);
-  cerr << fmt::format("file io benchmark elapsed time {:d}s\n", tstop - tstart);  
+  int elapsed = tstop - tstart;
+  cerr << fmt::format("file io benchmark elapsed time {:d}s\n", elapsed);
+  float giga = 1024.0 * 1024.0 * 1024.0;
+  float gb = bytes_read / giga;
+  float gbps = gb / elapsed;
+  cerr << fmt::format("{:.1f}GB read at a rate of {:.2f}GB/s\n", gb, gbps);
 }
