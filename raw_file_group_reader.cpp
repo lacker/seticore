@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <iostream>
 
+#include "thread_util.h"
+
 using namespace std;
 
 
@@ -93,16 +95,12 @@ void RawFileGroupReader::runIOThread() {
     for (int batch = 0; batch < num_batches; ++batch) {
       auto buffer = makeBuffer();
 
-      vector<future<bool> > futures;
+      vector<function<bool()> > tasks;
       for (int block = 0; block < buffer->num_blocks; ++block) {
-        file_group.readAsync(buffer->blockPointer(block), &futures);
+        file_group.readTasks(buffer->blockPointer(block), &tasks);
       }
-      for (auto& fut : futures) {
-        if (!fut.get()) {
-          cerr << "readAsync failed\n";
-          exit(1);
-        }
-      }
+      
+      runInParallel(move(tasks), 8);
 
       if (!push(move(buffer))) {
         return;

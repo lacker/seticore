@@ -88,6 +88,7 @@ class RawFileGroup {
 
   void read(char* buffer);
   void readAsync(char* buffer, vector<future<bool> >* futures);
-
+  void readTasks(char* buffer, vector<function<bool()> >* tasks);
+  
   double getStartTime(int block) const;
 };
