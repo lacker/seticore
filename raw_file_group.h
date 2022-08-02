@@ -57,8 +57,9 @@ class RawFileGroup {
   int num_coarse_channels;
   int npol;
   int schan;
-  double obsbw;
-  double obsfreq;
+  double obsbw;    // in Mhz
+  double obsfreq;  // in Mhz
+
   string obsid;
   string source_name;
   double tbin;
