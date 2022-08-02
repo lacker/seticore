@@ -1,6 +1,5 @@
 #pragma once
 
-#include <future>
 #include <map>
 #include <memory>
 #include <string>
@@ -86,8 +85,6 @@ class RawFileGroup {
 
   void resetBand(int new_band);
 
-  void read(char* buffer);
-  void readAsync(char* buffer, vector<future<bool> >* futures);
   void readTasks(char* buffer, vector<function<bool()> >* tasks);
   
   double getStartTime(int block) const;
