@@ -62,6 +62,10 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
 */
 void BeamformingConfig::run() {
   RawFileGroup file_group(raw_files, num_bands);
+
+  cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
+                      file_group.totalTime(), file_group.prefix);
+
   RecipeFile recipe(recipe_dir, file_group.obsid);
 
   // Do enough blocks per beamformer batch to handle one STI block

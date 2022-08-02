@@ -66,8 +66,15 @@ tests = [
     'multibeam_buffer_test.cpp',
 ]
 
+# The main binaries
+
 executable('seticore', srcs + ['main.cpp'],
            dependencies: deps, cuda_args: cuda_args)
+
+executable('tests', srcs + tests + ['tests.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
+
+# Other binaries
 
 executable('beamforming_integration_test',
            srcs + ['beamforming_integration_test.cpp'],
@@ -77,5 +84,6 @@ executable('file_io_benchmark',
            srcs + ['file_io_benchmark.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
-executable('tests', srcs + tests + ['tests.cpp'],
+executable('rawls',
+           srcs + ['rawls.cpp'],
            dependencies: deps, cuda_args: cuda_args)

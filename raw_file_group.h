@@ -88,4 +88,7 @@ class RawFileGroup {
   void readTasks(char* buffer, vector<function<bool()> >* tasks);
   
   double getStartTime(int block) const;
+
+  // The total time, in seconds, that this file group represents
+  float totalTime() const;
 };
