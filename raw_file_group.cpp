@@ -229,3 +229,9 @@ double RawFileGroup::getStartTime(int block) const {
 float RawFileGroup::totalTime() const {
   return tbin * timesteps_per_block * num_blocks;
 }
+
+float RawFileGroup::totalDataGB() const {
+  float giga = 1024.0 * 1024.0 * 1024.0;
+  float data_per_block = num_bands * read_size / giga;
+  return num_blocks * data_per_block;
+}

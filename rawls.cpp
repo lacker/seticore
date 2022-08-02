@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
     cout << pluralize(group.num_coarse_channels, "coarse channel") << endl;
     cout << pluralize(group.timesteps_per_block, "timestep") << " per block\n";
     cout << pluralize(group.num_blocks, "total block") << endl;
+    cout << fmt::format("{:.1f} GB total data\n", group.totalDataGB());
     cout << fmt::format("{:.1f}s total time\n", group.totalTime());
   }
 }

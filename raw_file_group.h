@@ -91,4 +91,8 @@ class RawFileGroup {
 
   // The total time, in seconds, that this file group represents
   float totalTime() const;
+
+  // The total amount of data in gigabytes that this file group represents
+  // Does not count headers, only data
+  float totalDataGB() const;
 };
