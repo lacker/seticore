@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   int num_batches = file_group.num_blocks / blocks_per_batch;
   long bytes_read = 0;
   
-  // Only process one band
+  // Only process some bands
   int num_bands_to_process = 1;
   RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
                             blocks_per_batch);
@@ -50,5 +50,5 @@ int main(int argc, char* argv[]) {
   float giga = 1024.0 * 1024.0 * 1024.0;
   float gb = bytes_read / giga;
   float gbps = gb / elapsed;
-  cerr << fmt::format("{:.1f}GB read at a rate of {:.2f}GB/s\n", gb, gbps);
+  cerr << fmt::format("{:.1f} GB read at a rate of {:.2f} GB/s\n", gb, gbps);
 }
