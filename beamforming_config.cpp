@@ -65,7 +65,7 @@ void BeamformingConfig::run() {
 
   cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
                       file_group.totalTime(), file_group.prefix);
-
+  
   RecipeFile recipe(recipe_dir, file_group.obsid);
 
   // Do enough blocks per beamformer batch to handle one STI block
@@ -117,7 +117,6 @@ void BeamformingConfig::run() {
     hfw->verbose = false;
     hit_recorder.reset(hfw);
   }
-
   
   cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
        << pluralize(num_bands_to_process, "band") << endl;
@@ -126,6 +125,9 @@ void BeamformingConfig::run() {
        << ", for a total of " << file_group.num_coarse_channels << endl;
   cout << "dedoppler input is " << fb_buffer.num_timesteps << " timesteps x "
        << fb_buffer.num_channels << " fine channels\n";
+  cout << fmt::format("dedoppler resolution is {:.1f} s, {:.1f} hz\n",
+                      file_group.tbin * fft_size * STI,
+                      file_group.coarseChannelBandwidth() / fft_size * 1'000'000);
   
   for (int band = 0; band < num_bands_to_process; ++band) {
     cout << endl;
@@ -169,7 +171,6 @@ void BeamformingConfig::run() {
                       file_group.prefix,
                       zeroPad(band, numDigits(num_bands)),
                       zeroPad(beam, numDigits(beamformer.nbeams)));
-
         FilterbankMetadata band_metadata = metadata.getBandMetadata(band, num_bands);
         FilterbankBuffer output = multibeam.getBeam(beam);
         H5Writer writer(h5_filename, band_metadata);

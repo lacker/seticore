@@ -235,3 +235,7 @@ float RawFileGroup::totalDataGB() const {
   float data_per_block = num_bands * read_size / giga;
   return num_blocks * data_per_block;
 }
+
+float RawFileGroup::coarseChannelBandwidth() const {
+  return obsbw / num_coarse_channels;
+}

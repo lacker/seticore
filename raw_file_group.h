@@ -96,4 +96,7 @@ class RawFileGroup {
   // The total amount of data in gigabytes that this file group represents
   // Does not count headers, only data
   float totalDataGB() const;
+
+  // The bandwidth of a coarse channel, in Mhz
+  float coarseChannelBandwidth() const;
 };
