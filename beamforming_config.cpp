@@ -109,7 +109,7 @@ void BeamformingConfig::run() {
   cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->data_size) << endl;
 
   
-  if (hit_recorder == NULL) {
+  if (hit_recorder == nullptr) {
     string output_filename = fmt::format("{}/{}.hits", output_dir,
                                          file_group.prefix);
     cout << "recording hits to " << output_filename << endl;
