@@ -221,8 +221,12 @@ void Beamformer::runCublasBeamform(int time, int pol) {
   and the output power has format:
     power[beam][time][frequency]
 
-  where the time dimension has shrunk by a factor of STI, now indexed by [0, nwin).
-  We add time_offset to all the times in the output.
+  integrated_timestep refers to an index after integration. So a voltage at time t will have
+  integrated_timestep = t / STI
+
+  The power array is typically a much larger array in which we are only populating a subset of times.
+  num_power_timesteps refers to the size of the time dimension of this array, and power_time_offset
+  is the time at which to start writing to it.
 
   TODO: this also seems equivalent to a batch matrix multiplication. could we do this
   with a cublas routine?
@@ -230,38 +234,39 @@ void Beamformer::runCublasBeamform(int time, int pol) {
 __global__ void calculatePower(const thrust::complex<float>* voltage,
                                float* power,
                                int nbeams, int num_channels, int npol,
-                               int num_output_timesteps, int time_offset) {
+			       int num_power_timesteps,
+			       int power_time_offset) {
   int chan = blockIdx.x;
   int beam = blockIdx.y;
-  int coarse_timestep = blockIdx.z;
-  int output_timestep = coarse_timestep + time_offset;
+  int integrated_timestep = blockIdx.z;
+  int output_timestep = integrated_timestep + power_time_offset;
   
-  int fine_timestep = threadIdx.x;
-  assert(fine_timestep < STI);
-  int time = coarse_timestep * STI + fine_timestep;
+  int subintegration_timestep = threadIdx.x;
+  assert(subintegration_timestep < STI);
+  int time = integrated_timestep * STI + subintegration_timestep;
 
   assert(2 == npol);
   int pol0_index = index4d(time, 0, npol, chan, num_channels, beam, nbeams);
   int pol1_index = index4d(time, 1, npol, chan, num_channels, beam, nbeams);
-  int power_index = index3d(beam, output_timestep, num_output_timesteps, chan, num_channels);
+  int power_index = index3d(beam, output_timestep, num_power_timesteps, chan, num_channels);
 
   __shared__ float reduced[STI];
   float real0 = voltage[pol0_index].real();
   float imag0 = voltage[pol0_index].imag();
   float real1 = voltage[pol1_index].real();
   float imag1 = voltage[pol1_index].imag();
-  reduced[fine_timestep] = real0 * real0 + imag0 * imag0 + real1 * real1 + imag1 * imag1;
+  reduced[subintegration_timestep] = real0 * real0 + imag0 * imag0 + real1 * real1 + imag1 * imag1;
 
   __syncthreads();
 
   for (int k = STI / 2; k > 0; k >>= 1) {
-    if (fine_timestep < k) {
-      reduced[fine_timestep] += reduced[fine_timestep + k];
+    if (subintegration_timestep < k) {
+      reduced[subintegration_timestep] += reduced[subintegration_timestep + k];
     }
     __syncthreads();
   }
 
-  if (fine_timestep == 0) {
+  if (subintegration_timestep == 0) {
     power[power_index] = reduced[0];
   }
 }
@@ -302,11 +307,6 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
   cudaMallocManaged(&prebeam, prebeam_bytes);
   checkCuda("Beamformer prebeam malloc");
 
-  power_size = nbeams * frame_size / STI;
-  size_t power_bytes = power_size * sizeof(float);
-  cudaMallocManaged(&power, power_bytes);
-  checkCuda("Beamformer power malloc");
-
   int batch_size = nants * npol;
   cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
   checkCuda("Beamformer fft planning");
@@ -314,7 +314,7 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
   cublasCreate(&cublas_handle);
   checkCuda("Beamformer cublas handle");
   
-  size_t total_bytes = coefficients_bytes + buffer_bytes + prebeam_bytes + power_bytes;
+  size_t total_bytes = coefficients_bytes + buffer_bytes + prebeam_bytes;
   cout << "beamformer memory: " << prettyBytes(total_bytes) << endl;
 }
 
@@ -322,7 +322,6 @@ Beamformer::~Beamformer() {
   cudaFree(coefficients);
   cudaFree(buffer);
   cudaFree(prebeam);
-  cudaFree(power);
   cufftDestroy(plan);
   cublasDestroy(cublas_handle);
 }
@@ -344,17 +343,19 @@ int Beamformer::numOutputTimesteps() const {
 
   The format of the output is row-major:
      power[beam][time][channel]
-  but its time resolution has been reduced by a factor of (fft_size * STI).
+  but its time resolution has been reduced by a factor of (fft_size * STI), and we are only
+  writing into a subrange of the time, starting at power_time_offset.
 
-  The input must be ready to go when run is called. In the future it would be nice
-  if the input could be asynchronously populated.
+  The input must be ready to go when run is called.
  */
-void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_offset) {
+void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int power_time_offset) {
   assert(input.num_blocks == nblocks);
   assert(input.num_antennas == nants);
   assert(input.num_coarse_channels == num_coarse_channels);
   assert(input.timesteps_per_block * input.num_blocks == nsamp);
   assert(input.npol == npol);
+  assert(output.num_beams == nbeams);
+  assert(output.num_channels == numOutputChannels());
 
   int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
@@ -405,8 +406,8 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_o
   dim3 power_block(STI, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block, 0, stream>>>
-    (buffer, output.data, nbeams, numOutputChannels(), npol, numOutputTimesteps(),
-     time_offset);
+    (buffer, output.data, nbeams, numOutputChannels(), npol, output.num_timesteps,
+     power_time_offset);
   checkCuda("Beamformer calculatePower");
 }
 

@@ -70,13 +70,16 @@ class Beamformer {
                                       int time, int last_index) const;
   thrust::complex<float> getPrebeam(int time, int channel, int pol, int antenna) const;
   thrust::complex<float> getVoltage(int time, int pol, int channel, int beam) const;
-
+  float getPower(int beam, int time, int channel) const;
+  
   // Beamforming coefficients, formatted by row-major:
   //   coefficients[coarse-channel][beam][polarity][antenna][real or imag]
   thrust::complex<float> *coefficients;
   size_t coefficients_size;
 
-  // The beamformed data, as power.
+  // The beamformed data, as power. Not owned by the beamformer.
+  // Its format is row-major:
+  //   power[beam][time][frequency]
   float* power;
   size_t power_size;
 

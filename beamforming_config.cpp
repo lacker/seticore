@@ -128,7 +128,7 @@ void BeamformingConfig::run() {
   cout << fmt::format("dedoppler resolution is {:.1f} s, {:.1f} hz\n",
                       file_group.tbin * fft_size * STI,
                       file_group.coarseChannelBandwidth() / fft_size * 1'000'000);
-  
+
   for (int band = 0; band < num_bands_to_process; ++band) {
     cout << endl;
 
