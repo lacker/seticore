@@ -1,7 +1,9 @@
 #include "raw_file_group_reader.h"
 
 #include <assert.h>
+#include <fmt/core.h>
 #include <iostream>
+#include <sys/sysinfo.h>
 
 #include "thread_util.h"
 
@@ -11,7 +13,29 @@ using namespace std;
 RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
                                        int num_batches, int blocks_per_batch)
   : file_group(file_group), num_bands(num_bands), num_batches(num_batches),
-    blocks_per_batch(blocks_per_batch), destroy(false)  {
+    blocks_per_batch(blocks_per_batch),
+    coarse_channels_per_band(file_group.num_coarse_channels / file_group.num_bands),
+    destroy(false)  {
+
+  // Limit queue size depending on total memory.
+  struct sysinfo info;
+  sysinfo(&info);
+  int mb = 1024 * 1024;
+  int gb = mb * 1024;
+  if ((int) info.totalram > 50 * gb) {
+    // Looks like a production machine.
+    int buffer_size = rawBufferSize(blocks_per_batch, file_group.nants,
+                                    coarse_channels_per_band,
+                                    file_group.timesteps_per_block,
+                                    file_group.npol);
+    buffer_queue_max_size = (int) (0.75 * info.totalram / buffer_size);
+    cout << fmt::format("limiting raw file input buffer memory to {:.1f} GB\n",
+                        1.0 * buffer_queue_max_size * buffer_size / gb);
+  } else {
+    // Looks like a dev machine.
+    buffer_queue_max_size = 4;
+  }
+
   io_thread = thread(&RawFileGroupReader::runIOThread, this);
 }
 
@@ -35,7 +59,6 @@ unique_ptr<RawBuffer> RawFileGroupReader::makeBuffer() {
   }
   lock.unlock();
 
-  int coarse_channels_per_band = file_group.num_coarse_channels / file_group.num_bands;  
   return make_unique<RawBuffer>(blocks_per_batch,
                                 file_group.nants,
                                 coarse_channels_per_band,
@@ -44,7 +67,6 @@ unique_ptr<RawBuffer> RawFileGroupReader::makeBuffer() {
 }
 
 shared_ptr<DeviceRawBuffer> RawFileGroupReader::makeDeviceBuffer() {
-  int coarse_channels_per_band = file_group.num_coarse_channels / file_group.num_bands;  
   return make_shared<DeviceRawBuffer>(blocks_per_batch,
                                       file_group.nants,
                                       coarse_channels_per_band,
@@ -76,7 +98,7 @@ void RawFileGroupReader::returnBuffer(unique_ptr<RawBuffer> buffer) {
 // Returns false if the reader gets destroyed before a new item is pushed
 bool RawFileGroupReader::push(unique_ptr<RawBuffer> buffer) {
   unique_lock<mutex> lock(m);
-  while (!destroy && buffer_queue.size() >= BUFFER_QUEUE_MAX_SIZE) {
+  while (!destroy && (int) buffer_queue.size() >= buffer_queue_max_size) {
     cv.wait(lock);
   }
   if (destroy) {

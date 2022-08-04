@@ -5,14 +5,21 @@
 
 using namespace std;
 
+size_t rawBufferSize(int num_blocks, int num_antennas,
+                     int num_coarse_channels,
+                     int timesteps_per_block, int npol) {
+  return sizeof(int8_t) * num_blocks * num_antennas * num_coarse_channels *
+    timesteps_per_block * npol * 2;
+}
+
 RawBuffer::RawBuffer(int num_blocks, int num_antennas,
                      int num_coarse_channels,
                      int timesteps_per_block, int npol)
   : num_blocks(num_blocks), num_antennas(num_antennas),
     num_coarse_channels(num_coarse_channels),
     timesteps_per_block(timesteps_per_block), npol(npol) {
-  data_size = sizeof(int8_t) * num_blocks * num_antennas * num_coarse_channels *
-    timesteps_per_block * npol * 2;
+  data_size = rawBufferSize(num_blocks, num_antennas, num_coarse_channels,
+                            timesteps_per_block, npol);
   cudaMallocHost(&data, data_size);
   checkCuda("RawBuffer malloc");
 }

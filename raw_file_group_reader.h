@@ -12,8 +12,6 @@
 
 using namespace std;
 
-const int BUFFER_QUEUE_MAX_SIZE = 4;
-
 /*
   The RawFileGroupReader is the most efficient way to read data from a RawFileGroup.
   It only supports one particular access pattern, where we read one frequency band
@@ -29,7 +27,9 @@ const int BUFFER_QUEUE_MAX_SIZE = 4;
 
   Externally, the RawFileGroupReader should be used from a single thread. Call
   read() to get the next RawBuffer, and when you're done with it, call
-  returnBuffer on it to reuse the pinned memory.
+  returnBuffer on it to reuse the pinned memory. You probably only want to
+  create one at a time, since it will attempt to use most of the available
+  memory for this buffer.
 
   Internally, there are several threads doing things.
   runIOThread is reading buffers and passing them to buffer_queue so that they
@@ -48,7 +48,8 @@ class RawFileGroupReader {
   const int num_bands;
   const int num_batches;
   const int blocks_per_batch;
-
+  const int coarse_channels_per_band;
+  
   RawFileGroupReader(RawFileGroup& file_group, int num_bands, int num_batches,
                      int blocks_per_batch);
   ~RawFileGroupReader();
@@ -62,6 +63,8 @@ class RawFileGroupReader {
   void returnBuffer(unique_ptr<RawBuffer> buffer);
 
  private:
+  int buffer_queue_max_size;
+  
   mutex m;
   condition_variable cv;
   bool destroy;
