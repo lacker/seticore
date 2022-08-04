@@ -15,7 +15,9 @@ using namespace std;
 const int BUFFER_QUEUE_MAX_SIZE = 4;
 
 /*
-  This class provides an efficient reader to loop through a RawFileGroup.
+  The RawFileGroupReader is the most efficient way to read data from a RawFileGroup.
+  It only supports one particular access pattern, where we read one frequency band
+  of the data at a time, looping all the way through all the raw files for each band.
 
   This reads in "batches" rather than blocks. Each batch is a certain number of blocks,
   defined by blocks_per_batch. We read num_batches batches for each band. If there
@@ -25,9 +27,20 @@ const int BUFFER_QUEUE_MAX_SIZE = 4;
   If you provide it with a different num_bands than the RawFileGroup has, it will
   only process the provided number of bands.
 
-  The file IO is done in a separate IO thread, reading ahead a few batches,
-  synchronizing on buffer_queue so the caller can read() on the user thread.
-  read() should only be called from a single thread.
+  Externally, the RawFileGroupReader should be used from a single thread. Call
+  read() to get the next RawBuffer, and when you're done with it, call
+  returnBuffer on it to reuse the pinned memory.
+
+  Internally, there are several threads doing things.
+  runIOThread is reading buffers and passing them to buffer_queue so that they
+  are ready when the client thread calls read(). This is possible since the access
+  pattern is defined when the RawFileGroupReader is created.
+  The io thread itself creates multiple helper threads to do the file reading. In
+  testing this does seem to help a significant amount on SSDs, even though it makes the
+  reads happen out of order.
+
+  Client code should be able to ignore the multithreading and just treat the
+  RawFileGroupReader like a single-threaded reader.
  */
 class RawFileGroupReader {
  public:
@@ -40,10 +53,7 @@ class RawFileGroupReader {
                      int blocks_per_batch);
   ~RawFileGroupReader();
 
-  // Makes a buffer of the correct size, reusing our pool of extra buffers if possible
-  unique_ptr<RawBuffer> makeBuffer();
-
-  // Makes a buffer of the correct size in GPU memory
+  // Makes a buffer of the same size the read() returns, in GPU memory
   shared_ptr<DeviceRawBuffer> makeDeviceBuffer();
   
   unique_ptr<RawBuffer> read();
@@ -56,6 +66,9 @@ class RawFileGroupReader {
   condition_variable cv;
   bool destroy;
   thread io_thread;  
+
+  // Makes a buffer of the correct size, reusing our pool of extra buffers if possible
+  unique_ptr<RawBuffer> makeBuffer();
   
   void runIOThread();
 
