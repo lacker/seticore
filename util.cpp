@@ -73,8 +73,8 @@ void assertStringEq(const string& lhs, const string& rhs) {
 }
 
 string pluralize(int n, const string& noun) {
-  if (n == 1) {
-    return fmt::format("1 {}", noun);
+  if (n == 1 || n == -1) {
+    return fmt::format("{} {}", n, noun);
   }
   return fmt::format("{} {}s", n, noun);
 }

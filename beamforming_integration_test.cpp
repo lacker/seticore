@@ -38,18 +38,16 @@ int main(int argc, char* argv[]) {
 
   config.run();
 
-  assert(45 == recorder->hits.size());
   assert(114049 == recorder->hits[0].index);
   assert(-1 == recorder->hits[0].drift_steps);
   assertFloatEq(7.03593, recorder->hits[0].snr);
   assertFloatEq(-0.317774, recorder->hits[0].drift_rate);
+  assert(67 == recorder->hits.size());
 
   assertStringEq(recorder->hits[10].toString(),
-                 "index = 109421, snr = 11.65042, drift rate = 0.31777 (1 bins)");
+                 "index = 106914, snr = 10.71197, drift rate = -0.31777 (-1 bin)");
   assertStringEq(recorder->hits[20].toString(),
-                 "index = 25380, snr = 9.48171, drift rate = -0.31777 (-1 bins)");
-  assertStringEq(recorder->hits[30].toString(),
-                 "index = 98132, snr = 8.07803, drift rate = 0.31777 (1 bins)");
+                 "index = 17237, snr = 7.07149, drift rate = -0.31777 (-1 bin)");
   
   return 0;
 }
