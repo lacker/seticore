@@ -29,7 +29,7 @@ vector<vector<string> > scanForRawFileGroups(const string& directory);
 
   The RawFileGroup is not threadsafe and the only access pattern it supports is to
   call resetBand for the band you want to read, followed by a number of
-  readTasks calls which provide callbacks to read sequential batches.
+  readTasks calls which provide functions to read sequential batches.
   Typically you can get metadata from the RawFileGroup directly but to read it
   you want a RawFileGroupReader.
 */
@@ -101,6 +101,14 @@ class RawFileGroup {
 
   void resetBand(int new_band);
 
+  /*
+    readTasks reads data from a band of the next block into buffer. Sort of.
+    It's indirect - instead of directly reading the data in this thread, it
+    inserts functions in tasks, and when those functions are called, they read
+    the data. This lets the RawFileGroupReader split up these tasks among multiple
+    threads for efficiently, without making the RawFileGroup itself do any
+    parallelism.
+   */
   void readTasks(char* buffer, vector<function<bool()> >* tasks);
   
   double getStartTime(int block) const;
