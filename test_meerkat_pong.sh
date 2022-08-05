@@ -16,15 +16,21 @@ FFT4K=131072
 FFT32K=16384
 
 # Testing the July 19 dataset on blpn130
-# INPUT_DIR="/buf0ro/20220719/0026/Unknown/GUPPI/"
-# RECIPE_DIR="/home/obs/bfr5/"
-# FFT_SIZE=$FFT1K
+if false; then
+    INPUT_DIR="/buf0ro/20220719/0026/Unknown/GUPPI/"
+    RECIPE_DIR="/home/obs/bfr5/"
+    FFT_SIZE=$FFT1K
+    NUM_BANDS=16
+fi
 
 # Testing the August 1 dataset on blpn131
-INPUT_DIR="/buf0ro/20220801/0055/Unknown/GUPPI/"
-RECIPE_DIR="/home/obs/bfr5/"
-FFT_SIZE=$FFT4K
-
+if true; then
+    INPUT_DIR="/buf0ro/20220801/0055/Unknown/GUPPI/"
+    RECIPE_DIR="/home/obs/bfr5/"
+    FFT_SIZE=$FFT4K
+    NUM_BANDS=16
+fi
+    
 OUTPUT_DIR="/mydatag/test/lacker/"
 
 
@@ -37,9 +43,10 @@ nsys profile -t nvtx,cuda \
     --input $INPUT_DIR \
     --output $OUTPUT_DIR \
     --max_drift 10.0 \
+    --min_drift 0.0 \
     --snr 10.0 \
     --recipe_dir $RECIPE_DIR \
-    --num_bands 16 \
+    --num_bands $NUM_BANDS \
     --fft_size $FFT_SIZE \
     --telescope_id 64
     

@@ -9,7 +9,7 @@ using namespace std;
 
 /*
   This benchmark reads the first bands for the first raw
-  file group in the ../benchmark directory.
+  file group in the ../benchmark directory, or the provided argument.
 
   You may have to drop disk caches first for this test to be meaningful:
 
@@ -17,7 +17,12 @@ using namespace std;
  */
 int main(int argc, char* argv[]) {
   // Specifying parameters
-  string dir = "../benchmark";
+  string dir;
+  if (argc < 2) {
+    dir = "../benchmark";
+  } else {
+    dir = argv[1];
+  }
   auto file_lists = scanForRawFileGroups(dir);
   assert(file_lists.size() == 1);
 
