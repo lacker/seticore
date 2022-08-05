@@ -28,7 +28,7 @@ RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
                                     coarse_channels_per_band,
                                     file_group.timesteps_per_block,
                                     file_group.npol);
-    buffer_queue_max_size = (int) (0.75 * info.totalram / buffer_size);
+    buffer_queue_max_size = (int) (0.25 * info.totalram / buffer_size);
     cout << fmt::format("limiting raw file input buffer memory to {:.1f} GB\n",
                         1.0 * buffer_queue_max_size * buffer_size / gb);
   } else {
