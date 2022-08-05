@@ -7,6 +7,7 @@
 #include "raw_file_group.h"
 #include "run_dedoppler.h"
 #include <string>
+#include "thread_util.h"
 #include <time.h>
 #include "util.h"
 
@@ -19,6 +20,8 @@ const string VERSION = "0.1.8";
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
 int main(int argc, char* argv[]) {
+  setThreadName("main");
+  
   po::options_description desc("seticore options");
   desc.add_options()
     ("help,h", "produce help message")

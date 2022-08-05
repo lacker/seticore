@@ -32,10 +32,10 @@ using namespace std;
   memory for this buffer.
 
   Internally, there are several threads doing things.
-  runIOThread is reading buffers and passing them to buffer_queue so that they
+  runInputThread is reading buffers and passing them to buffer_queue so that they
   are ready when the client thread calls read(). This is possible since the access
   pattern is defined when the RawFileGroupReader is created.
-  The io thread itself creates multiple helper threads to do the file reading. In
+  The input thread itself creates multiple helper threads to do the file reading. In
   testing this does seem to help a significant amount on SSDs, even though it makes the
   reads happen out of order.
 
@@ -73,7 +73,7 @@ class RawFileGroupReader {
   // Makes a buffer of the correct size, reusing our pool of extra buffers if possible
   unique_ptr<RawBuffer> makeBuffer();
   
-  void runIOThread();
+  void runInputThread();
 
   // Pushes this buffer onto the output queue, waiting if necessary
   bool push(unique_ptr<RawBuffer> buffer);

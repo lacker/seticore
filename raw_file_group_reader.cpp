@@ -36,7 +36,7 @@ RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
     buffer_queue_max_size = 4;
   }
 
-  io_thread = thread(&RawFileGroupReader::runIOThread, this);
+  io_thread = thread(&RawFileGroupReader::runInputThread, this);
 }
 
 RawFileGroupReader::~RawFileGroupReader() {
@@ -111,7 +111,8 @@ bool RawFileGroupReader::push(unique_ptr<RawBuffer> buffer) {
 }
 
 // Reads all the input and passes it to the buffer_queue
-void RawFileGroupReader::runIOThread() {
+void RawFileGroupReader::runInputThread() {
+  setThreadName("input");
   for (int band = 0; band < num_bands; ++band) {
     file_group.resetBand(band);
     for (int batch = 0; batch < num_batches; ++batch) {

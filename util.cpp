@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <fmt/core.h>
 #include <iostream>
+#include <pthread.h>
 
 using namespace std;
 
@@ -93,3 +94,4 @@ string prettyBytes(size_t n) {
   }  
   return fmt::format("{} bytes", n);
 }
+

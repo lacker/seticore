@@ -16,7 +16,9 @@ class TaskList {
   void run(int num_threads);
 
  private:
-  void runWorkerThread();
+  void runTempWorkerThread();
 };
 
 void runInParallel(vector<function<bool()> > tasks, int num_threads);
+
+void setThreadName(const string& name);
