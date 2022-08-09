@@ -347,6 +347,9 @@ int Beamformer::numOutputTimesteps() const {
   writing into a subrange of the time, starting at power_time_offset.
 
   The input must be ready to go when run is called.
+
+  It is okay to call run before the previous run completes, as long as you
+  only call it from one thread.
  */
 void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int power_time_offset) {
   assert(input.num_blocks == nblocks);

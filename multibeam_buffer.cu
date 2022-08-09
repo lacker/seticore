@@ -8,13 +8,22 @@
 
 using namespace std;
 
-MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_channels)
-  : num_beams(num_beams), num_timesteps(num_timesteps), num_channels(num_channels) {
+MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_channels,
+                                 int num_write_timesteps)
+  : num_beams(num_beams), num_timesteps(num_timesteps), num_channels(num_channels),
+    num_write_timesteps(num_write_timesteps) {
+  assert(num_write_timesteps <= num_timesteps);
   size_t bytes = sizeof(float) * num_beams * num_timesteps * num_channels;
   cudaMallocManaged(&data, bytes);
   cout << "multibeam buffer memory: " << prettyBytes(bytes) << endl;
   checkCuda("MultibeamBuffer data malloc");
+
+  cudaStreamCreateWithFlags(&prefetch_stream, cudaStreamNonBlocking);
+  checkCuda("MultibeamBuffer stream init");
 }
+
+MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_channels)
+  : MultibeamBuffer(num_beams, num_timesteps, num_channels, num_timesteps) {}
 
 MultibeamBuffer::~MultibeamBuffer() {
   cudaFree(data);
@@ -27,7 +36,7 @@ FilterbankBuffer MultibeamBuffer::getBeam(int beam) {
 }
 
 void MultibeamBuffer::set(int beam, int time, int channel, float value) {
-  int index = (beam * num_timesteps + time) * num_channels + channel;
+  int index = index3d(beam, time, num_timesteps, channel, num_channels);
   data[index] = value;
 }
 
@@ -37,7 +46,7 @@ float MultibeamBuffer::get(int beam, int time, int channel) {
   assert(beam < num_beams);
   assert(time < num_timesteps);
   assert(channel < num_channels);
-  int index = (beam * num_timesteps + time) * num_channels + channel;
+  int index = index3d(beam, time, num_timesteps, channel, num_channels);
   return data[index];
 }
 
@@ -58,4 +67,76 @@ void MultibeamBuffer::copyRegionAsync(int beam, int channel_offset,
                     width, num_timesteps,
                     cudaMemcpyDefault);
   checkCuda("MultibeamBuffer copyRegionAsync");
+}
+
+void MultibeamBuffer::hintWritingTime(int time) {
+  prefetchStripes(0, 0, time - 1, time + 1);
+}
+
+void MultibeamBuffer::hintReadingBeam(int beam) {
+  prefetchStripes(beam - 1, beam + 1, 0, 0);
+}
+
+// Does nothing when [first_time, last_time] is an invalid range
+void MultibeamBuffer::prefetchRange(int beam, int first_time, int last_time,
+                                    int destination_device) {
+  if (first_time > last_time) {
+    return;
+  }
+  
+  int start_index = index3d(beam, first_time, num_timesteps, 0, num_channels);
+  size_t prefetch_size = sizeof(float) * (last_time - first_time + 1) * num_channels;
+  cudaMemPrefetchAsync(data + start_index, prefetch_size, destination_device,
+                       prefetch_stream);
+  checkCuda("MultibeamBuffer prefetchRange");
+}
+
+/*
+  Prefetch so that the range of times from [first_time, last_time] and the
+  range of beams from [first_beam, last_beam] will be on the GPU.
+  The set of values to prefetch is like an intersection of vertical
+  and horizontal stripes.
+
+  For (time, beam) pairs that are adjacent to this set in memory, or
+  at the first or last times, we don't do any explicit
+  prefetching. For (time, beam) pairs that are not adjacent, we
+  prefetch them to the CPU. The adjacent regions are like a buffer
+  where CUDA can decide that they can go part on the CPU
+  and part on the GPU, since the CUDA library rounds prefetch ranges
+  to the nearest page size.
+
+  Truncates invalid inputs to do something sane.
+ */
+void MultibeamBuffer::prefetchStripes(int first_beam, int last_beam,
+                                      int first_time, int last_time) {
+  if (first_beam < 0) {
+    first_beam = 0;
+  }
+  if (last_beam >= num_beams) {
+    last_beam = num_beams - 1;
+  }
+  if (first_time < 0) {
+    first_time = 0;
+  }
+  if (last_time >= num_timesteps) {
+    last_time = num_timesteps - 1;
+  }
+  
+  const int gpu_id = 0;
+  for (int beam = 0; beam < num_beams; ++beam) {
+    if (first_beam <= beam && beam <= last_beam) {
+      // Prefetch this entire beam to the GPU
+      prefetchRange(beam, 0, num_timesteps - 1, gpu_id);
+      continue;
+    }
+
+    // Prefetch the desired time range to the GPU
+    prefetchRange(beam, first_time, last_time, gpu_id);
+
+    // Prefetch earlier times to the CPU, with a margin
+    prefetchRange(beam, 1, first_time - 2, cudaCpuDeviceId);
+
+    // Prefetch later times to the CPU, with a margin
+    prefetchRange(beam, last_time + 2, num_timesteps - 2, cudaCpuDeviceId);
+  }
 }

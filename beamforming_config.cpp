@@ -156,12 +156,17 @@ void BeamformingConfig::run() {
       read_buffer = reader.read();
       device_raw_buffer->copyFromAsync(*read_buffer);
       device_raw_buffer->waitUntilReady();
+
+      // At this point, the beamformer could still be processing the
+      // previous batch, but that's okay.
+      multibeam.hintWritingTime(time_offset);
       beamformer.run(*device_raw_buffer, multibeam, time_offset);
     }
 
     cout << endl;
     for (int beam = 0; beam < beamformer.nbeams; ++beam) {
-
+      multibeam.hintReadingBeam(beam);
+      
       if (!h5_dir.empty()) {
         // Write out data for this band and beam to a file
         cudaDeviceSynchronize();
