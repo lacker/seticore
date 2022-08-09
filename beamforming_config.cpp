@@ -84,7 +84,8 @@ void BeamformingConfig::run() {
   int num_multibeam_timesteps = beamformer.numOutputTimesteps() * num_batches;
   MultibeamBuffer multibeam(beamformer.nbeams,
                             num_multibeam_timesteps,
-                            beamformer.numOutputChannels());
+                            beamformer.numOutputChannels(),
+                            beamformer.numOutputTimesteps());
   
   RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
                             blocks_per_batch);

@@ -70,16 +70,22 @@ void MultibeamBuffer::copyRegionAsync(int beam, int channel_offset,
 }
 
 void MultibeamBuffer::hintWritingTime(int time) {
-  prefetchStripes(0, 0, time - 1, time + 1);
+  prefetchStripes(0, 0, time - num_write_timesteps, time + 2 * num_write_timesteps);
 }
 
 void MultibeamBuffer::hintReadingBeam(int beam) {
-  prefetchStripes(beam - 1, beam + 1, 0, 0);
+  prefetchStripes(beam - 1, beam + 1, 0, num_write_timesteps);
 }
 
-// Does nothing when [first_time, last_time] is an invalid range
+// Truncates [first_time, last_time]
 void MultibeamBuffer::prefetchRange(int beam, int first_time, int last_time,
                                     int destination_device) {
+  if (first_time < 0) {
+    first_time = 0;
+  }
+  if (last_time >= num_timesteps) {
+    last_time = num_timesteps - 1;
+  }
   if (first_time > last_time) {
     return;
   }
@@ -105,7 +111,7 @@ void MultibeamBuffer::prefetchRange(int beam, int first_time, int last_time,
   and part on the GPU, since the CUDA library rounds prefetch ranges
   to the nearest page size.
 
-  Truncates invalid inputs to do something sane.
+  Truncates inputs that are out of range.
  */
 void MultibeamBuffer::prefetchStripes(int first_beam, int last_beam,
                                       int first_time, int last_time) {
@@ -133,10 +139,13 @@ void MultibeamBuffer::prefetchStripes(int first_beam, int last_beam,
     // Prefetch the desired time range to the GPU
     prefetchRange(beam, first_time, last_time, gpu_id);
 
+    // I think this could be shrunk to the CPU page size
+    int margin = num_write_timesteps;
+    
     // Prefetch earlier times to the CPU, with a margin
-    prefetchRange(beam, 1, first_time - 2, cudaCpuDeviceId);
+    prefetchRange(beam, margin, first_time - margin, cudaCpuDeviceId);
 
     // Prefetch later times to the CPU, with a margin
-    prefetchRange(beam, last_time + 2, num_timesteps - 2, cudaCpuDeviceId);
+    prefetchRange(beam, last_time + margin, num_timesteps - margin, cudaCpuDeviceId);
   }
 }
