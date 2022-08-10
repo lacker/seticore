@@ -54,6 +54,7 @@ srcs = [
     'raw_file_group_reader.cpp',
     'recipe_file.cpp',
     'run_dedoppler.cpp',
+    'taylor.cu',
     'thread_util.cpp',
     'util.cpp',
     'vector_hit_recorder.cpp',

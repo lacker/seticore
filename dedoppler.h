@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda.h>
 #include <string>
 #include <vector>
 
@@ -71,3 +72,4 @@ private:
 
 // Fill a buffer with meaningless data for testing
 FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels);
+

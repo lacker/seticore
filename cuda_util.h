@@ -20,10 +20,16 @@ public:
   ~Stream();
 };
 
+// Helper to calculate a 2d row-major index, ie for:
+//   arr[a][b]
+__host__ __device__ inline int index2d(int a, int b, int b_end) {
+  return a * b_end + b;
+}
+
 // Helper to calculate a 3d row-major index, ie for:
 //   arr[a][b][c]
 __host__ __device__ inline int index3d(int a, int b, int b_end, int c, int c_end) {
-  return ((a * b_end) + b) * c_end + c;
+  return index2d(a, b, b_end) * c_end + c;
 }
 
 // Helper to calculate a 4d row-major index, ie for:

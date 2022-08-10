@@ -27,3 +27,4 @@ TEST_CASE("basic functionality", "[dedoppler]") {
   REQUIRE(hits[0].index == 70);
   REQUIRE(hits[0].drift_steps == 3);
 }
+
