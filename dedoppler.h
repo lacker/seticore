@@ -68,3 +68,6 @@ private:
   // The difference in adjacent drift rates that we look for, in Hz/s
   double drift_rate_resolution;  
 };
+
+// Fill a buffer with meaningless data for testing
+FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels);

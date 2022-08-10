@@ -1,6 +1,7 @@
 #include "util.h"
 
 #include <assert.h>
+#include <chrono>
 #include <fmt/core.h>
 #include <iostream>
 #include <pthread.h>
@@ -95,3 +96,7 @@ string prettyBytes(size_t n) {
   return fmt::format("{} bytes", n);
 }
 
+long timeInMS() {
+  return chrono::duration_cast<chrono::milliseconds>
+    (chrono::system_clock::now().time_since_epoch()).count();
+}

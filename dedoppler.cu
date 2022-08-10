@@ -476,3 +476,14 @@ void Dedopplerer::search(const FilterbankBuffer& input,
 }
 
 
+// Make a filterbank buffer with a bit of deterministic noise so that
+// normalization doesn't make everything infinite SNR.
+FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels) {
+  FilterbankBuffer buffer(num_timesteps, num_channels);
+  buffer.zero();
+  for (int chan = 0; chan < buffer.num_channels; ++chan) {
+    buffer.set(0, chan, 0.1 * chan / buffer.num_channels);
+  }
+  return buffer;
+}
+
