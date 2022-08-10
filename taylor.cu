@@ -6,10 +6,6 @@
 using namespace std;
 
 /*
-  Kernel to runs one round of the Taylor tree algorithm, calculating the sums
-  of paths of length `path_length`.
-  Each thread does the calculations for one frequency.
-
   Apologies for the length of this comment, but the Taylor tree algorithm is
   fairly complicated for the number of lines of code it is, so it takes
   a while to explain. My hope is that this code will be comprehensible
@@ -87,11 +83,20 @@ using namespace std;
   calculate sums for all slopes in [drift_block, drift_block+1], if we just shift all
   accesses of the kth timestep by an extra drift_block * k.
 
-  This kernel is designed to run one thread per frequency in the
-  data. If it's trying to calculate the sum of a path that goes out of
-  the range, it just won't write to that value. Any in-range path will
-  get a value written to it. So you don't have to initialize the
-  buffers, as long as you recognize that
+  This file provides different ways to run different components of the Taylor tree
+  algorithm.
+*/
+
+/*
+  A helper function to run the Taylor tree algorithm for one starting
+  frequency, calculating the sums of paths of length `path_length` given the
+  sums of paths of length `path_length / 2`.
+
+  This function supports source and target of different dimensions. It checks
+  boundaries and does not read or write out of bounds.
+
+  Any in-range path will get a value written to it. So you don't have to
+  initialize the output buffer, as long as you recognize that
   output[path_offset][start_frequency] is only valid when the last
   frequency of the path is within bounds, i.e.
 
@@ -99,19 +104,19 @@ using namespace std;
 
   This code is based on the original kernel by Franklin Antonio, available at
     https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
-*/
-__global__ void taylorTree(const float* source_buffer, float* target_buffer,
-                           int num_timesteps, int num_freqs, int path_length, int drift_block) {
-  assert(path_length <= num_timesteps);
-  int freq = blockIdx.x * blockDim.x + threadIdx.x;
-  if (freq < 0 || freq >= num_freqs) {
+ */
+__host__ __device__ inline void
+taylorOneStepOneChannel(const float* source_buffer, float* target_buffer,
+                        int chan, int num_timesteps, int num_source_channels,
+                        int num_target_channels, int path_length, int drift_block) {
+  if (chan < 0 || chan >= num_source_channels || chan >= num_target_channels) {
+    // We can't calculate any paths for this channel, since it is out of bounds
     return;
   }
 
   int num_time_blocks = num_timesteps / path_length;
   for (int time_block = 0; time_block < num_time_blocks; ++time_block) {
     for (int path_offset = path_length - 1; path_offset >= 0; path_offset--) {
-
       // The recursion calculates sums for a target time block based on two
       // different source time blocks.
       // Data for block b comes from blocks 2b and 2b+1.
@@ -124,11 +129,11 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
       // freq_shift thus represents the amount we need to shift the
       // second path.
       int half_offset = path_offset / 2;
-      int freq_shift = (path_offset + 1) / 2 + drift_block * path_length / 2;
+      int chan_shift = (path_offset + 1) / 2 + drift_block * path_length / 2;
 
-      if (freq + freq_shift < 0 ||
-          freq + freq_shift >= num_freqs) {
-        // We can't calculate this path sum, because it would require
+      if (chan + chan_shift < 0 ||
+          chan + chan_shift >= num_source_channels) {
+        // We can't calculate this path sum, because the last step requires
         // reading out-of-range data.
         continue;
       }
@@ -146,13 +151,36 @@ __global__ void taylorTree(const float* source_buffer, float* target_buffer,
       // array[((i * y) + j) * z + k]
 
       // Here, the target buffer has dimensions num_time_blocks * path_length * num_freqs
-      // The source buffer has dimensions (2 * num_time_blocks) * (path_length / 2) * num_freqs
+      // The source buffer has dimensions:
+      //   (2 * num_time_blocks) * (path_length / 2) * num_freqs
       // so this line of code is just substituting the appropriate
       // dimensions into the above formula.
-      target_buffer[(time_block * path_length + path_offset) * num_freqs + freq] =
-        source_buffer[(time_block * path_length + half_offset) * num_freqs + freq] +
-        source_buffer[(time_block * path_length + half_offset + path_length / 2) * num_freqs + freq + freq_shift];
+      target_buffer[(time_block * path_length + path_offset) * num_target_channels + chan] =
+        source_buffer[(time_block * path_length + half_offset) * num_source_channels + chan] +
+        source_buffer[(time_block * path_length + half_offset + path_length / 2) * num_source_channels + chan + chan_shift];
     }
   }
+
+}
+
+/*
+  Kernel to run one round of the Taylor tree algorithm on an input array.
+
+  We assume that the caller is using a grid tiling such that
+  blockIdx.x * blockDim.x + threadIdx.x
+  will cover all frequencies.
+*/
+__global__ void taylorTreeOneStepKernel(const float* source_buffer, float* target_buffer,
+                                        int num_timesteps, int num_freqs, int path_length,
+                                        int drift_block) {
+  assert(path_length <= num_timesteps);
+  int freq = blockIdx.x * blockDim.x + threadIdx.x;
+  if (freq < 0 || freq >= num_freqs) {
+    return;
+  }
+
+  taylorOneStepOneChannel(source_buffer, target_buffer,
+                          freq, num_timesteps, num_freqs, num_freqs, path_length,
+                          drift_block);
 }
 

@@ -27,7 +27,7 @@
   metadata along as we find it. One thread per freq.
 
   The function ignores data corresponding to invalid paths. See
-  comments in taylorTree for details.
+  comments in taylor.cu for details.
 */
 __global__ void findTopPathSums(const float* path_sums, int num_timesteps, int num_freqs,
                                 int drift_block, float* top_path_sums,
@@ -182,9 +182,9 @@ void Dedopplerer::search(const FilterbankBuffer& input,
     for (int path_length = 2; path_length <= rounded_num_timesteps; path_length *= 2) {
 
       // Invoke cuda kernel
-      taylorTree<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, target_buffer,
-                                                  rounded_num_timesteps, num_channels,
-                                                  path_length, drift_block);
+      taylorTreeOneStepKernel<<<grid_size, CUDA_MAX_THREADS>>>
+        (source_buffer, target_buffer, rounded_num_timesteps, num_channels,
+         path_length, drift_block);
       checkCuda("taylorTree");
       
       // Swap buffer aliases to make the old target the new source
