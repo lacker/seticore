@@ -7,7 +7,7 @@
 
 TEST_CASE("taylor outputs match", "[taylor]") {
   int num_timesteps = 16;
-  int num_channels = 200;
+  int num_channels = 2000;
   FilterbankBuffer input(num_timesteps, num_channels);
   for (int time = 0; time < num_timesteps; ++time) {
     for (int chan = 0; chan < num_channels; ++chan) {

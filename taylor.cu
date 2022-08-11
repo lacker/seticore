@@ -165,7 +165,7 @@ const float* basicTaylorTree(const float* input, float* buffer1, float* buffer2,
  */
 const int tile_timesteps = 16;
 const int tile_width = 256;
-const int tile_block_width = tile_width - tile_timesteps + 1;
+const int tile_block_width = tile_width - tile_timesteps;
 __global__ void taylorTiledKernel(const float* input, float* output,
                                   int num_channels, int drift) {
   __shared__ float buffer1[tile_timesteps * tile_width];
@@ -186,6 +186,12 @@ __global__ void taylorTiledKernel(const float* input, float* output,
   taylorOneStepOneChannel(buffer1, buffer2, chan, tile_timesteps,
                           tile_width, tile_width, 8, 0);
   __syncthreads();
+
+  if (chan > tile_block_width || chan + block_start >= num_channels) {
+    // Don't write out the value from this channel
+    return;
+  }
+  
   taylorOneStepOneChannel(buffer2, output + block_start, chan, tile_timesteps,
                           tile_width, num_channels, 16, 0);
   
