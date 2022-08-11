@@ -104,8 +104,9 @@ unmapDrift(const float* source_buffer, float* target_buffer, int num_timesteps,
   for (int time = 0; time < num_timesteps; ++time) {
     int source_chan = chan + chan_offset + time * drift;
     if (source_chan < 0 || source_chan >= num_source_channels) {
-      // The region has drifted out of bounds
-      return;
+      // Out of bounds.
+      // We might come back in bounds, though, so keep looping.
+      continue;
     }
 
     target_buffer[index2d(time, chan, num_target_channels)] =

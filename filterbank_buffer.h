@@ -40,10 +40,9 @@ class FilterbankBuffer {
   void set(int time, int channel, float value);
   float get(int time, int channel) const;
 
-  // Assert two filterbanks are equal.
-  // If drift_block is provided, treat time as a drift and only check if it is valid.
+  // Assert two filterbanks are equal over the indexes that are valid for
+  // this drift block.
   void assertEqual(const FilterbankBuffer& other, int drift_block) const;
-  void assertEqual(const FilterbankBuffer& other) const;
 };
 
 // Fill a buffer with meaningless data for testing

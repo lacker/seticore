@@ -315,7 +315,9 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
   checkCuda("Beamformer cublas handle");
   
   size_t total_bytes = coefficients_bytes + buffer_bytes + prebeam_bytes;
-  cout << "beamformer memory: " << prettyBytes(total_bytes) << endl;
+  if (total_bytes > 2000000) {
+    cout << "beamformer memory: " << prettyBytes(total_bytes) << endl;
+  }
 }
 
 Beamformer::~Beamformer() {

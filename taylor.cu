@@ -174,7 +174,7 @@ __global__ void taylorTiledKernel(const float* input, float* output,
   int chan = threadIdx.x;
 
   unmapDrift(input, buffer1, tile_timesteps, chan, block_start, num_channels,
-             tile_width, drift);
+             tile_width, drift); 
 
   __syncthreads();
   taylorOneStepOneChannel(buffer1, buffer2, chan, tile_timesteps,
@@ -192,9 +192,11 @@ __global__ void taylorTiledKernel(const float* input, float* output,
 }
 
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
-                     int num_channels, int drift) {
+                     int num_channels, int drift_block) {
   assert(num_timesteps == tile_timesteps);
   int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
-  taylorTiledKernel<<<num_blocks, tile_width>>>(input, output, num_channels, drift);
+  taylorTiledKernel<<<num_blocks, tile_width>>>
+    (input, output, num_channels, drift_block);
+  checkCuda("taylorTiledKernel");
 }
 

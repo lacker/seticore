@@ -66,10 +66,6 @@ void FilterbankBuffer::assertEqual(const FilterbankBuffer& other, int drift_bloc
   }
 }
 
-void FilterbankBuffer::assertEqual(const FilterbankBuffer& other) const {
-  assertEqual(other, 0);
-}
-
 // Make a filterbank buffer with a bit of deterministic noise so that
 // normalization doesn't make everything infinite SNR.
 FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels) {

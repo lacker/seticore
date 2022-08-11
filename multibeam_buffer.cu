@@ -15,7 +15,9 @@ MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_chann
   assert(num_write_timesteps <= num_timesteps);
   size_t bytes = sizeof(float) * num_beams * num_timesteps * num_channels;
   cudaMallocManaged(&data, bytes);
-  cout << "multibeam buffer memory: " << prettyBytes(bytes) << endl;
+  if (bytes > 2000000) {
+    cout << "multibeam buffer memory: " << prettyBytes(bytes) << endl;
+  }
   checkCuda("MultibeamBuffer data malloc");
 
   cudaStreamCreateWithFlags(&prefetch_stream, cudaStreamNonBlocking);

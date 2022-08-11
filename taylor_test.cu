@@ -19,15 +19,21 @@ TEST_CASE("taylor outputs match", "[taylor]") {
   FilterbankBuffer buffer2(num_timesteps, num_channels);
   FilterbankBuffer tiled(num_timesteps, num_channels);
 
-  for (int drift = 0; drift <= 0; ++drift) {
+  for (int drift_block = -2; drift_block <= 2; ++drift_block) {
+    // Avoid confusion while debugging
+    buffer1.zero();
+    buffer2.zero();
+    tiled.zero();
+    cudaDeviceSynchronize();
+    
     const float* out_ptr = basicTaylorTree(input.data, buffer1.data, buffer2.data,
-                                           num_timesteps, num_channels, drift);
+                                           num_timesteps, num_channels, drift_block);
     const FilterbankBuffer& basic = (out_ptr == buffer1.data) ? buffer1 : buffer2;
 
-    tiledTaylorTree(input.data, tiled.data, num_timesteps, num_channels, drift);
+    tiledTaylorTree(input.data, tiled.data, num_timesteps, num_channels, drift_block);
 
     cudaDeviceSynchronize();
 
-    basic.assertEqual(tiled, drift);
-  }
+    basic.assertEqual(tiled, drift_block);
+  } 
 }
