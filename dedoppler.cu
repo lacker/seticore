@@ -151,7 +151,6 @@ void Dedopplerer::search(const FilterbankBuffer& input,
   int min_drift_block = floor(-normalized_max_drift);
   int max_drift_block = floor(normalized_max_drift);
 
-  // For now all cuda operations use the same grid.
   // This will create one cuda thread per frequency bin
   int grid_size = (num_channels + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
 
@@ -165,44 +164,15 @@ void Dedopplerer::search(const FilterbankBuffer& input,
   
   int mid = num_channels / 2;
 
-  // Do the Taylor tree algorithm
+  // Do the Taylor tree algorithm for each drift block
   for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
-    
-    // The dataflow among the buffers looks like:
-    // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
-    // We use the aliases source_buffer and target_buffer to make this simpler.
-    // In each pass through the upcoming loop, we are reading from
-    // source_buffer and writing to target_buffer.
-    float* source_buffer = input.data;
-    float* target_buffer = buffer1;
+    // Calculate Taylor sums
+    const float* taylor_sums = fullTaylorTree(input.data, buffer1, buffer2,
+                                              rounded_num_timesteps, num_channels,
+                                              drift_block);
 
-    // Each pass through the data calculates the sum of paths that are
-    // twice as long as the previous path, until we reach our goal,
-    // which is paths of length num_timesteps.
-    for (int path_length = 2; path_length <= rounded_num_timesteps; path_length *= 2) {
-
-      // Invoke cuda kernel
-      taylorTreeOneStepKernel<<<grid_size, CUDA_MAX_THREADS>>>
-        (source_buffer, target_buffer, rounded_num_timesteps, num_channels,
-         path_length, drift_block);
-      checkCuda("taylorTree");
-      
-      // Swap buffer aliases to make the old target the new source
-      if (target_buffer == buffer1) {
-        source_buffer = buffer1;
-        target_buffer = buffer2;
-      } else if (target_buffer == buffer2) {
-        source_buffer = buffer2;
-        target_buffer = buffer1;
-      } else {
-        cerr << "programmer error; control flow should not reach here\n";
-        exit(1);
-      }
-    }
-
-    // Invoke cuda kernel
-    // The final path sums are in source_buffer because we did one last alias-swap
-    findTopPathSums<<<grid_size, CUDA_MAX_THREADS>>>(source_buffer, rounded_num_timesteps,
+    // Track the best sums
+    findTopPathSums<<<grid_size, CUDA_MAX_THREADS>>>(taylor_sums, rounded_num_timesteps,
                                                      num_channels, drift_block,
                                                      gpu_top_path_sums,
                                                      gpu_top_drift_blocks,
@@ -322,16 +292,3 @@ void Dedopplerer::search(const FilterbankBuffer& input,
     }
   }
 }
-
-
-// Make a filterbank buffer with a bit of deterministic noise so that
-// normalization doesn't make everything infinite SNR.
-FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels) {
-  FilterbankBuffer buffer(num_timesteps, num_channels);
-  buffer.zero();
-  for (int chan = 0; chan < buffer.num_channels; ++chan) {
-    buffer.set(0, chan, 0.1 * chan / buffer.num_channels);
-  }
-  return buffer;
-}
-

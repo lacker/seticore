@@ -54,24 +54,39 @@ void assertComplexEq(thrust::complex<float> c, float real, float imag) {
 }
 
 void assertFloatEq(float a, float b) {
+  assertFloatEq(a, b, "");
+}
+
+void assertFloatEq(float a, float b, const string& tag) {
   while (a > 100) {
     a /= 2.0;
     b /= 2.0;
   }
   if (abs(a - b) > 0.001) {
+    if (!tag.empty()) {
+      cerr << tag << ": ";
+    }
     cerr << a << " != " << b << endl;
     exit(1);
   }
 }
 
-void assertStringEq(const string& lhs, const string& rhs) {
+void assertStringEq(const string& lhs, const string& rhs, const string& tag) {
   if (lhs == rhs) {
     return;
   }
-  cerr << "assertStringEq failed:\n";
+  if (tag.empty()) {
+    cerr << "assertStringEq failed:\n";
+  } else {
+    cerr << "assertStringEq failed for " << tag << ":\n";
+  }
   cerr << "lhs: " << lhs << endl;
   cerr << "rhs: " << rhs << endl;
   exit(1);
+}
+
+void assertStringEq(const string& lhs, const string& rhs) {
+  assertStringEq(lhs, rhs, "");
 }
 
 string pluralize(int n, const string& noun) {

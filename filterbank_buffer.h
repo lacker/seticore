@@ -33,5 +33,11 @@ class FilterbankBuffer {
 
   void zero();
   void set(int time, int channel, float value);
-  float get(int time, int channel);
+  float get(int time, int channel) const;
+
+  void assertEqual(const FilterbankBuffer& other);
 };
+
+// Fill a buffer with meaningless data for testing
+FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels);
+

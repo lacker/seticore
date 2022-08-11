@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <cuda.h>
+#include <iostream>
 
+#include "cuda_util.h"
 #include "taylor.h"
 
 using namespace std;
@@ -184,3 +186,49 @@ __global__ void taylorTreeOneStepKernel(const float* source_buffer, float* targe
                           drift_block);
 }
 
+/*
+  Run all rounds of the Taylor tree algorithm.
+  buffer1 and buffer2 are two GPU buffers provided to do work.
+  Returns the buffer that the eventual output is in.
+ */
+const float* fullTaylorTree(const float* input, float* buffer1, float* buffer2,
+                            int num_timesteps, int num_channels, int drift_block) {
+  // This will create one cuda thread per frequency bin
+  int grid_size = (num_channels + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
+
+  // The dataflow among the buffers looks like:
+  // input -> buffer1 -> buffer2 -> buffer1 -> buffer2 -> ...
+  // We use the aliases source_buffer and target_buffer to make this simpler.
+  // In each pass through the upcoming loop, we are reading from
+  // source_buffer and writing to target_buffer.
+  const float* source_buffer = input;
+  float* target_buffer = buffer1;
+
+  // Each pass through the data calculates the sum of paths that are
+  // twice as long as the previous path, until we reach our goal,
+  // which is paths of length num_timesteps.
+  for (int path_length = 2; path_length <= num_timesteps; path_length *= 2) {
+
+    // Invoke cuda kernel
+    taylorTreeOneStepKernel<<<grid_size, CUDA_MAX_THREADS>>>
+      (source_buffer, target_buffer, num_timesteps, num_channels,
+       path_length, drift_block);
+    checkCuda("taylorTreeOneStepKernel");
+
+    // Swap buffer aliases to make the old target the new source
+    if (target_buffer == buffer1) {
+      source_buffer = buffer1;
+      target_buffer = buffer2;
+    } else if (target_buffer == buffer2) {
+      source_buffer = buffer2;
+      target_buffer = buffer1;
+    } else {
+      cerr << "programmer error; control flow should not reach here\n";
+      exit(1);
+    }
+  }
+
+  // The final path sums are in source_buffer because we did one last
+  // alias-swap
+  return source_buffer;
+}

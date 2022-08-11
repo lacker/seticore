@@ -70,6 +70,3 @@ private:
   double drift_rate_resolution;  
 };
 
-// Fill a buffer with meaningless data for testing
-FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels);
-

@@ -1,9 +1,11 @@
 #include "filterbank_buffer.h"
 
-#include "cuda_util.h"
-
 #include <assert.h>
+#include <fmt/core.h>
 #include <iostream>
+
+#include "cuda_util.h"
+#include "util.h"
 
 using namespace std;
 
@@ -42,9 +44,32 @@ void FilterbankBuffer::set(int time, int channel, float value) {
   data[index] = value;
 }
 
-float FilterbankBuffer::get(int time, int channel) {
+float FilterbankBuffer::get(int time, int channel) const {
   cudaDeviceSynchronize();
   checkCuda("FilterbankBuffer get");
   int index = time * num_channels + channel;
   return data[index];
 }
+
+void FilterbankBuffer::assertEqual(const FilterbankBuffer& other) {
+  assert(num_timesteps == other.num_timesteps);
+  assert(num_channels == other.num_channels);
+  for (int time = 0; time < num_timesteps; ++time) {
+    for (int chan = 0; chan < num_channels; ++chan) {
+      assertFloatEq(get(time, chan), other.get(time, chan),
+                    fmt::format("data[{}][{}]", time, chan));
+    }
+  }
+}
+
+// Make a filterbank buffer with a bit of deterministic noise so that
+// normalization doesn't make everything infinite SNR.
+FilterbankBuffer makeNoisyBuffer(int num_timesteps, int num_channels) {
+  FilterbankBuffer buffer(num_timesteps, num_channels);
+  buffer.zero();
+  for (int chan = 0; chan < buffer.num_channels; ++chan) {
+    buffer.set(0, chan, 0.1 * chan / buffer.num_channels);
+  }
+  return buffer;
+}
+

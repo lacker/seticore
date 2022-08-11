@@ -5,7 +5,9 @@ project('seticore', ['cpp', 'c', 'cuda'],
             'werror=true',
         ])
 
-cuda_args = [ '--std=c++14' ]
+cuda_args = [ '--std=c++14',
+              '--display-error-number',
+              '--diag-suppress=1675' ]
 
 cmake = import('cmake')
 
@@ -81,8 +83,8 @@ executable('beamforming_integration_test',
            srcs + ['beamforming_integration_test.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
-executable('dedoppler_benchmark',
-           srcs + ['dedoppler_benchmark.cpp'],
+executable('taylor_benchmark',
+           srcs + ['taylor_benchmark.cu'],
            dependencies: deps, cuda_args: cuda_args)
 
 executable('file_io_benchmark',
