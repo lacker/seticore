@@ -178,7 +178,7 @@ void BeamformingConfig::run() {
                       zeroPad(band, numDigits(num_bands)),
                       zeroPad(beam, numDigits(beamformer.nbeams)));
         FilterbankMetadata band_metadata = metadata.getBandMetadata(band, num_bands);
-        FilterbankBuffer output = multibeam.getBeam(beam);
+        FilterbankBuffer output(multibeam.getBeam(beam));
         H5Writer writer(h5_filename, band_metadata);
         writer.setData(output.data);
         writer.close();

@@ -2,6 +2,8 @@
 
 #include <cuda.h>
 
+#include "cuda_util.h"
+
 using namespace std;
 
 /*
@@ -18,6 +20,9 @@ using namespace std;
   frequency of the path is within bounds, i.e.
 
   0 <= (num_timesteps - 1) * drift_block + path_offset + start_frequency < num_freqs
+
+  target_buffer and num_target_channels can indicate a slice of a larger array,
+  because num_target_channels is only used as a stride.
 
   This code is based on the original kernel by Franklin Antonio, available at
     https://github.com/UCBerkeleySETI/dedopplerperf/blob/main/CudaTaylor5demo.cu
@@ -80,10 +85,43 @@ taylorOneStepOneChannel(const float* source_buffer, float* target_buffer,
 
 }
 
-__global__ void taylorTreeOneStepKernel(const float* source_buffer, float* target_buffer,
-                                        int num_timesteps, int num_freqs, int path_length,
-                                        int drift_block);
+/*
+  Maps a parallelogram-shaped region of source_buffer to a rectangular region
+  of target_buffer.
+  Handles all timesteps for the given channel.
 
-const float* fullTaylorTree(const float* source_buffer, float* buffer1, float* buffer2,
-                            int num_timesteps, int num_freqs, int drift_block);
+  Both buffers are shaped row-major [time][channel].
+  chan_offset is the channel in source_buffer that maps to 0 in target_buffer.
+  drift is how much horizontal shift there is for each vertical step.
+
+  Checks range validity for source_buffer, but not for target buffer.
+  For paths that are out of range, the contents of target_buffer are left unchanged.
+ */
+__host__ __device__ inline void
+unmapDrift(const float* source_buffer, float* target_buffer, int num_timesteps,
+           int chan, int chan_offset, int num_source_channels, int num_target_channels,
+           int drift) {
+  for (int time = 0; time < num_timesteps; ++time) {
+    int source_chan = chan + chan_offset + time * drift;
+    if (source_chan < 0 || source_chan >= num_source_channels) {
+      // The region has drifted out of bounds
+      return;
+    }
+
+    target_buffer[index2d(time, chan, num_target_channels)] =
+      source_buffer[index2d(time, source_chan, num_source_channels)];
+  }
+}
+
+__global__ void taylorOneStepKernel(const float* source_buffer, float* target_buffer,
+                                    int num_timesteps, int num_freqs, int path_length,
+                                    int drift_block);
+
+const float* basicTaylorTree(const float* source_buffer, float* buffer1, float* buffer2,
+                             int num_timesteps, int num_freqs, int drift_block);
  
+__global__ void taylorTiledKernel(const float* source_buffer, float* target_buffer,
+                                  int num_channels, int drift_block);
+
+void tiledTaylorTree(const float* input, float* output, int num_timesteps,
+                     int num_channels, int drift_block);

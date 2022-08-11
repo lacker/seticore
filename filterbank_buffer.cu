@@ -51,15 +51,23 @@ float FilterbankBuffer::get(int time, int channel) const {
   return data[index];
 }
 
-void FilterbankBuffer::assertEqual(const FilterbankBuffer& other) {
+void FilterbankBuffer::assertEqual(const FilterbankBuffer& other, int drift_block) const {
   assert(num_timesteps == other.num_timesteps);
   assert(num_channels == other.num_channels);
-  for (int time = 0; time < num_timesteps; ++time) {
+  for (int drift = 0; drift < num_timesteps; ++drift) {
     for (int chan = 0; chan < num_channels; ++chan) {
-      assertFloatEq(get(time, chan), other.get(time, chan),
-                    fmt::format("data[{}][{}]", time, chan));
+      int last_chan = chan + (num_timesteps - 1) * drift_block + drift;
+      if (last_chan < 0 || last_chan >= num_channels) {
+        continue;
+      }
+      assertFloatEq(get(drift, chan), other.get(drift, chan),
+                    fmt::format("data[{}][{}]", drift, chan));
     }
   }
+}
+
+void FilterbankBuffer::assertEqual(const FilterbankBuffer& other) const {
+  assertEqual(other, 0);
 }
 
 // Make a filterbank buffer with a bit of deterministic noise so that

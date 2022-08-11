@@ -167,9 +167,9 @@ void Dedopplerer::search(const FilterbankBuffer& input,
   // Do the Taylor tree algorithm for each drift block
   for (int drift_block = min_drift_block; drift_block <= max_drift_block; ++drift_block) {
     // Calculate Taylor sums
-    const float* taylor_sums = fullTaylorTree(input.data, buffer1, buffer2,
-                                              rounded_num_timesteps, num_channels,
-                                              drift_block);
+    const float* taylor_sums = basicTaylorTree(input.data, buffer1, buffer2,
+                                               rounded_num_timesteps, num_channels,
+                                               drift_block);
 
     // Track the best sums
     findTopPathSums<<<grid_size, CUDA_MAX_THREADS>>>(taylor_sums, rounded_num_timesteps,

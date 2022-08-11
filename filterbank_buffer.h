@@ -31,11 +31,19 @@ class FilterbankBuffer {
   
   ~FilterbankBuffer();
 
+  // Only implicit moving, no implicit copying
+  FilterbankBuffer(const FilterbankBuffer&) = delete;
+  FilterbankBuffer& operator=(FilterbankBuffer&) = delete;
+  FilterbankBuffer(FilterbankBuffer&& other) = default;
+  
   void zero();
   void set(int time, int channel, float value);
   float get(int time, int channel) const;
 
-  void assertEqual(const FilterbankBuffer& other);
+  // Assert two filterbanks are equal.
+  // If drift_block is provided, treat time as a drift and only check if it is valid.
+  void assertEqual(const FilterbankBuffer& other, int drift_block) const;
+  void assertEqual(const FilterbankBuffer& other) const;
 };
 
 // Fill a buffer with meaningless data for testing

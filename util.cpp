@@ -58,6 +58,8 @@ void assertFloatEq(float a, float b) {
 }
 
 void assertFloatEq(float a, float b, const string& tag) {
+  float initial_a = a;
+  float initial_b = b;
   while (a > 100) {
     a /= 2.0;
     b /= 2.0;
@@ -66,7 +68,7 @@ void assertFloatEq(float a, float b, const string& tag) {
     if (!tag.empty()) {
       cerr << tag << ": ";
     }
-    cerr << a << " != " << b << endl;
+    cerr << fmt::format("{:.3f} != {:.3f}\n", initial_a, initial_b);
     exit(1);
   }
 }
