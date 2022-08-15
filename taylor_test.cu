@@ -5,7 +5,7 @@
 #include "filterbank_buffer.h"
 #include "taylor.h"
 
-TEST_CASE("taylor outputs match", "[taylor]") {
+TEST_CASE("tiled taylor outputs match basic algorithm", "[taylor]") {
   for (int num_timesteps = 4; num_timesteps <= 32; num_timesteps *= 2) {
     int num_channels = 2000;
     FilterbankBuffer input(num_timesteps, num_channels);

@@ -270,4 +270,26 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
   checkCuda("taylorTiledKernel");
 }
 
- 
+/*
+  Run a Taylor tree algorithm on the data in source_buffer, picking
+  the best algorithm according to the data size.
+ */
+const float* runTaylorTree(const float* source, float* buffer1, float* buffer2,
+                           int num_timesteps, int num_channels, int drift_block) {
+  if (num_timesteps == 2) {
+    // Only basic bothers to handle the n=2 case
+    return basicTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
+                           drift_block);
+  }
+
+  if (num_timesteps <= 32) {
+    // We can do it in one step of tiled
+    tiledTaylorTree(source, buffer1, num_timesteps, num_channels, drift_block);
+    return buffer1;
+  }
+
+  // Use basic for large inputs
+  // TODO: use a better algorithm here
+  return basicTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
+                         drift_block);
+}

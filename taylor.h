@@ -120,3 +120,5 @@ const float* basicTaylorTree(const float* source_buffer, float* buffer1, float* 
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
                      int num_channels, int drift_block);
  
+const float* runTaylorTree(const float* source_buffer, float* buffer1, float* buffer2,
+                           int num_timesteps, int num_channels, int drift_block);
