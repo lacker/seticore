@@ -60,7 +60,7 @@ We don't need the `hdf5plugin` install any more once its files have been copied 
 You can run the regression tests with:
 
 ```
-./test_dedoppler.sh
+./run_tests.sh
 ```
 
 This will automatically download a few gigabytes of test data from Berkeley and ensure

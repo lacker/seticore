@@ -54,4 +54,6 @@ TEST_CASE("h5 write then read", "[h5]") {
   FilterbankBuffer buffer(f.num_timesteps, f.coarse_channel_size);
   f.loadCoarseChannel(2, &buffer);
   REQUIRE(buffer.get(1, 3) == 123.0);
+  
+  boost::filesystem::remove(filename);
 }
