@@ -4,6 +4,7 @@
 
 #include "cuda_util.h"
 #include "taylor.h"
+#include "util.h"
 
 using namespace std;
 
@@ -93,7 +94,7 @@ using namespace std;
   blockIdx.x * blockDim.x + threadIdx.x
   will cover all frequencies.
 */
-__global__ void taylorOneStepKernel(const float* source_buffer, float* target_buffer,
+__global__ void oneStepTaylorKernel(const float* source_buffer, float* target_buffer,
                                     int num_timesteps, int num_freqs, int path_length,
                                     int drift_block) {
   assert(path_length <= num_timesteps);
@@ -131,7 +132,7 @@ const float* basicTaylorTree(const float* input, float* buffer1, float* buffer2,
   for (int path_length = 2; path_length <= num_timesteps; path_length *= 2) {
 
     // Invoke cuda kernel
-    taylorOneStepKernel<<<grid_size, CUDA_MAX_THREADS>>>
+    oneStepTaylorKernel<<<grid_size, CUDA_MAX_THREADS>>>
       (source_buffer, target_buffer, num_timesteps, num_channels,
        path_length, drift_block);
     checkCuda("taylorTreeOneStepKernel");
@@ -155,35 +156,66 @@ const float* basicTaylorTree(const float* input, float* buffer1, float* buffer2,
 }
 
 /*
- Kernel to map a tile of the input data into shared memory and run the Taylor tree
- algorithm within shared memory.
+  The tiled version of the Taylor tree algorithm first maps data into shared memory,
+  and then runs the Taylor tree algorithm within shared memory.
 
- Currently only handles the case where num_timesteps = 16.
+  This shared memory is statically allocated, so we need to determine its size at
+  runtime, which these helper functions handle.
+
+  tileWidth determines the number of channels we can allocate in shared memory, given
+  the number of timesteps. We use two grids of floats, so a grid size of 4096 entries
+  equals 32k of shared memory, which is a reasonable size to target
+  for modern GPUs (as of mid-2022).
+*/
+__host__ __device__ constexpr int tileWidth(int num_timesteps) {
+  int total = 4096;
+  int answer = total / num_timesteps;
+  assert(answer * num_timesteps == total);
+  
+  // Width needs to be greater than timesteps, or the tiled algorithm
+  // cannot work
+  assert(answer > num_timesteps);
+
+  return answer;
+}
+
+/*
+  tileBlockWidth returns the size of the tile which will actually be
+  able to generate correct results. Beyond this point, the algorithm
+  will "run off the edge" of the tile when trying to add path sums.
+ */
+__host__ __device__ constexpr int tileBlockWidth(int num_timesteps) {
+  return tileWidth(num_timesteps) - num_timesteps;
+}
+
+/*
+ tiledTaylorKernel maps a tile of the input data into shared memory and runs
+ the Taylor tree algorithm within shared memory.
 
  Each block starts at channel blockIdx.x * tile_block_width.
  threadIdx.x is the channel that this thread handles within the block.
  */
-const int tile_timesteps = 16;
-const int tile_width = 256;
-const int tile_block_width = tile_width - tile_timesteps;
-__global__ void taylorTiledKernel(const float* input, float* output,
+template<int num_timesteps>
+__global__ void tiledTaylorKernel(const float* input, float* output,
                                   int num_channels, int drift) {
-  __shared__ float buffer1[tile_timesteps * tile_width];
-  __shared__ float buffer2[tile_timesteps * tile_width];
+  const int tile_width = tileWidth(num_timesteps);
+  const int tile_block_width = tileBlockWidth(num_timesteps);
+  __shared__ float buffer1[num_timesteps * tile_width];
+  __shared__ float buffer2[num_timesteps * tile_width];
   int block_start = blockIdx.x * tile_block_width;
   int chan = threadIdx.x;
 
-  unmapDrift(input, buffer1, tile_timesteps, chan, block_start, num_channels,
+  unmapDrift(input, buffer1, num_timesteps, chan, block_start, num_channels,
              tile_width, drift); 
 
   __syncthreads();
-  taylorOneStepOneChannel(buffer1, buffer2, chan, tile_timesteps,
+  taylorOneStepOneChannel(buffer1, buffer2, chan, num_timesteps,
                           tile_width, tile_width, 2, 0);
   __syncthreads();
-  taylorOneStepOneChannel(buffer2, buffer1, chan, tile_timesteps,
+  taylorOneStepOneChannel(buffer2, buffer1, chan, num_timesteps,
                           tile_width, tile_width, 4, 0);
   __syncthreads();
-  taylorOneStepOneChannel(buffer1, buffer2, chan, tile_timesteps,
+  taylorOneStepOneChannel(buffer1, buffer2, chan, num_timesteps,
                           tile_width, tile_width, 8, 0);
   __syncthreads();
 
@@ -192,17 +224,28 @@ __global__ void taylorTiledKernel(const float* input, float* output,
     return;
   }
   
-  taylorOneStepOneChannel(buffer2, output + block_start, chan, tile_timesteps,
+  taylorOneStepOneChannel(buffer2, output + block_start, chan, num_timesteps,
                           tile_width, num_channels, 16, 0);
   
 }
 
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
                      int num_channels, int drift_block) {
-  assert(num_timesteps == tile_timesteps);
+  int tile_width = tileWidth(num_timesteps);
+  int tile_block_width = tileBlockWidth(num_timesteps);
   int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
-  taylorTiledKernel<<<num_blocks, tile_width>>>
-    (input, output, num_channels, drift_block);
+  
+  switch(num_timesteps) {
+  case 16:
+    tiledTaylorKernel<16><<<num_blocks, tile_width>>>
+      (input, output, num_channels, drift_block);
+    break;
+  default:
+    cerr << "cannot run tiledTaylorTree on num_timesteps = " << num_timesteps << endl;
+    exit(1);
+  }
+  
   checkCuda("taylorTiledKernel");
 }
 
+ 

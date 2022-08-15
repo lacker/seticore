@@ -6,6 +6,7 @@
 using namespace std;
 
 int roundUpToPowerOfTwo(int n);
+bool isPowerOfTwo(int n);
 int numDigits(int n);
 string zeroPad(int n, int size);
 string cToS(thrust::complex<float> c);

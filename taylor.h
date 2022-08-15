@@ -114,15 +114,9 @@ unmapDrift(const float* source_buffer, float* target_buffer, int num_timesteps,
   }
 }
 
-__global__ void taylorOneStepKernel(const float* source_buffer, float* target_buffer,
-                                    int num_timesteps, int num_freqs, int path_length,
-                                    int drift_block);
-
 const float* basicTaylorTree(const float* source_buffer, float* buffer1, float* buffer2,
                              int num_timesteps, int num_freqs, int drift_block);
- 
-__global__ void taylorTiledKernel(const float* source_buffer, float* target_buffer,
-                                  int num_channels, int drift_block);
 
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
                      int num_channels, int drift_block);
+ 
