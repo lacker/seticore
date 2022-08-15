@@ -189,12 +189,26 @@ __host__ __device__ constexpr int tileBlockWidth(int num_timesteps) {
 }
 
 /*
+  A helper macro, for unrolling the loop inside tiledTaylorKernel
+ */
+#define TILED_OUTPUT(buffer, n) \
+  if (num_timesteps == n) { \
+    if (chan <= tile_block_width && chan + block_start < num_channels) { \
+      taylorOneStepOneChannel(buffer, output + block_start, chan, num_timesteps, \
+                              tile_width, num_channels, n, 0); \
+    } \
+    return; \
+  }
+
+/*
  tiledTaylorKernel maps a tile of the input data into shared memory and runs
  the Taylor tree algorithm within shared memory.
 
  Each block starts at channel blockIdx.x * tile_block_width.
  threadIdx.x is the channel that this thread handles within the block.
- */
+
+ In testing, unrolling this loop really did help, about 20% speedup.
+*/
 template<int num_timesteps>
 __global__ void tiledTaylorKernel(const float* input, float* output,
                                   int num_channels, int drift) {
@@ -207,27 +221,36 @@ __global__ void tiledTaylorKernel(const float* input, float* output,
 
   unmapDrift(input, buffer1, num_timesteps, chan, block_start, num_channels,
              tile_width, drift); 
-
   __syncthreads();
+  
+  TILED_OUTPUT(buffer1, 2);
   taylorOneStepOneChannel(buffer1, buffer2, chan, num_timesteps,
                           tile_width, tile_width, 2, 0);
   __syncthreads();
+  
+  TILED_OUTPUT(buffer2, 4);
   taylorOneStepOneChannel(buffer2, buffer1, chan, num_timesteps,
                           tile_width, tile_width, 4, 0);
   __syncthreads();
+  
+  TILED_OUTPUT(buffer1, 8);
   taylorOneStepOneChannel(buffer1, buffer2, chan, num_timesteps,
-                          tile_width, tile_width, 8, 0);
+                          tile_width, tile_width, 8, 0);  
+  __syncthreads();
+  
+  TILED_OUTPUT(buffer2, 16);
+  taylorOneStepOneChannel(buffer2, buffer1, chan, num_timesteps,
+                          tile_width, tile_width, 16, 0);
   __syncthreads();
 
-  if (chan > tile_block_width || chan + block_start >= num_channels) {
-    // Don't write out the value from this channel
-    return;
-  }
-  
-  taylorOneStepOneChannel(buffer2, output + block_start, chan, num_timesteps,
-                          tile_width, num_channels, 16, 0);
-  
+  TILED_OUTPUT(buffer1, 32);
 }
+
+#define TILED_BASE_CASE(n) \
+  case n: \
+    tiledTaylorKernel<n><<<num_blocks, tile_width>>> \
+      (input, output, num_channels, drift_block); \
+    break;
 
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
                      int num_channels, int drift_block) {
@@ -236,10 +259,8 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
   int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
   
   switch(num_timesteps) {
-  case 16:
-    tiledTaylorKernel<16><<<num_blocks, tile_width>>>
-      (input, output, num_channels, drift_block);
-    break;
+    TILED_BASE_CASE(16);
+    TILED_BASE_CASE(32);
   default:
     cerr << "cannot run tiledTaylorTree on num_timesteps = " << num_timesteps << endl;
     exit(1);

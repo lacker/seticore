@@ -10,7 +10,7 @@
   Performance testing the taylor tree inner loop.
  */
 int main(int argc, char* argv[]) {
-  const int num_timesteps = 16;
+  const int num_timesteps = 32;
   int num_channels = 1 << 24;
   FilterbankBuffer input(makeNoisyBuffer(num_timesteps, num_channels));
 
