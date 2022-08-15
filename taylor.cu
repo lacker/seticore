@@ -223,7 +223,6 @@ __global__ void tiledTaylorKernel(const float* input, float* output,
              tile_width, drift); 
   __syncthreads();
   
-  TILED_OUTPUT(buffer1, 2);
   taylorOneStepOneChannel(buffer1, buffer2, chan, num_timesteps,
                           tile_width, tile_width, 2, 0);
   __syncthreads();
@@ -259,6 +258,8 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
   int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
   
   switch(num_timesteps) {
+    TILED_BASE_CASE(4);
+    TILED_BASE_CASE(8);
     TILED_BASE_CASE(16);
     TILED_BASE_CASE(32);
   default:

@@ -6,7 +6,7 @@
 #include "taylor.h"
 
 TEST_CASE("taylor outputs match", "[taylor]") {
-  for (int num_timesteps = 16; num_timesteps <= 32; num_timesteps *= 2) {
+  for (int num_timesteps = 4; num_timesteps <= 32; num_timesteps *= 2) {
     int num_channels = 2000;
     FilterbankBuffer input(num_timesteps, num_channels);
     for (int time = 0; time < num_timesteps; ++time) {
