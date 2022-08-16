@@ -286,13 +286,30 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
     exit(1);
   }
   
-  checkCuda("taylorTiledKernel");
+  checkCuda("tiledTaylorTree");
 }
 
 void twoPassTaylorTree(const float* input, float* buffer, float* output,
                        int num_timesteps, int num_channels, int drift_block) {
   assert(num_timesteps == 64);
-  // TODO: implement
+
+  // First pass: do tiles of height 32
+  int tile_width = tileWidth(32);
+  int tile_block_width = tileBlockWidth(32);
+  int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
+  dim3 grid_dim(num_blocks, 2, 1);
+  dim3 block_dim(tile_width, 1, 1);
+  tiledTaylorKernel<32><<<grid_dim, block_dim>>>
+    (input, buffer, num_channels, drift_block);
+
+  checkCuda("first pass: tiledTaylorKernel");
+  
+  // Second pass... does this work?
+  int grid_size = (num_channels + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
+  oneStepTaylorKernel<<<grid_size, CUDA_MAX_THREADS>>>
+    (buffer, output, 64, num_channels, 64, 0);
+
+  checkCuda("second pass: oneStepTaylorKernel");
 }
 
 /*
@@ -313,6 +330,12 @@ const float* runTaylorTree(const float* source, float* buffer1, float* buffer2,
     return buffer1;
   }
 
+  if (num_timesteps == 64) {
+    twoPassTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
+                      drift_block);
+    return buffer2;
+  }
+  
   // Use basic for large inputs
   // TODO: use a better algorithm here
   return basicTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,

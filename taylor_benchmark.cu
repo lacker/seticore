@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
                         (end - start) / 1000.0);
 
     start = timeInMS();
+    // twoPassTaylorTree(input.data, buffer1.data, buffer2.data, num_timesteps, num_channels, drift_block);
     tiledTaylorTree(input.data, buffer1.data, num_timesteps, num_channels, drift_block);
     cudaDeviceSynchronize();
     end = timeInMS();
