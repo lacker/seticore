@@ -7,11 +7,11 @@
 #include "util.h"
 
 /*
-  Performance testing the taylor tree inner loop.
+  Performance testing the taylor tree inner loops.
  */
 int main(int argc, char* argv[]) {
-  const int num_timesteps = 32;
-  int num_channels = 1 << 24;
+  const int num_timesteps = 256;
+  int num_channels = 1 << 20;
   FilterbankBuffer input(makeNoisyBuffer(num_timesteps, num_channels));
 
   FilterbankBuffer buffer1(num_timesteps, num_channels);
@@ -24,15 +24,16 @@ int main(int argc, char* argv[]) {
                     num_timesteps, num_channels, drift_block);
     cudaDeviceSynchronize();
     long end = timeInMS();
-    cout << fmt::format("old algorithm: elapsed time {:.3f}s\n",
+    cout << fmt::format("the basic algorithm: elapsed time {:.3f}s\n",
                         (end - start) / 1000.0);
 
     start = timeInMS();
-    // twoPassTaylorTree(input.data, buffer1.data, buffer2.data, num_timesteps, num_channels, drift_block);
-    tiledTaylorTree(input.data, buffer1.data, num_timesteps, num_channels, drift_block);
+    optimizedTaylorTree(input.data, buffer1.data, buffer2.data,
+                        num_timesteps, num_channels, drift_block);
+
     cudaDeviceSynchronize();
     end = timeInMS();
-    cout << fmt::format("new algorithm: elapsed time {:.3f}s\n",
+    cout << fmt::format("optimized algorithm: elapsed time {:.3f}s\n",
                         (end - start) / 1000.0);
     
   }

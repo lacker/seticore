@@ -289,35 +289,49 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
   checkCuda("tiledTaylorTree");
 }
 
-void twoPassTaylorTree(const float* input, float* buffer, float* output,
-                       int num_timesteps, int num_channels, int drift_block) {
-  assert(num_timesteps == 64);
+/*
+  Runs the tiled algorithm up to length-32 paths, then step by step
+  afterwards.
+
+  TODO: we could do some sort of tiling for the subsequent stage as well.
+ */
+const float* twoStageTaylorTree(const float* input, float* buffer1, float* buffer2,
+                                int num_timesteps, int num_channels, int drift_block) {
+  assert(num_timesteps >= 64);
+  assert(isPowerOfTwo(num_timesteps));
 
   // First pass: do tiles of height 32
   int tile_width = tileWidth(32);
   int tile_block_width = tileBlockWidth(32);
   int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
-  dim3 grid_dim(num_blocks, 2, 1);
+  dim3 grid_dim(num_blocks, num_timesteps / 32, 1);
   dim3 block_dim(tile_width, 1, 1);
   tiledTaylorKernel<32><<<grid_dim, block_dim>>>
-    (input, buffer, num_channels, drift_block);
+    (input, buffer1, num_channels, drift_block);
 
-  checkCuda("first pass: tiledTaylorKernel");
-  
-  // Second pass... does this work?
+  checkCuda("first stage: tiledTaylorKernel");
+
+  float* source = buffer1;
+  float* target = buffer2;  
   int grid_size = (num_channels + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
-  oneStepTaylorKernel<<<grid_size, CUDA_MAX_THREADS>>>
-    (buffer, output, 64, num_channels, 64, 0);
 
-  checkCuda("second pass: oneStepTaylorKernel");
+  for (int path_length = 64; path_length <= num_timesteps; path_length *= 2) {
+    oneStepTaylorKernel<<<grid_size, CUDA_MAX_THREADS>>>
+      (source, target, num_timesteps, num_channels, path_length, drift_block); 
+    checkCuda("second stage: oneStepTaylorKernel");
+
+    swap(source, target);
+  }
+  
+  return source;
 }
 
 /*
   Run a Taylor tree algorithm on the data in source_buffer, picking
   the best algorithm according to the data size.
  */
-const float* runTaylorTree(const float* source, float* buffer1, float* buffer2,
-                           int num_timesteps, int num_channels, int drift_block) {
+const float* optimizedTaylorTree(const float* source, float* buffer1, float* buffer2,
+                                 int num_timesteps, int num_channels, int drift_block) {
   if (num_timesteps == 2) {
     // Only basic bothers to handle the n=2 case
     return basicTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
@@ -330,14 +344,7 @@ const float* runTaylorTree(const float* source, float* buffer1, float* buffer2,
     return buffer1;
   }
 
-  if (num_timesteps == 64) {
-    twoPassTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
-                      drift_block);
-    return buffer2;
-  }
-  
-  // Use basic for large inputs
-  // TODO: use a better algorithm here
-  return basicTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
-                         drift_block);
+  // Use two-stage for large inputs
+  return twoStageTaylorTree(source, buffer1, buffer2, num_timesteps, num_channels,
+                            drift_block);
 }

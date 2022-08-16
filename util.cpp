@@ -16,6 +16,10 @@ int roundUpToPowerOfTwo(int n) {
   return rounded;
 }
 
+bool isPowerOfTwo(int n) {
+  return n == roundUpToPowerOfTwo(n);
+}
+
 int numDigits(int n) {
   if (n < 10) {
     return 1;
