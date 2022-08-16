@@ -92,6 +92,7 @@ taylorOneStepOneChannel(const float* source_buffer, float* target_buffer,
 
   Both buffers are shaped row-major [time][channel].
   chan_offset is the channel in source_buffer that maps to 0 in target_buffer.
+  time_offset is the time in source_buffer that maps to 0 in target_buffer.
   drift is how much horizontal shift there is for each vertical step.
 
   Checks range validity for source_buffer, but not for target buffer.
@@ -99,10 +100,11 @@ taylorOneStepOneChannel(const float* source_buffer, float* target_buffer,
  */
 __host__ __device__ inline void
 unmapDrift(const float* source_buffer, float* target_buffer, int num_timesteps,
-           int chan, int chan_offset, int num_source_channels, int num_target_channels,
-           int drift) {
+           int time_offset, int chan, int chan_offset, int num_source_channels,
+           int num_target_channels, int drift) {
   for (int time = 0; time < num_timesteps; ++time) {
-    int source_chan = chan + chan_offset + time * drift;
+    int source_time = time_offset + time;
+    int source_chan = chan + chan_offset + source_time * drift;
     if (source_chan < 0 || source_chan >= num_source_channels) {
       // Out of bounds.
       // We might come back in bounds, though, so keep looping.
@@ -110,7 +112,7 @@ unmapDrift(const float* source_buffer, float* target_buffer, int num_timesteps,
     }
 
     target_buffer[index2d(time, chan, num_target_channels)] =
-      source_buffer[index2d(time, source_chan, num_source_channels)];
+      source_buffer[index2d(source_time, source_chan, num_source_channels)];
   }
 }
 
@@ -119,6 +121,9 @@ const float* basicTaylorTree(const float* source_buffer, float* buffer1, float* 
 
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
                      int num_channels, int drift_block);
- 
+
+void twoPassTaylorTree(const float* input, float* buffer, float* output,
+                       int num_timesteps, int num_channels, int drift_block);
+
 const float* runTaylorTree(const float* source_buffer, float* buffer1, float* buffer2,
                            int num_timesteps, int num_channels, int drift_block);

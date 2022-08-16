@@ -194,7 +194,7 @@ __host__ __device__ constexpr int tileBlockWidth(int num_timesteps) {
 #define TILED_OUTPUT(buffer, n) \
   if (num_timesteps == n) { \
     if (chan <= tile_block_width && chan + block_start < num_channels) { \
-      taylorOneStepOneChannel(buffer, output + block_start, chan, num_timesteps, \
+      taylorOneStepOneChannel(buffer, output_start, chan, num_timesteps, \
                               tile_width, num_channels, n, 0); \
     } \
     return; \
@@ -204,8 +204,14 @@ __host__ __device__ constexpr int tileBlockWidth(int num_timesteps) {
  tiledTaylorKernel maps a tile of the input data into shared memory and runs
  the Taylor tree algorithm within shared memory.
 
- Each block starts at channel blockIdx.x * tile_block_width.
+ num_timesteps is the size of each tile, rather than the size of the
+ input data.
+
+ blockIdx.x is the horizontal index of the block.
+ So each block starts at channel blockIdx.x * tile_block_width.
  threadIdx.x is the channel that this thread handles within the block.
+ blockIdx.y is the vertical index of the block. This can only be
+ greater than zero when the input data is larger than num_timesteps.
 
  In testing, unrolling this loop really did help, about 20% speedup.
 */
@@ -217,10 +223,12 @@ __global__ void tiledTaylorKernel(const float* input, float* output,
   __shared__ float buffer1[num_timesteps * tile_width];
   __shared__ float buffer2[num_timesteps * tile_width];
   int block_start = blockIdx.x * tile_block_width;
+  int time_offset = blockIdx.y * num_timesteps;
   int chan = threadIdx.x;
+  float* output_start = output + block_start + time_offset * num_channels;
 
-  unmapDrift(input, buffer1, num_timesteps, chan, block_start, num_channels,
-             tile_width, drift); 
+  unmapDrift(input, buffer1, num_timesteps, time_offset, chan, block_start,
+             num_channels, tile_width, drift); 
   __syncthreads();
   
   taylorOneStepOneChannel(buffer1, buffer2, chan, num_timesteps,
@@ -245,12 +253,11 @@ __global__ void tiledTaylorKernel(const float* input, float* output,
   TILED_OUTPUT(buffer1, 32);
 }
 
-#define TILED_BASE_CASE(n) \
-  case n: \
-    tiledTaylorKernel<n><<<num_blocks, tile_width>>> \
-      (input, output, num_channels, drift_block); \
-    break;
-
+/*
+  Run the tiled taylor tree algorithm.
+  Valid num_timesteps are listed explicitly to ensure that nvcc
+  compiles the kernel for all possible templates.
+ */
 void tiledTaylorTree(const float* input, float* output, int num_timesteps,
                      int num_channels, int drift_block) {
   int tile_width = tileWidth(num_timesteps);
@@ -258,16 +265,34 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
   int num_blocks = (num_channels + tile_block_width - 1) / tile_block_width;
   
   switch(num_timesteps) {
-    TILED_BASE_CASE(4);
-    TILED_BASE_CASE(8);
-    TILED_BASE_CASE(16);
-    TILED_BASE_CASE(32);
+  case 4:
+    tiledTaylorKernel<4><<<num_blocks, tile_width>>>
+      (input, output, num_channels, drift_block);
+    break;
+  case 8:
+    tiledTaylorKernel<8><<<num_blocks, tile_width>>>
+      (input, output, num_channels, drift_block);
+    break;
+  case 16:
+    tiledTaylorKernel<16><<<num_blocks, tile_width>>>
+      (input, output, num_channels, drift_block);
+    break;
+  case 32:
+    tiledTaylorKernel<32><<<num_blocks, tile_width>>>
+      (input, output, num_channels, drift_block);
+    break;
   default:
     cerr << "cannot run tiledTaylorTree on num_timesteps = " << num_timesteps << endl;
     exit(1);
   }
   
   checkCuda("taylorTiledKernel");
+}
+
+void twoPassTaylorTree(const float* input, float* buffer, float* output,
+                       int num_timesteps, int num_channels, int drift_block) {
+  assert(num_timesteps == 64);
+  // TODO: implement
 }
 
 /*
