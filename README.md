@@ -1,6 +1,7 @@
 # seticore
 A high-performance implementation of some core SETI algorithms, in particular turboSETI's
-dedoppler algorithm that creates .dat files from .h5 files.
+dedoppler algorithm that creates .dat files from .h5 files, and a beamforming algorithm
+to produce filterbanks from .raw and .bfr5 files.
 
 ## Quickstart
 
