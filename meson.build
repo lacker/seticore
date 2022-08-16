@@ -5,10 +5,17 @@ project('seticore', ['cpp', 'c', 'cuda'],
             'werror=true',
         ])
 
-cuda_args = [ '--std=c++14',
-              '--display-error-number',
-              '--diag-suppress=1675' ]
+basic_cuda_args = [ '--std=c++14' ]
+newer_cuda_args = [ '--display-error-number',
+                    '--diag-suppress=1675' ]
 
+nvcc_release = run_command('./nvcc_release.sh', check: true).stdout().strip()
+if nvcc_release <= '11.0'
+    cuda_args = basic_cuda_args
+else
+    cuda_args = basic_cuda_args + newer_cuda_args
+endif
+    
 cmake = import('cmake')
 
 fmt_subproj = cmake.subproject('fmt')
