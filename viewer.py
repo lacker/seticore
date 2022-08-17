@@ -17,7 +17,9 @@ def read_hits(filename):
 def show_hit(hit):
     fb = hit.filterbank
     data = np.array(fb.data).reshape((fb.numTimesteps, fb.numChannels))
-    print(f"hit at {hit.signal.frequency:.5f} MHz with {hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
+    print(f"hit with source {fb.sourceName}, beam {fb.beam}, " +
+          f"{hit.signal.frequency:.5f} MHz, " +
+          f"{hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
     fig, ax = plt.subplots(figsize=data.shape)
     ax.imshow(data, rasterized=True, interpolation="nearest", cmap="viridis")
     display(fig)
