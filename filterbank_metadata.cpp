@@ -8,16 +8,20 @@ using namespace std;
 FilterbankMetadata::FilterbankMetadata(): has_dc_spike(false), coarse_channel_size(0) {}
 
 /*
-  Gives the slightly altered metadata that you get if you split this file into bands.
+  Gives the slightly altered metadata that you get if you split this file into one beam
+  and one subband.
   The coarse channels have to divide evenly into bands.
  */
-FilterbankMetadata FilterbankMetadata::getBandMetadata(int band, int num_bands) {
+FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
+                                                         int num_bands) {
   assert(0 == num_coarse_channels % num_bands);
 
   FilterbankMetadata answer(*this);
   answer.num_coarse_channels = num_coarse_channels / num_bands;
   answer.num_channels = num_channels / num_bands;
   answer.fch1 = fch1 + (foff * answer.num_channels * band);
+  answer.source_names.clear();
+  answer.source_name = getSourceName(beam);
   return answer;
 }
 
@@ -53,4 +57,11 @@ void FilterbankMetadata::inferMetadata() {
     exit(1);
   }
   num_coarse_channels = num_channels / coarse_channel_size;
+}
+
+string FilterbankMetadata::getSourceName(int beam) const {
+  if (source_names.empty()) {
+    return source_name;
+  }
+  return source_names[beam];
 }

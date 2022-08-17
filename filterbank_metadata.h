@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 using namespace std;
 
 // This is allegedly a SIGPROC standard but the most authoritative source
@@ -21,13 +24,21 @@ class FilterbankMetadata {
   FilterbankMetadata();
 
   bool has_dc_spike;
+
+  // Represents the boresight source when there are multiple beams
   string source_name;
+
+  // Set when there is one source per beam
+  vector<string> source_names;
+
   double fch1, foff, tstart, tsamp, src_dej, src_raj;
   int num_timesteps, num_channels, coarse_channel_size, num_coarse_channels, telescope_id;
   
   virtual ~FilterbankMetadata() {}
 
-  FilterbankMetadata getBandMetadata(int band, int num_bands);
+  FilterbankMetadata getSubsetMetadata(int beam, int band, int num_bands);
+
+  string getSourceName(int beam) const;
   
  protected:
   void inferMetadata();

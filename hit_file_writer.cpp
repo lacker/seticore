@@ -50,7 +50,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
 
   // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
-  filterbank.setSourceName(metadata.source_name);
+  filterbank.setSourceName(metadata.getSourceName(beam));
   filterbank.setRa(metadata.src_raj);
   filterbank.setDec(metadata.src_dej);
   filterbank.setTelescopeId(metadata.telescope_id);

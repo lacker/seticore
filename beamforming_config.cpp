@@ -22,8 +22,9 @@
 // Construct metadata for the data created by a RawFileGroup and Beamformer.
 // This metadata should apply to the entire span of channels, not just one band.
 FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
-                                     const Beamformer& beamformer,
-                                     int telescope_id) {
+                                   const Beamformer& beamformer,
+                                   const RecipeFile& recipe,
+                                   int telescope_id) {
   FilterbankMetadata metadata;
   metadata.source_name = file_group.source_name;
   metadata.fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
@@ -38,7 +39,8 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   metadata.telescope_id = telescope_id;
   metadata.coarse_channel_size = beamformer.fft_size;
   metadata.num_coarse_channels = metadata.num_channels / metadata.coarse_channel_size;
-
+  metadata.source_names = recipe.src_names;
+  
   return metadata;
 }
 
@@ -96,7 +98,8 @@ void BeamformingConfig::run() {
   fb_buffer.zero();
   cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.data_bytes) << endl;
   
-  FilterbankMetadata metadata = combineMetadata(file_group, beamformer, telescope_id);
+  FilterbankMetadata metadata = combineMetadata(file_group, beamformer, recipe,
+                                                telescope_id);
 
   Dedopplerer dedopplerer(multibeam.num_timesteps,
                           fb_buffer.num_channels,
@@ -177,7 +180,8 @@ void BeamformingConfig::run() {
                       file_group.prefix,
                       zeroPad(band, numDigits(num_bands)),
                       zeroPad(beam, numDigits(beamformer.nbeams)));
-        FilterbankMetadata band_metadata = metadata.getBandMetadata(band, num_bands);
+        FilterbankMetadata band_metadata = metadata.getSubsetMetadata(beam, band,
+                                                                      num_bands);
         FilterbankBuffer output(multibeam.getBeam(beam));
         H5Writer writer(h5_filename, band_metadata);
         writer.setData(output.data);
