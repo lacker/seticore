@@ -24,8 +24,16 @@ if false; then
 fi
 
 # Testing the August 1 dataset on blpn131
-if true; then
+if false; then
     INPUT_DIR="/buf0ro/20220801/0055/Unknown/GUPPI/"
+    RECIPE_DIR="/home/obs/bfr5/"
+    FFT_SIZE=$FFT4K
+    NUM_BANDS=16
+fi
+
+# Testing the August 16 dataset on blpn129
+if true; then
+    INPUT_DIR="/buf0/20220816/"
     RECIPE_DIR="/home/obs/bfr5/"
     FFT_SIZE=$FFT4K
     NUM_BANDS=16
