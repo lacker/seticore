@@ -38,6 +38,8 @@ class FilterbankMetadata {
 
   FilterbankMetadata getSubsetMetadata(int beam, int band, int num_bands);
 
+  // Providing information about beams when metadata is split among beams
+  bool isCoherent(int beam) const;
   string getSourceName(int beam) const;
   
  protected:

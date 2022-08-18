@@ -44,7 +44,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   signal.setDriftRate(dedoppler_hit.drift_rate);
   signal.setSnr(dedoppler_hit.snr);
   signal.setCoarseChannel(coarse_channel);
-  if (beam != NO_BEAM) {
+  if (metadata.isCoherent(beam)) {
     signal.setBeam(beam);
   }
 
@@ -59,7 +59,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   filterbank.setTstart(metadata.tstart);
   filterbank.setNumTimesteps(metadata.num_timesteps);
   filterbank.setCoarseChannel(coarse_channel);
-  if (beam != NO_BEAM) {
+  if (metadata.isCoherent(beam)) {
     filterbank.setBeam(beam);
   }
   

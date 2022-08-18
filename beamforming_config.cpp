@@ -84,7 +84,7 @@ void BeamformingConfig::run() {
   // Create a buffer large enough to hold all beamformer batches for one band  
   int num_batches = file_group.num_blocks / beamformer.nblocks;
   int num_multibeam_timesteps = beamformer.numOutputTimesteps() * num_batches;
-  MultibeamBuffer multibeam(beamformer.nbeams,
+  MultibeamBuffer multibeam(beamformer.nbeams + 1,
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels(),
                             beamformer.numOutputTimesteps());
@@ -174,12 +174,15 @@ void BeamformingConfig::run() {
       if (!h5_dir.empty()) {
         // Write out data for this band and beam to a file
         cudaDeviceSynchronize();
+        string beam_name = metadata.isCoherent(beam) ?
+          fmt::format("beam{}", zeroPad(beam, numDigits(beamformer.nbeams))) :
+          "incoherent";
         string h5_filename =
-          fmt::format("{}/{}.band{}.beam{}.h5",
+          fmt::format("{}/{}.band{}.{}.h5",
                       h5_dir,
                       file_group.prefix,
                       zeroPad(band, numDigits(num_bands)),
-                      zeroPad(beam, numDigits(beamformer.nbeams)));
+                      beam_name);
         FilterbankMetadata band_metadata = metadata.getSubsetMetadata(beam, band,
                                                                       num_bands);
         FilterbankBuffer output(multibeam.getBeam(beam));

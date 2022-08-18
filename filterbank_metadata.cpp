@@ -60,13 +60,12 @@ void FilterbankMetadata::inferMetadata() {
 }
 
 string FilterbankMetadata::getSourceName(int beam) const {
-  if (source_names.empty()) {
+  if (!isCoherent(beam)) {
     return source_name;
   }
-  if (beam < source_names.size()) {
-    return source_names[beam];
-  }
+  return source_names[beam];
+}
 
-  // This is the incoherent beam
-  return source_name;
+bool FilterbankMetadata::isCoherent(int beam) const {
+  return 0 <= beam && beam < (int) source_names.size();
 }
