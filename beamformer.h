@@ -24,6 +24,28 @@ const int STI = 8;
   (coarse_channel * fft_size) + fine_channel
   Whenever data is indexed with adjacent indices of [coarse-channel][fine-channel],
   it's equivalent to a single global index of just [channel].
+
+  The overall data flow is thus:
+
+  convertRaw:
+    input -> buffer
+
+  FFT:
+    buffer -> buffer
+
+  shift:
+    buffer -> prebeam
+
+  incoherent:
+    prebeam -> output
+
+  beamform:
+    prebeam -> buffer
+
+  calculatePower:
+    buffer -> output
+
+  Note that "buffer" is reused in several places.
  */
 class Beamformer {
  public:
@@ -118,6 +140,7 @@ class Beamformer {
   cufftHandle plan;
 
   cublasHandle_t cublas_handle;
-  
+
+  void formIncoherentBeam(float* output);
   void runCublasBeamform(int time, int pol);
 };

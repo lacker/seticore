@@ -63,5 +63,10 @@ string FilterbankMetadata::getSourceName(int beam) const {
   if (source_names.empty()) {
     return source_name;
   }
-  return source_names[beam];
+  if (beam < source_names.size()) {
+    return source_names[beam];
+  }
+
+  // This is the incoherent beam
+  return source_name;
 }

@@ -59,7 +59,7 @@ struct Filterbank {
   # Column zero in the data corresponds to this column in the whole coarse channel
   channelOffset @12 :Int32;
 
-  # Which beam this data is from. Only included when beamforming
+  # Which beam this data is from. Only included when beamforming a coherent beam
   beam @13 :Int32;
 }
 

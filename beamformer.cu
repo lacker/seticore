@@ -12,6 +12,8 @@ using namespace std;
 
 const cuComplex COMPLEX_ONE = make_cuComplex(1.0, 0.0);
 const cuComplex COMPLEX_ZERO = make_cuComplex(0.0, 0.0);
+const float ONE = 1.0f;
+const float ZERO = 0.0f;
 
 /*
   We convert from int8 input with format:
@@ -211,6 +213,55 @@ void Beamformer::runCublasBeamform(int time, int pol) {
 }
 
 /*
+  The prebeamforming data, interpreted as complex, has format:
+    prebeam[time][channel][pol][antenna]
+
+  We want to combine by STI, so break down this time into "big_timestep"
+  and "little_timestep". Also, polarity, antenna, and real-vs-imaginary all get
+  handled the same way; they all get squared and added into the output value.
+  So we can interpret the data as:
+    prebeam[big_timestep][little_timestep][channel][combined_index]
+
+  The output should just have format:
+    output[big_timestep][channel]
+
+  We use matrix-vector multiplication to compute x^T x, ie the norm of x.
+  See:
+    https://docs.nvidia.com/cuda/cublas/index.html#cublas-lt-t-gt-gemvstridedbatched
+
+  keeping in mind that A and x are representing the same data.
+ */
+void Beamformer::formIncoherentBeam(float* output) {
+  float* input = (float*) prebeam;
+  int num_combined = npol * nants * 2;
+  int output_timesteps = numOutputTimesteps();
+
+  cublasSetStream(cublas_handle, stream);
+  
+  for (int big_timestep = 0; big_timestep < output_timesteps; ++big_timestep) {
+    // Add to the big_timestep row in the output
+    float* output_start = output + big_timestep * numOutputChannels();
+    
+    for (int little_timestep = 0; little_timestep < STI; ++little_timestep) {
+      int input_timestep = big_timestep * STI + little_timestep;
+      float* input_start = input + index3d(input_timestep,
+                                           0, numOutputChannels(),
+                                           0, num_combined);
+
+      cublasSgemvStridedBatched
+        (cublas_handle, CUBLAS_OP_T,
+         num_combined, 1,
+         &ONE,
+         input_start, 1, num_combined,
+         input_start, 1, num_combined,
+         (little_timestep == 0) ? &ZERO : &ONE,
+         output_start, 1, 1,
+         numOutputChannels());
+    }
+  }
+}
+
+/*
   We calculate power and shrink the data at the same time.
   Every polarity and every window of STI adjacent timesteps gets reduced to a single
   power value, by adding the norm of each complex voltage.
@@ -221,19 +272,21 @@ void Beamformer::runCublasBeamform(int time, int pol) {
   and the output power has format:
     power[beam][time][frequency]
 
-  integrated_timestep refers to an index after integration. So a voltage at time t will have
-  integrated_timestep = t / STI
+  integrated_timestep refers to an index after integration. So a voltage at time t has:
+    integrated_timestep = t / STI
 
-  The power array is typically a much larger array in which we are only populating a subset of times.
-  num_power_timesteps refers to the size of the time dimension of this array, and power_time_offset
-  is the time at which to start writing to it.
+  The power array is typically a much larger array in which we are only populating a
+  subset of times.
+  num_power_timesteps refers to the size of the time dimension of this array, and
+  power_time_offset is the time at which to start writing to it.
 
   TODO: this also seems equivalent to a batch matrix multiplication. could we do this
   with a cublas routine?
  */
 __global__ void calculatePower(const thrust::complex<float>* voltage,
                                float* power,
-                               int nbeams, int num_channels, int npol,
+                               int num_input_beams,
+                               int num_channels, int npol,
 			       int num_power_timesteps,
 			       int power_time_offset) {
   int chan = blockIdx.x;
@@ -246,9 +299,10 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   int time = integrated_timestep * STI + subintegration_timestep;
 
   assert(2 == npol);
-  int pol0_index = index4d(time, 0, npol, chan, num_channels, beam, nbeams);
-  int pol1_index = index4d(time, 1, npol, chan, num_channels, beam, nbeams);
-  int power_index = index3d(beam, output_timestep, num_power_timesteps, chan, num_channels);
+  int pol0_index = index4d(time, 0, npol, chan, num_channels, beam, num_input_beams);
+  int pol1_index = index4d(time, 1, npol, chan, num_channels, beam, num_input_beams);
+  int power_index = index3d(beam, output_timestep, num_power_timesteps,
+                            chan, num_channels);
 
   __shared__ float reduced[STI];
   float real0 = voltage[pol0_index].real();
@@ -345,23 +399,27 @@ int Beamformer::numOutputTimesteps() const {
 
   The format of the output is row-major:
      power[beam][time][channel]
-  but its time resolution has been reduced by a factor of (fft_size * STI), and we are only
-  writing into a subrange of the time, starting at power_time_offset.
+  but its time resolution has been reduced by a factor of (fft_size * STI), and we are
+  only writing into a subrange of the time, starting at power_time_offset.
 
   The input must be ready to go when run is called.
 
   It is okay to call run before the previous run completes, as long as you
   only call it from one thread.
  */
-void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int power_time_offset) {
+void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
+                     int power_time_offset) {
   assert(input.num_blocks == nblocks);
   assert(input.num_antennas == nants);
   assert(input.num_coarse_channels == num_coarse_channels);
   assert(input.timesteps_per_block * input.num_blocks == nsamp);
   assert(input.npol == npol);
-  assert(output.num_beams == nbeams);
+  assert(output.num_beams == nbeams || output.num_beams == nbeams + 1);
   assert(output.num_channels == numOutputChannels());
 
+  // If the output has an extra beam, fill it with incoherent beamforming
+  bool incoherent = (output.num_beams > nbeams);
+  
   int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
   int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
@@ -394,6 +452,14 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output, int power_
     (buffer, prebeam, fft_size, nants, npol, num_coarse_channels, nsamp / fft_size);
   checkCuda("Beamformer shift");
 
+  if (incoherent) {
+    // The incoherent beam goes into the beam numbered nbeams in the output
+    int data_offset = index3d(nbeams,
+                         power_time_offset, output.num_timesteps,
+                         0, output.num_channels);
+    formIncoherentBeam(output.data + data_offset);
+  }
+  
   if (use_cublas_beamform) {
     for (int time = 0; time < nsamp / fft_size; ++time) {
       for (int pol = 0; pol < npol; ++pol) {
