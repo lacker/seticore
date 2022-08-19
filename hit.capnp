@@ -6,7 +6,8 @@
 
 
 # The Signal contains information about a linear signal we found.
-# Some of this is redundant, but it's more convenient.
+# Some of this is redundant if the Filterbank is present, so that the Signal
+# is still useful on its own.
 struct Signal {
   # The frequency the hit starts at
   frequency @0 :Float64;
@@ -27,7 +28,7 @@ struct Signal {
   # Which coarse channel this hit is in
   coarseChannel @5 :Int32;
 
-  # Which beam this hit is in. Only included when beamforming
+  # Which beam this hit is in. -1 for incoherent beam
   beam @6 :Int32;
 }
 
@@ -59,7 +60,7 @@ struct Filterbank {
   # Column zero in the data corresponds to this column in the whole coarse channel
   channelOffset @12 :Int32;
 
-  # Which beam this data is from. Only included when beamforming a coherent beam
+  # Which beam this data is from. -1 for incoherent beam
   beam @13 :Int32;
 }
 

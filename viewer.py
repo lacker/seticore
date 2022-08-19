@@ -15,7 +15,7 @@ def read_hits(filename):
             yield hit
 
 def beam_name(hit):
-    n = hit.filterbank.beam:
+    n = hit.filterbank.beam
     if n < 0:
         return "incoherent beam"
     return f"beam {n}"

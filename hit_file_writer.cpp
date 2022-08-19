@@ -63,6 +63,8 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   filterbank.setCoarseChannel(coarse_channel);
   if (metadata.isCoherent(beam)) {
     filterbank.setBeam(beam);
+  } else {
+    filterbank.setBeam(NO_BEAM);
   }
   
   // Extract the subset of columns near the hit
