@@ -168,7 +168,7 @@ void BeamformingConfig::run() {
     }
 
     cout << endl;
-    for (int beam = 0; beam < beamformer.nbeams; ++beam) {
+    for (int beam = 0; beam < multibeam.num_beams; ++beam) {
       multibeam.hintReadingBeam(beam);
       
       if (!h5_dir.empty()) {
