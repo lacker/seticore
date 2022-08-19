@@ -46,6 +46,8 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   signal.setCoarseChannel(coarse_channel);
   if (metadata.isCoherent(beam)) {
     signal.setBeam(beam);
+  } else {
+    signal.setBeam(NO_BEAM);
   }
 
   // Most metadata is copied from some input

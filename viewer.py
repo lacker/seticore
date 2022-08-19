@@ -13,11 +13,17 @@ def read_hits(filename):
         hits = hit_capnp.Hit.read_multiple(f)
         for hit in hits:
             yield hit
+
+def beam_name(hit):
+    n = hit.filterbank.beam:
+    if n < 0:
+        return "incoherent beam"
+    return f"beam {n}"
             
 def show_hit(hit):
     fb = hit.filterbank
     data = np.array(fb.data).reshape((fb.numTimesteps, fb.numChannels))
-    print(f"hit with source {fb.sourceName}, beam {fb.beam}, " +
+    print(f"hit with source {fb.sourceName}, {beam_name(hit)}, " +
           f"{hit.signal.frequency:.5f} MHz, " +
           f"{hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
     fig, ax = plt.subplots(figsize=data.shape)
