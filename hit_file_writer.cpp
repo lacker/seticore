@@ -33,6 +33,8 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
 
   Hit::Builder hit = message.initRoot<Hit>();
 
+  int output_beam = metadata.isCoherent(beam) ? beam : NO_BEAM;
+  
   // Most of the signal is just copied from the dedoppler hit
   Signal::Builder signal = hit.getSignal();
   int coarse_offset = coarse_channel * metadata.coarse_channel_size;
@@ -44,11 +46,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   signal.setDriftRate(dedoppler_hit.drift_rate);
   signal.setSnr(dedoppler_hit.snr);
   signal.setCoarseChannel(coarse_channel);
-  if (metadata.isCoherent(beam)) {
-    signal.setBeam(beam);
-  } else {
-    signal.setBeam(NO_BEAM);
-  }
+  signal.setBeam(output_beam);
 
   // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
@@ -61,11 +59,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   filterbank.setTstart(metadata.tstart);
   filterbank.setNumTimesteps(metadata.num_timesteps);
   filterbank.setCoarseChannel(coarse_channel);
-  if (metadata.isCoherent(beam)) {
-    filterbank.setBeam(beam);
-  } else {
-    filterbank.setBeam(NO_BEAM);
-  }
+  filterbank.setBeam(output_beam);
   
   // Extract the subset of columns near the hit
   // final_index is the index of the signal at the last point in time we dedopplered for
