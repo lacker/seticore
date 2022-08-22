@@ -9,10 +9,6 @@
 
 using namespace std;
 
-// Factor to reduce the time dimension by in our output
-// TODO: make this a runtime parameter
-const int STI = 8;
-
 /*
   The beamformer metadata is confusing because it's constantly reshaping the data it's
   operating on.
@@ -74,11 +70,14 @@ class Beamformer {
   // This will be reduced by two multiplicative factors, fft_size and STI.
   const int nsamp;
 
+  // Number of timesteps for short time integration.
+  const int sti;
+  
   // The beamformer runs all its operations on one stream.
   const cudaStream_t stream;
   
   Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
-             int nblocks, int num_coarse_channels, int npol, int nsamp);
+             int nblocks, int num_coarse_channels, int npol, int nsamp, int sti);
   ~Beamformer();
 
   int numOutputChannels() const;

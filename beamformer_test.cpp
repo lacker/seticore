@@ -10,8 +10,9 @@ TEST_CASE("cublasBeamform", "[beamformer]") {
   int num_coarse_channels = 8;
   int npol = 2;
   int nsamp = 512;
+  int sti = 8;
   Beamformer beamformer(0, fft_size, nants, nbeams, nblocks, num_coarse_channels,
-                        npol, nsamp);
+                        npol, nsamp, sti);
 
   RawBuffer raw(nblocks, nants, num_coarse_channels, nsamp / nblocks, npol);
   raw.set(1, 2, 3, 4, 1, false, 100);

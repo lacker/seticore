@@ -14,6 +14,7 @@ public:
   const string recipe_dir;
   const int num_bands;
   const int fft_size;
+  const int sti;
   const int telescope_id;
   const float snr;
   const float max_drift;
@@ -35,13 +36,14 @@ public:
                     const string& recipe_dir,
                     int num_bands,
                     int fft_size,
+                    int sti,
                     int telescope_id,
                     float snr,
                     float max_drift,
                     float min_drift)
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
       recipe_dir(recipe_dir), num_bands(num_bands), fft_size(fft_size),
-      telescope_id(telescope_id), snr(snr), max_drift(max_drift),
+      sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
       min_drift(min_drift), num_bands_to_process(num_bands) {
   }
 

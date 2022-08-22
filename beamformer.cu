@@ -10,6 +10,8 @@
 
 using namespace std;
 
+const int MAX_STI = 8;
+
 const cuComplex COMPLEX_ONE = make_cuComplex(1.0, 0.0);
 const cuComplex COMPLEX_ZERO = make_cuComplex(0.0, 0.0);
 const float ONE = 1.0f;
@@ -242,8 +244,8 @@ void Beamformer::formIncoherentBeam(float* output) {
     // Add to the big_timestep row in the output
     float* output_start = output + big_timestep * numOutputChannels();
     
-    for (int little_timestep = 0; little_timestep < STI; ++little_timestep) {
-      int input_timestep = big_timestep * STI + little_timestep;
+    for (int little_timestep = 0; little_timestep < sti; ++little_timestep) {
+      int input_timestep = big_timestep * sti + little_timestep;
       float* input_start = input + index3d(input_timestep,
                                            0, numOutputChannels(),
                                            0, num_combined);
@@ -288,7 +290,7 @@ void Beamformer::formIncoherentBeam(float* output) {
 __global__ void calculatePower(const thrust::complex<float>* voltage,
                                float* power,
                                int num_input_beams,
-                               int num_channels, int npol,
+                               int num_channels, int npol, int sti,
 			       int num_power_timesteps,
 			       int power_time_offset) {
   int chan = blockIdx.x;
@@ -297,8 +299,8 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   int output_timestep = integrated_timestep + power_time_offset;
   
   int subintegration_timestep = threadIdx.x;
-  assert(subintegration_timestep < STI);
-  int time = integrated_timestep * STI + subintegration_timestep;
+  assert(subintegration_timestep < sti);
+  int time = integrated_timestep * sti + subintegration_timestep;
 
   assert(2 == npol);
   int pol0_index = index4d(time, 0, npol, chan, num_channels, beam, num_input_beams);
@@ -306,7 +308,7 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   int power_index = index3d(beam, output_timestep, num_power_timesteps,
                             chan, num_channels);
 
-  __shared__ float reduced[STI];
+  __shared__ float reduced[MAX_STI];
   float real0 = voltage[pol0_index].real();
   float imag0 = voltage[pol0_index].imag();
   float real1 = voltage[pol1_index].real();
@@ -315,7 +317,7 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
 
   __syncthreads();
 
-  for (int k = STI / 2; k > 0; k >>= 1) {
+  for (int k = sti / 2; k > 0; k >>= 1) {
     if (subintegration_timestep < k) {
       reduced[subintegration_timestep] += reduced[subintegration_timestep + k];
     }
@@ -336,11 +338,11 @@ __global__ void calculatePower(const thrust::complex<float>* voltage,
   We should check to ensure they are the same and handle it cleanly if they aren't.
  */
 Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
-                       int nblocks, int num_coarse_channels, int npol, int nsamp)
+                       int nblocks, int num_coarse_channels, int npol, int nsamp, int sti)
   : fft_size(fft_size), nants(nants), nbeams(nbeams), nblocks(nblocks),
-    num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp),
+    num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp), sti(sti),
     stream(stream), use_cublas_beamform(true), release_input(true) {
-  assert(0 == nsamp % (STI * fft_size));
+  assert(0 == nsamp % (sti * fft_size));
   assert(0 == nsamp % nblocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
 
@@ -389,7 +391,7 @@ int Beamformer::numOutputChannels() const {
 }
 
 int Beamformer::numOutputTimesteps() const {
-  return nsamp / (fft_size * STI); 
+  return nsamp / (fft_size * sti); 
 }
 
 /*
@@ -418,7 +420,8 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   assert(input.npol == npol);
   assert(output.num_beams == nbeams || output.num_beams == nbeams + 1);
   assert(output.num_channels == numOutputChannels());
-
+  assert(sti <= MAX_STI);
+  
   // If the output has an extra beam, fill it with incoherent beamforming
   bool incoherent = (output.num_beams > nbeams);
   
@@ -476,10 +479,10 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
        npol, nsamp / fft_size, prebeam_size, buffer_size, coefficients_size);
   }
   
-  dim3 power_block(STI, 1, 1);
+  dim3 power_block(sti, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block, 0, stream>>>
-    (buffer, output.data, nbeams, numOutputChannels(), npol, output.num_timesteps,
+    (buffer, output.data, nbeams, numOutputChannels(), npol, sti, output.num_timesteps,
      power_time_offset);
   checkCuda("Beamformer calculatePower");
 }

@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
   string recipe_dir = "/d/mubf";
   int num_bands = 32;
   int fft_size = 131072;
+  int sti = 8;
   int telescope_id = 64;
   float snr = 7.0;
   float max_drift = 0.01;
@@ -29,7 +30,7 @@ int main(int argc, char* argv[]) {
   assert(groups[0].size() == 2);
 
   BeamformingConfig config(groups[0], output_dir, recipe_dir, num_bands,
-                           fft_size, telescope_id, snr, max_drift, min_drift);
+                           fft_size, sti, telescope_id, snr, max_drift, min_drift);
   config.num_bands_to_process = 1;
   // config.h5_dir = "/d/h5";
   

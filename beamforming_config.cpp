@@ -71,15 +71,15 @@ void BeamformingConfig::run() {
   RecipeFile recipe(recipe_dir, file_group.obsid);
 
   // Do enough blocks per beamformer batch to handle one STI block
-  assert((STI * fft_size) % file_group.timesteps_per_block == 0);
-  int blocks_per_batch = (STI * fft_size) / file_group.timesteps_per_block;
+  assert((sti * fft_size) % file_group.timesteps_per_block == 0);
+  int blocks_per_batch = (sti * fft_size) / file_group.timesteps_per_block;
   
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
   Beamformer beamformer(0, fft_size, file_group.nants, recipe.nbeams,
                         blocks_per_batch, coarse_channels_per_band, file_group.npol,
-                        nsamp);
+                        nsamp, sti);
 
   // Create a buffer large enough to hold all beamformer batches for one band  
   int num_batches = file_group.num_blocks / beamformer.nblocks;
@@ -130,7 +130,7 @@ void BeamformingConfig::run() {
   cout << "dedoppler input is " << fb_buffer.num_timesteps << " timesteps x "
        << fb_buffer.num_channels << " fine channels\n";
   cout << fmt::format("dedoppler resolution is {:.1f} s, {:.1f} hz\n",
-                      file_group.tbin * fft_size * STI,
+                      file_group.tbin * fft_size * sti,
                       file_group.coarseChannelBandwidth() / fft_size * 1'000'000);
 
   for (int band = 0; band < num_bands_to_process; ++band) {

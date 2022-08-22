@@ -55,6 +55,9 @@ int main(int argc, char* argv[]) {
 
     ("telescope_id", po::value<int>(),
      "SIGPROC standard id for the telescope that provided this data")
+
+    ("sti", po::value<int>()->default_value(8),
+     "duration of the Short Time Integration to compress post-beamforming data")
     ;
 
   po::positional_options_description p;
@@ -80,6 +83,7 @@ int main(int argc, char* argv[]) {
     string recipe_dir = vm["recipe_dir"].as<string>();
     int num_bands = vm["num_bands"].as<int>();
     int fft_size = vm["fft_size"].as<int>();
+    int sti = vm["sti"].as<int>();
     int telescope_id = vm["telescope_id"].as<int>();
     float snr = vm["snr"].as<double>();
     float max_drift = vm["max_drift"].as<double>();
@@ -89,7 +93,8 @@ int main(int argc, char* argv[]) {
     cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
     for (auto group : groups) {
       BeamformingConfig config(group, output_dir, recipe_dir, num_bands,
-                               fft_size, telescope_id, snr, max_drift, min_drift);
+                               fft_size, sti, telescope_id, snr, max_drift, min_drift);
+
       if (vm.count("h5_dir")) {
         config.h5_dir = vm["h5_dir"].as<string>();
       }
