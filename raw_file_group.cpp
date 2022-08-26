@@ -58,7 +58,7 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   timesteps_per_block = header.num_timesteps;
 
   schan = header.getInt("SCHAN", -1);
-  assert(schan > 0);
+  assert(schan >= 0);
   synctime = header.getUnsignedInt("SYNCTIME", -1);
   assert(synctime > 0);
   piperblk = header.getUnsignedInt("PIPERBLK", -1);
