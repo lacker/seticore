@@ -28,8 +28,13 @@ class FilterbankMetadata {
   // Represents the boresight source when there are multiple beams
   string source_name;
 
-  // Set when there is one source per beam
+  // These vectors are for the case where this file represents a number of different
+  // beams pointed at different things.
+  // It's a bit of a hack and if there is more per-beam metadata like this, we might
+  // want a different interface.
   vector<string> source_names;
+  vector<double> ras;
+  vector<double> decs;
 
   double fch1, foff, tstart, tsamp, src_dej, src_raj;
   int num_timesteps, num_channels, coarse_channel_size, num_coarse_channels, telescope_id;
@@ -39,8 +44,10 @@ class FilterbankMetadata {
   FilterbankMetadata getSubsetMetadata(int beam, int band, int num_bands);
 
   // Providing information about beams when metadata is split among beams
-  bool isCoherent(int beam) const;
-  string getSourceName(int beam) const;
+  bool isCoherentBeam(int beam) const;
+  string getBeamSourceName(int beam) const;
+  double getBeamRA(int beam) const;
+  double getBeamDec(int beam) const;
   
  protected:
   void inferMetadata();

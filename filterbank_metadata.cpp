@@ -21,7 +21,9 @@ FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
   answer.num_channels = num_channels / num_bands;
   answer.fch1 = fch1 + (foff * answer.num_channels * band);
   answer.source_names.clear();
-  answer.source_name = getSourceName(beam);
+  answer.source_name = getBeamSourceName(beam);
+  answer.src_raj = getBeamRA(beam);
+  answer.src_dej = getBeamDec(beam);
   return answer;
 }
 
@@ -59,13 +61,27 @@ void FilterbankMetadata::inferMetadata() {
   num_coarse_channels = num_channels / coarse_channel_size;
 }
 
-string FilterbankMetadata::getSourceName(int beam) const {
-  if (!isCoherent(beam)) {
+string FilterbankMetadata::getBeamSourceName(int beam) const {
+  if (!isCoherentBeam(beam)) {
     return source_name;
   }
   return source_names[beam];
 }
 
-bool FilterbankMetadata::isCoherent(int beam) const {
+double FilterbankMetadata::getBeamRA(int beam) const {
+  if (!isCoherentBeam(beam)) {
+    return src_raj;
+  }
+  return ras[beam];
+}
+
+double FilterbankMetadata::getBeamDec(int beam) const {
+  if (!isCoherentBeam(beam)) {
+    return src_dej;
+  }
+  return decs[beam];
+}
+
+bool FilterbankMetadata::isCoherentBeam(int beam) const {
   return 0 <= beam && beam < (int) source_names.size();
 }

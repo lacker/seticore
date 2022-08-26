@@ -174,7 +174,7 @@ void BeamformingConfig::run() {
       if (!h5_dir.empty()) {
         // Write out data for this band and beam to a file
         cudaDeviceSynchronize();
-        string beam_name = metadata.isCoherent(beam) ?
+        string beam_name = metadata.isCoherentBeam(beam) ?
           fmt::format("beam{}", zeroPad(beam, numDigits(beamformer.nbeams))) :
           "incoherent";
         string h5_filename =

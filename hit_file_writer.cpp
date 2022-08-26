@@ -33,7 +33,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
 
   Hit::Builder hit = message.initRoot<Hit>();
 
-  int output_beam = metadata.isCoherent(beam) ? beam : NO_BEAM;
+  int output_beam = metadata.isCoherentBeam(beam) ? beam : NO_BEAM;
   
   // Most of the signal is just copied from the dedoppler hit
   Signal::Builder signal = hit.getSignal();
@@ -50,9 +50,9 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
 
   // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
-  filterbank.setSourceName(metadata.getSourceName(beam));
-  filterbank.setRa(metadata.src_raj);
-  filterbank.setDec(metadata.src_dej);
+  filterbank.setSourceName(metadata.getBeamSourceName(beam));
+  filterbank.setRa(metadata.getBeamRA(beam));
+  filterbank.setDec(metadata.getBeamDec(beam));
   filterbank.setTelescopeId(metadata.telescope_id);
   filterbank.setFoff(metadata.foff);
   filterbank.setTsamp(metadata.tsamp);
