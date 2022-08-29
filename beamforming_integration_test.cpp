@@ -10,13 +10,20 @@ using namespace std;
 /*
   This integration test involves the hardcoded location of about 40G of testing
   files. That makes it implausible to use in any more than one location.
+  If you do want to run this, though, you need to create a directory ../data/beamtest
+  (it can be a symlink) and download these files into that directory:
+
+  https://bldata.berkeley.edu/pipeline/tmp/MeerKAT-array_1-20220513T043147Z.bfr5
+  https://bldata.berkeley.edu/pipeline/tmp/guppi_59712_16307_003760_J1939-6342_0001.0000.raw
+  https://bldata.berkeley.edu/pipeline/tmp/guppi_59712_16307_003760_J1939-6342_0001.0001.raw
+
   TODO: make this based on smaller files which are generally available
  */
 int main(int argc, char* argv[]) {
   // Specifying parameters
-  string input_dir = "/d/onlytwo";
+  string input_dir = "../data/beamtest";
   string output_dir = "mocked";
-  string recipe_dir = "/d/mubf";
+  string recipe_dir = "../data/beamtest";
   int num_bands = 32;
   int fft_size = 131072;
   int sti = 8;
@@ -32,7 +39,6 @@ int main(int argc, char* argv[]) {
   BeamformingConfig config(groups[0], output_dir, recipe_dir, num_bands,
                            fft_size, sti, telescope_id, snr, max_drift, min_drift);
   config.num_bands_to_process = 1;
-  // config.h5_dir = "/d/h5";
   
   VectorHitRecorder* recorder = new VectorHitRecorder();
   config.hit_recorder.reset(recorder);
