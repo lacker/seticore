@@ -8,7 +8,7 @@ to produce filterbanks from .raw and .bfr5 files.
 Install dependencies:
 
 ```
-sudo apt-get install cmake libboost-all-dev libhdf5-dev pkg-config
+sudo apt-get install cmake g++ libboost-all-dev libhdf5-dev pkg-config
 ```
 
 You will also need a Python environment for your build tools:
