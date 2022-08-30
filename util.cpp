@@ -121,3 +121,7 @@ long timeInMS() {
   return chrono::duration_cast<chrono::milliseconds>
     (chrono::system_clock::now().time_since_epoch()).count();
 }
+
+double unixTimeToMJD(double unix_time) {
+  return unix_time / 86400.0 + 40587.0;
+}

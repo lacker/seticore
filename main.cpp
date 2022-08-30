@@ -15,7 +15,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.1.14";
+const string VERSION = "0.1.15";
 
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.

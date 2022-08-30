@@ -19,3 +19,5 @@ void assertStringEq(const string& lhs, const string& rhs, const string& tag);
 string pluralize(int n, const string& noun);
 string prettyBytes(size_t n);
 long timeInMS();
+double unixTimeToMJD(double unix_time);
+

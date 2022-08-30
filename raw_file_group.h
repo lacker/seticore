@@ -110,7 +110,10 @@ class RawFileGroup {
     parallelism.
    */
   void readTasks(char* buffer, vector<function<bool()> >* tasks);
-  
+
+  // Returns time in typical Unix seconds-since-epoch.
+  // Globally this is only precise to a second, since synctime is an integer, but
+  // for relative times in this file it's considered absolutely precise.
   double getStartTime(int block) const;
 
   // The total time, in seconds, that this file group represents

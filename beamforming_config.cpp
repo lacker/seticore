@@ -34,6 +34,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   double time_per_block = file_group.tbin * file_group.timesteps_per_block;
   double time_per_beamform = time_per_block * beamformer.nblocks;
   metadata.tsamp = time_per_beamform / beamformer.numOutputTimesteps();
+  metadata.tstart = unixTimeToMJD(file_group.getStartTime(0));
   metadata.num_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
   metadata.num_channels = beamformer.numOutputChannels() * file_group.num_bands;
   metadata.telescope_id = telescope_id;
