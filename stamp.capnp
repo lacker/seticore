@@ -36,14 +36,9 @@ struct Stamp {
   # Which of the coarse channels in the input data this stamp is from
   coarseChannel @12 :Int32;
 
-  # The center frequency of the coarse channel we got this data from.
-  # This is redundant with coarseChannel if you have the input file, but useful
-  # if you don't have the input file.
-  coarseCenter @13 :Float64;
-
   # The size of the FFT we used to upchannelize
-  fftSize @14 :Int32;
+  fftSize @13 :Int32;
 
   # Column zero in the data corresponds to this column in the post-FFT coarse channel
-  startChannel @15 :Int32;
+  startChannel @14 :Int32;
 }

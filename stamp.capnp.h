@@ -30,7 +30,7 @@ struct Stamp {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 11, 2)
+    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 10, 2)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -83,8 +83,6 @@ public:
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Reader getData() const;
 
   inline  ::int32_t getCoarseChannel() const;
-
-  inline double getCoarseCenter() const;
 
   inline  ::int32_t getFftSize() const;
 
@@ -165,9 +163,6 @@ public:
 
   inline  ::int32_t getCoarseChannel();
   inline void setCoarseChannel( ::int32_t value);
-
-  inline double getCoarseCenter();
-  inline void setCoarseCenter(double value);
 
   inline  ::int32_t getFftSize();
   inline void setFftSize( ::int32_t value);
@@ -429,20 +424,6 @@ inline void Stamp::Builder::setCoarseChannel( ::int32_t value) {
       ::capnp::bounded<16>() * ::capnp::ELEMENTS, value);
 }
 
-inline double Stamp::Reader::getCoarseCenter() const {
-  return _reader.getDataField<double>(
-      ::capnp::bounded<9>() * ::capnp::ELEMENTS);
-}
-
-inline double Stamp::Builder::getCoarseCenter() {
-  return _builder.getDataField<double>(
-      ::capnp::bounded<9>() * ::capnp::ELEMENTS);
-}
-inline void Stamp::Builder::setCoarseCenter(double value) {
-  _builder.setDataField<double>(
-      ::capnp::bounded<9>() * ::capnp::ELEMENTS, value);
-}
-
 inline  ::int32_t Stamp::Reader::getFftSize() const {
   return _reader.getDataField< ::int32_t>(
       ::capnp::bounded<17>() * ::capnp::ELEMENTS);
@@ -459,16 +440,16 @@ inline void Stamp::Builder::setFftSize( ::int32_t value) {
 
 inline  ::int32_t Stamp::Reader::getStartChannel() const {
   return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<20>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<18>() * ::capnp::ELEMENTS);
 }
 
 inline  ::int32_t Stamp::Builder::getStartChannel() {
   return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<20>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<18>() * ::capnp::ELEMENTS);
 }
 inline void Stamp::Builder::setStartChannel( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<20>() * ::capnp::ELEMENTS, value);
+      ::capnp::bounded<18>() * ::capnp::ELEMENTS, value);
 }
 
 
