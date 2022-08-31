@@ -23,22 +23,23 @@ struct Stamp {
   telescopeId @7 :Int32;
 
   # Dimensions of the data
-  numAntennas @8 :Int32;
-  numTimesteps @9 :Int32;
-  numChannels @10 :Int32;
+  numTimesteps @8 :Int32;
+  numChannels @9 :Int32;
+  numPolarities @10 :Int32;
+  numAntennas @11 :Int32;
 
   # An array of complex voltages. Interpret this as row-major:
-  #   data[antenna][timestep][channel][real vs imag]
-  data @11 :List(Float32);
+  #   data[timestep][channel][polarity][antenna][real vs imag]
+  data @12 :List(Float32);
 
   # Metadata describing how this stamp was extracted from raw files.
 
   # Which of the coarse channels in the input data this stamp is from
-  coarseChannel @12 :Int32;
+  coarseChannel @13 :Int32;
 
   # The size of the FFT we used to upchannelize
-  fftSize @13 :Int32;
+  fftSize @14 :Int32;
 
   # Column zero in the data corresponds to this column in the post-FFT coarse channel
-  startChannel @14 :Int32;
+  startChannel @15 :Int32;
 }

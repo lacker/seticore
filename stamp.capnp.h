@@ -73,11 +73,13 @@ public:
 
   inline  ::int32_t getTelescopeId() const;
 
-  inline  ::int32_t getNumAntennas() const;
-
   inline  ::int32_t getNumTimesteps() const;
 
   inline  ::int32_t getNumChannels() const;
+
+  inline  ::int32_t getNumPolarities() const;
+
+  inline  ::int32_t getNumAntennas() const;
 
   inline bool hasData() const;
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Reader getData() const;
@@ -144,14 +146,17 @@ public:
   inline  ::int32_t getTelescopeId();
   inline void setTelescopeId( ::int32_t value);
 
-  inline  ::int32_t getNumAntennas();
-  inline void setNumAntennas( ::int32_t value);
-
   inline  ::int32_t getNumTimesteps();
   inline void setNumTimesteps( ::int32_t value);
 
   inline  ::int32_t getNumChannels();
   inline void setNumChannels( ::int32_t value);
+
+  inline  ::int32_t getNumPolarities();
+  inline void setNumPolarities( ::int32_t value);
+
+  inline  ::int32_t getNumAntennas();
+  inline void setNumAntennas( ::int32_t value);
 
   inline bool hasData();
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Builder getData();
@@ -330,46 +335,60 @@ inline void Stamp::Builder::setTelescopeId( ::int32_t value) {
       ::capnp::bounded<12>() * ::capnp::ELEMENTS, value);
 }
 
-inline  ::int32_t Stamp::Reader::getNumAntennas() const {
-  return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<13>() * ::capnp::ELEMENTS);
-}
-
-inline  ::int32_t Stamp::Builder::getNumAntennas() {
-  return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<13>() * ::capnp::ELEMENTS);
-}
-inline void Stamp::Builder::setNumAntennas( ::int32_t value) {
-  _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<13>() * ::capnp::ELEMENTS, value);
-}
-
 inline  ::int32_t Stamp::Reader::getNumTimesteps() const {
   return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<14>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<13>() * ::capnp::ELEMENTS);
 }
 
 inline  ::int32_t Stamp::Builder::getNumTimesteps() {
   return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<14>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<13>() * ::capnp::ELEMENTS);
 }
 inline void Stamp::Builder::setNumTimesteps( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<14>() * ::capnp::ELEMENTS, value);
+      ::capnp::bounded<13>() * ::capnp::ELEMENTS, value);
 }
 
 inline  ::int32_t Stamp::Reader::getNumChannels() const {
   return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<15>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<14>() * ::capnp::ELEMENTS);
 }
 
 inline  ::int32_t Stamp::Builder::getNumChannels() {
   return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<15>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<14>() * ::capnp::ELEMENTS);
 }
 inline void Stamp::Builder::setNumChannels( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<14>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Stamp::Reader::getNumPolarities() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<15>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Stamp::Builder::getNumPolarities() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<15>() * ::capnp::ELEMENTS);
+}
+inline void Stamp::Builder::setNumPolarities( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
       ::capnp::bounded<15>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Stamp::Reader::getNumAntennas() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<16>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Stamp::Builder::getNumAntennas() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<16>() * ::capnp::ELEMENTS);
+}
+inline void Stamp::Builder::setNumAntennas( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<16>() * ::capnp::ELEMENTS, value);
 }
 
 inline bool Stamp::Reader::hasData() const {
@@ -412,44 +431,44 @@ inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> Stamp::
 
 inline  ::int32_t Stamp::Reader::getCoarseChannel() const {
   return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<16>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
 }
 
 inline  ::int32_t Stamp::Builder::getCoarseChannel() {
   return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<16>() * ::capnp::ELEMENTS);
+      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
 }
 inline void Stamp::Builder::setCoarseChannel( ::int32_t value) {
-  _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<16>() * ::capnp::ELEMENTS, value);
-}
-
-inline  ::int32_t Stamp::Reader::getFftSize() const {
-  return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
-}
-
-inline  ::int32_t Stamp::Builder::getFftSize() {
-  return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
-}
-inline void Stamp::Builder::setFftSize( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<17>() * ::capnp::ELEMENTS, value);
 }
 
-inline  ::int32_t Stamp::Reader::getStartChannel() const {
+inline  ::int32_t Stamp::Reader::getFftSize() const {
   return _reader.getDataField< ::int32_t>(
       ::capnp::bounded<18>() * ::capnp::ELEMENTS);
 }
 
-inline  ::int32_t Stamp::Builder::getStartChannel() {
+inline  ::int32_t Stamp::Builder::getFftSize() {
   return _builder.getDataField< ::int32_t>(
       ::capnp::bounded<18>() * ::capnp::ELEMENTS);
 }
-inline void Stamp::Builder::setStartChannel( ::int32_t value) {
+inline void Stamp::Builder::setFftSize( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<18>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Stamp::Reader::getStartChannel() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<19>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Stamp::Builder::getStartChannel() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<19>() * ::capnp::ELEMENTS);
+}
+inline void Stamp::Builder::setStartChannel( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<19>() * ::capnp::ELEMENTS, value);
 }
 
 
