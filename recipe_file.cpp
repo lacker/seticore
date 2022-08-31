@@ -37,8 +37,16 @@ RecipeFile::RecipeFile(const string& filename) :
   nbeams(getLongScalarData("/diminfo/nbeams")),
   cal_all(getComplexVectorData("/calinfo/cal_all")),
   nants(evenlyDivide(delays.size(), nbeams * time_array.size())),
-  nchans(evenlyDivide(cal_all.size(), nants * npol))
-{ }
+  nchans(evenlyDivide(cal_all.size(), nants * npol)) {
+  if ((int) ras.size() < nbeams) {
+    cerr << fmt::format("could only load {} ras but nbeams = {}\n", ras.size(), nbeams);
+    exit(1);
+  }
+  if ((int) decs.size() < nbeams) {
+    cerr << fmt::format("could only load {} decs but nbeams = {}\n", decs.size(), nbeams);
+    exit(1);
+  }
+}
 
 string makeRecipeFilename(const string& directory, const string& obsid) {
   string fixed_obsid = obsid;
