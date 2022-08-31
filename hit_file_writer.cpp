@@ -83,7 +83,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   int num_channels = end_index - begin_index;
   filterbank.setNumChannels(num_channels);
   filterbank.setFch1(metadata.fch1 + (coarse_offset + begin_index) * metadata.foff);
-  filterbank.setChannelOffset(begin_index);
+  filterbank.setStartChannel(begin_index);
   filterbank.initData(metadata.num_timesteps * num_channels);
   auto data = filterbank.getData();
   

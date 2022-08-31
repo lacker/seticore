@@ -58,7 +58,7 @@ struct Filterbank {
   coarseChannel @11 :Int32;
 
   # Column zero in the data corresponds to this column in the whole coarse channel
-  channelOffset @12 :Int32;
+  startChannel @12 :Int32;
 
   # Which beam this data is from. -1 for incoherent beam
   beam @13 :Int32;

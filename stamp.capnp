@@ -45,5 +45,5 @@ struct Stamp {
   fftSize @14 :Int32;
 
   # Column zero in the data corresponds to this column in the post-FFT coarse channel
-  channelOffset @15 :Int32;
+  startChannel @15 :Int32;
 }

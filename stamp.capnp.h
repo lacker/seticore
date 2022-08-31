@@ -88,7 +88,7 @@ public:
 
   inline  ::int32_t getFftSize() const;
 
-  inline  ::int32_t getChannelOffset() const;
+  inline  ::int32_t getStartChannel() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -172,8 +172,8 @@ public:
   inline  ::int32_t getFftSize();
   inline void setFftSize( ::int32_t value);
 
-  inline  ::int32_t getChannelOffset();
-  inline void setChannelOffset( ::int32_t value);
+  inline  ::int32_t getStartChannel();
+  inline void setStartChannel( ::int32_t value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -457,16 +457,16 @@ inline void Stamp::Builder::setFftSize( ::int32_t value) {
       ::capnp::bounded<17>() * ::capnp::ELEMENTS, value);
 }
 
-inline  ::int32_t Stamp::Reader::getChannelOffset() const {
+inline  ::int32_t Stamp::Reader::getStartChannel() const {
   return _reader.getDataField< ::int32_t>(
       ::capnp::bounded<20>() * ::capnp::ELEMENTS);
 }
 
-inline  ::int32_t Stamp::Builder::getChannelOffset() {
+inline  ::int32_t Stamp::Builder::getStartChannel() {
   return _builder.getDataField< ::int32_t>(
       ::capnp::bounded<20>() * ::capnp::ELEMENTS);
 }
-inline void Stamp::Builder::setChannelOffset( ::int32_t value) {
+inline void Stamp::Builder::setStartChannel( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<20>() * ::capnp::ELEMENTS, value);
 }
