@@ -220,7 +220,7 @@ public:
 
   inline  ::int32_t getCoarseChannel() const;
 
-  inline  ::int32_t getChannelOffset() const;
+  inline  ::int32_t getStartChannel() const;
 
   inline  ::int32_t getBeam() const;
 
@@ -297,8 +297,8 @@ public:
   inline  ::int32_t getCoarseChannel();
   inline void setCoarseChannel( ::int32_t value);
 
-  inline  ::int32_t getChannelOffset();
-  inline void setChannelOffset( ::int32_t value);
+  inline  ::int32_t getStartChannel();
+  inline void setStartChannel( ::int32_t value);
 
   inline  ::int32_t getBeam();
   inline void setBeam( ::int32_t value);
@@ -734,16 +734,16 @@ inline void Filterbank::Builder::setCoarseChannel( ::int32_t value) {
       ::capnp::bounded<15>() * ::capnp::ELEMENTS, value);
 }
 
-inline  ::int32_t Filterbank::Reader::getChannelOffset() const {
+inline  ::int32_t Filterbank::Reader::getStartChannel() const {
   return _reader.getDataField< ::int32_t>(
       ::capnp::bounded<16>() * ::capnp::ELEMENTS);
 }
 
-inline  ::int32_t Filterbank::Builder::getChannelOffset() {
+inline  ::int32_t Filterbank::Builder::getStartChannel() {
   return _builder.getDataField< ::int32_t>(
       ::capnp::bounded<16>() * ::capnp::ELEMENTS);
 }
-inline void Filterbank::Builder::setChannelOffset( ::int32_t value) {
+inline void Filterbank::Builder::setStartChannel( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<16>() * ::capnp::ELEMENTS, value);
 }
