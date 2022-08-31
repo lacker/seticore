@@ -33,10 +33,14 @@ class FilterbankMetadata {
   // It's a bit of a hack and if there is more per-beam metadata like this, we might
   // want a different interface.
   vector<string> source_names;
-  vector<double> ras;
-  vector<double> decs;
+  vector<double> ras;  // radians
+  vector<double> decs; // radians
 
-  double fch1, foff, tstart, tsamp, src_dej, src_raj;
+  double fch1, foff, tstart, tsamp;
+
+  // We try to use radians, but in practice this seems inconsistent
+  double src_dej, src_raj;
+
   int num_timesteps, num_channels, coarse_channel_size, num_coarse_channels, telescope_id;
   
   virtual ~FilterbankMetadata() {}

@@ -20,4 +20,5 @@ string pluralize(int n, const string& noun);
 string prettyBytes(size_t n);
 long timeInMS();
 double unixTimeToMJD(double unix_time);
-
+double hoursToRadians(double hours);
+double degreesToRadians(double degrees);

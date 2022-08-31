@@ -4,6 +4,7 @@
 #include <chrono>
 #include <fmt/core.h>
 #include <iostream>
+#include <math.h>
 #include <pthread.h>
 
 using namespace std;
@@ -124,4 +125,12 @@ long timeInMS() {
 
 double unixTimeToMJD(double unix_time) {
   return unix_time / 86400.0 + 40587.0;
+}
+
+double hoursToRadians(double hours) {
+  return hours * M_PI / 12.0;
+}
+
+double degreesToRadians(double degrees) {
+  return degrees * M_PI / 180.0;
 }

@@ -5,6 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <fmt/core.h>
 #include <iostream>
+#include "util.h"
 #include <vector> 
 
 using namespace std;
@@ -50,6 +51,8 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   npol = header.npol;
   obsbw = header.obsbw;
   obsfreq = header.obsfreq;
+  ra = hoursToRadians(header.ra);
+  dec = degreesToRadians(header.dec);
   obsid = header.getString("OBSID");
   source_name = header.src_name;
   start_pktidx = header.pktidx;
