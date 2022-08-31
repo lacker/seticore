@@ -11,6 +11,11 @@ else
     INSTALL_DIR=$1
 fi
 
+if [[ $(objdump --syms ./build/seticore | grep debug_info) ]]; then
+    echo this is a debug build
+    exit 1
+fi
+
 BIN=./build/seticore
 
 VERSION=`$BIN --help 2>&1 | grep version | sed 's:.* ::'`
