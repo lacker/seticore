@@ -44,8 +44,8 @@ size_t Upchannelizer::requiredInternalBufferSize() const {
  */
 __global__ void convertRaw(const int8_t* input, int input_size,
                            thrust::complex<float>* buffer, int buffer_size,
-                           int nants, int nblocks, int num_coarse_channels,
-                           int npol, int nsamp, int time_per_block) {
+                           int num_antennas, int nblocks, int num_coarse_channels,
+                           int num_polarity, int nsamp, int time_per_block) {
   int time_within_block = blockIdx.x * CUDA_MAX_THREADS + threadIdx.x;
   if (time_within_block >= time_per_block) {
     return;
@@ -55,10 +55,10 @@ __global__ void convertRaw(const int8_t* input, int input_size,
   int chan = blockIdx.z % num_coarse_channels;
   int time = block * time_per_block + time_within_block;
   
-  for (int pol = 0; pol < npol; ++pol) {
-    int input_index = 2 * index5d(block, antenna, nants, chan, num_coarse_channels,
-                                  time_within_block, time_per_block, pol, npol);
-    int converted_index = index4d(pol, antenna, nants, chan, num_coarse_channels, time, nsamp);
+  for (int pol = 0; pol < num_polarity; ++pol) {
+    int input_index = 2 * index5d(block, antenna, num_antennas, chan, num_coarse_channels,
+                                  time_within_block, time_per_block, pol, num_polarity);
+    int converted_index = index4d(pol, antenna, num_antennas, chan, num_coarse_channels, time, nsamp);
 
     assert(input_index + 1 < input_size);
     assert(converted_index < buffer_size);
@@ -81,7 +81,7 @@ __global__ void convertRaw(const int8_t* input, int input_size,
   understand it myself, so I can't explain it.
  */
 __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* prebeam,
-                      int fft_size, int nants, int npol, int num_coarse_channels,
+                      int fft_size, int num_antennas, int num_polarity, int num_coarse_channels,
                       int num_timesteps) {
   int antenna = threadIdx.y;
   int pol = threadIdx.z;
@@ -91,10 +91,10 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
 
   int output_fine_chan = fine_chan ^ (fft_size >> 1);
 
-  int input_index = index5d(pol, antenna, nants, coarse_chan, num_coarse_channels,
+  int input_index = index5d(pol, antenna, num_antennas, coarse_chan, num_coarse_channels,
                             time, num_timesteps, fine_chan, fft_size);
   int output_index = index5d(time, coarse_chan, num_coarse_channels, output_fine_chan, fft_size,
-                             pol, npol, antenna, nants);
+                             pol, num_polarity, antenna, num_antennas);
 
   prebeam[output_index] = buffer[input_index];
 }
@@ -107,7 +107,7 @@ void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
                         MultiantennaBuffer& output) {
   assert(input.num_antennas == num_antennas);
   assert(input.num_coarse_channels == num_coarse_channels);
-  assert(input.npol == num_polarity);
+  assert(input.num_polarity == num_polarity);
   assert(input.timesteps_per_block * input.num_blocks == num_input_timesteps);
 
   assert(buffer.size >= requiredInternalBufferSize());
