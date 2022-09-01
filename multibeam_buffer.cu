@@ -53,8 +53,8 @@ float MultibeamBuffer::get(int beam, int time, int channel) {
 }
 
 void MultibeamBuffer::zeroAsync() {
-  size_t data_size = sizeof(float) * num_beams * num_timesteps * num_channels;
-  cudaMemsetAsync(data, 0, data_size);
+  size_t size = sizeof(float) * num_beams * num_timesteps * num_channels;
+  cudaMemsetAsync(data, 0, size);
   checkCuda("MultibeamBuffer zeroAsync");
 }
 

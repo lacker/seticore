@@ -124,7 +124,7 @@ void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
   dim3 convert_raw_grid(cuda_blocks_per_block, input.num_blocks,
                         num_antennas * num_coarse_channels);
   convertRaw<<<convert_raw_grid, convert_raw_block, 0, stream>>>
-    (input.data, input.data_size,
+    (input.data, input.size,
      buffer.data, buffer.size,
      num_antennas, input.num_blocks, num_coarse_channels, num_polarity,
      num_input_timesteps, input.timesteps_per_block);

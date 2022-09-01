@@ -18,9 +18,9 @@ RawBuffer::RawBuffer(int num_blocks, int num_antennas,
   : num_blocks(num_blocks), num_antennas(num_antennas),
     num_coarse_channels(num_coarse_channels),
     timesteps_per_block(timesteps_per_block), npol(npol) {
-  data_size = rawBufferSize(num_blocks, num_antennas, num_coarse_channels,
+  size = rawBufferSize(num_blocks, num_antennas, num_coarse_channels,
                             timesteps_per_block, npol);
-  cudaMallocHost(&data, data_size);
+  cudaMallocHost(&data, size);
   checkCuda("RawBuffer malloc");
 }
 
@@ -30,7 +30,7 @@ RawBuffer::~RawBuffer() {
 
 char* RawBuffer::blockPointer(int block) const {
   assert(block < num_blocks);
-  size_t bytes_per_block = data_size / num_blocks;
+  size_t bytes_per_block = size / num_blocks;
   return ((char*) data) + (block * bytes_per_block);
 }
 

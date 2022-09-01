@@ -34,7 +34,7 @@ class DeviceRawBuffer {
   const int num_polarity;
 
   int8_t* data;
-  size_t data_size;
+  size_t size;
   
   DeviceRawBuffer(int num_blocks, int num_antennas, int num_coarse_channels,
                   int timesteps_per_block, int num_polarity);

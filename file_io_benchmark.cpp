@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
   
     for (int batch = 0; batch < num_batches; ++batch) {
       auto buffer = reader.read();
-      bytes_read += buffer->data_size;
+      bytes_read += buffer->size;
       reader.returnBuffer(move(buffer));
       cerr << "done band " << band << " batch " << batch << endl;
     }

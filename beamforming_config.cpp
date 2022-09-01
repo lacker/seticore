@@ -115,7 +115,7 @@ void BeamformingConfig::run() {
   // These buffers hold data we have read from raw input while we are working on them
   unique_ptr<RawBuffer> read_buffer;
   shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.makeDeviceBuffer();
-  cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->data_size) << endl;
+  cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->size) << endl;
 
   
   if (hit_recorder == nullptr) {

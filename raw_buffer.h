@@ -17,7 +17,7 @@ class RawBuffer {
   const int npol;
   
   int8_t* data;
-  size_t data_size;
+  size_t size;
   
   RawBuffer(int num_blocks, int num_antennas, int num_coarse_channels,
             int timesteps_per_block, int npol);

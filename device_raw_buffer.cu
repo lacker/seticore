@@ -13,9 +13,9 @@ DeviceRawBuffer::DeviceRawBuffer(int num_blocks, int num_antennas,
     num_coarse_channels(num_coarse_channels),
     timesteps_per_block(timesteps_per_block), num_polarity(num_polarity),
     state(DeviceRawBufferState::unused) {
-  data_size = sizeof(int8_t) * num_blocks * num_antennas * num_coarse_channels *
+  size = sizeof(int8_t) * num_blocks * num_antennas * num_coarse_channels *
     timesteps_per_block * num_polarity * 2;
-  cudaMalloc(&data, data_size);
+  cudaMalloc(&data, size);
   cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
   checkCuda("DeviceRawBuffer init");
 }
@@ -27,7 +27,7 @@ DeviceRawBuffer::~DeviceRawBuffer() {
 
 // Should only be called from the producer thread
 void DeviceRawBuffer::copyFromAsync(const RawBuffer& other) {
-  assert(data_size == other.data_size);
+  assert(size == other.size);
   waitUntilUnused();
 
   unique_lock<mutex> lock(m);
@@ -36,7 +36,7 @@ void DeviceRawBuffer::copyFromAsync(const RawBuffer& other) {
   lock.unlock();
   // Nobody waits on copying state, so no need to notify
   
-  cudaMemcpyAsync(data, other.data, data_size, cudaMemcpyHostToDevice, stream);
+  cudaMemcpyAsync(data, other.data, size, cudaMemcpyHostToDevice, stream);
   cudaStreamAddCallback(stream, DeviceRawBuffer::staticCopyCallback, this, 0);
 }
 
