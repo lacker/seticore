@@ -7,14 +7,19 @@
 using namespace std;
 
 
-Upchannelizer::Upchannelizer(cudaStream_t stream, int fft_size, int nants,
-                             int nblocks, int num_coarse_channels, int npol, int nsamp)
-  : fft_size(fft_size), nants(nants), nblocks(nblocks),
-    num_coarse_channels(num_coarse_channels), npol(npol), nsamp(nsamp), stream(stream),
+Upchannelizer::Upchannelizer(cudaStream_t stream, int fft_size,
+                             int num_input_timesteps, int num_coarse_channels,
+                             int num_polarity, int num_antennas)
+  : stream(stream),
+    fft_size(fft_size),
+    num_input_timesteps(num_input_timesteps),
+    num_coarse_channels(num_coarse_channels),
+    num_polarity(num_polarity),
+    num_antennas(num_antennas),
     release_input(true) {
-  assert(nsamp % fft_size == 0);
+  assert(num_input_timesteps % fft_size == 0);
 
-  int batch_size = nants * npol;
+  int batch_size = num_antennas * num_polarity;
   cufftPlan1d(&plan, fft_size, CUFFT_C2C, batch_size);
 
   checkCuda("Upchannelizer fft planning");
@@ -25,7 +30,7 @@ Upchannelizer::~Upchannelizer() {
 }
 
 size_t Upchannelizer::requiredInternalBufferSize() const {
-  return (size_t) nants * num_coarse_channels * npol * nsamp;
+  return (size_t) num_antennas * num_coarse_channels * num_polarity * num_input_timesteps;
 }
 
 /*
@@ -39,8 +44,8 @@ size_t Upchannelizer::requiredInternalBufferSize() const {
  */
 __global__ void convertRaw(const int8_t* input, int input_size,
                            thrust::complex<float>* buffer, int buffer_size,
-                           int nants, int nblocks, int num_coarse_channels, int npol, int nsamp,
-                           int time_per_block) {
+                           int nants, int nblocks, int num_coarse_channels,
+                           int npol, int nsamp, int time_per_block) {
   int time_within_block = blockIdx.x * CUDA_MAX_THREADS + threadIdx.x;
   if (time_within_block >= time_per_block) {
     return;
@@ -100,28 +105,29 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
 */
 void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
                         MultiantennaBuffer& output) {
-  assert(input.num_antennas == nants);
-  assert(input.num_blocks == nblocks);
+  assert(input.num_antennas == num_antennas);
   assert(input.num_coarse_channels == num_coarse_channels);
-  assert(input.npol == npol);
-  assert(input.timesteps_per_block * input.num_blocks == nsamp);
+  assert(input.npol == num_polarity);
+  assert(input.timesteps_per_block * input.num_blocks == num_input_timesteps);
 
   assert(buffer.size >= requiredInternalBufferSize());
 
-  assert(output.num_timesteps == nsamp / fft_size);
+  assert(output.num_timesteps == num_input_timesteps / fft_size);
   assert(output.num_channels == num_coarse_channels * fft_size);
-  assert(output.num_polarity == npol);
-  assert(output.num_antennas == nants);
+  assert(output.num_polarity == num_polarity);
+  assert(output.num_antennas == num_antennas);
 
-  int time_per_block = nsamp / nblocks;
   // Unfortunate overuse of "block"
-  int cuda_blocks_per_block = (time_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
+  int cuda_blocks_per_block =
+    (input.timesteps_per_block + CUDA_MAX_THREADS - 1) / CUDA_MAX_THREADS;
   dim3 convert_raw_block(CUDA_MAX_THREADS, 1, 1);
-  dim3 convert_raw_grid(cuda_blocks_per_block, nblocks, nants * num_coarse_channels);
+  dim3 convert_raw_grid(cuda_blocks_per_block, input.num_blocks,
+                        num_antennas * num_coarse_channels);
   convertRaw<<<convert_raw_grid, convert_raw_block, 0, stream>>>
     (input.data, input.data_size,
      buffer.data, buffer.size,
-     nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
+     num_antennas, input.num_blocks, num_coarse_channels, num_polarity,
+     num_input_timesteps, input.timesteps_per_block);
   checkCuda("Beamformer convertRaw");
 
   // Release the input buffer when we're done with it
@@ -130,8 +136,9 @@ void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
   }
   
   // Run FFTs. TODO: see if there's a faster way
-  int num_ffts = nants * npol * num_coarse_channels * nsamp / fft_size;
-  int batch_size = nants * npol;
+  int num_ffts = num_antennas * num_polarity * num_coarse_channels *
+    num_input_timesteps / fft_size;
+  int batch_size = num_antennas * num_polarity;
   int num_batches = num_ffts / batch_size;
   for (int i = 0; i < num_batches; ++i) {
     cuComplex* pointer = (cuComplex*) buffer.data + i * batch_size * fft_size;
@@ -139,10 +146,10 @@ void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
   }
   checkCuda("Beamformer fft operation");
 
-  dim3 shift_block(1, nants, npol);
-  dim3 shift_grid(fft_size, num_coarse_channels, nsamp / fft_size);
+  dim3 shift_block(1, num_antennas, num_polarity);
+  dim3 shift_grid(fft_size, num_coarse_channels, num_input_timesteps / fft_size);
   shift<<<shift_grid, shift_block, 0, stream>>>
-    (buffer.data, output.data, fft_size, nants, npol, num_coarse_channels,
-     nsamp / fft_size);
+    (buffer.data, output.data, fft_size, num_antennas, num_polarity, num_coarse_channels,
+     num_input_timesteps / fft_size);
   checkCuda("Beamformer shift");  
 }

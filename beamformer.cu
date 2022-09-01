@@ -280,8 +280,9 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
   assert(0 == nsamp % nblocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
 
-  upchannelizer = make_unique<Upchannelizer>(stream, fft_size, nants, nblocks,
-                                             num_coarse_channels, npol, nsamp);
+  upchannelizer = make_unique<Upchannelizer>(stream, fft_size,
+                                             nsamp, num_coarse_channels,
+                                             npol, nants);
   
   int frame_size = num_coarse_channels * nsamp;
   

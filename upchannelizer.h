@@ -18,33 +18,28 @@ using namespace std;
  */
 class Upchannelizer {
  public:
+  // The upchannelizer runs all its operations on one cuda stream.
+  const cudaStream_t stream;
+
   // The factor for upchannelization. The frequency dimension will be expanded by
   // this amount, and the time dimension will be shrunk by this amount.
   const int fft_size;
 
-  // Number of antennas
-  const int nants;
-
-  // Number of time-blocks that the input is provided in.
-  // This only affects the format of the input array.
-  const int nblocks;
-
+  // Number of timesteps in the input.
+  // This will be reduced by a factor of fft_size.
+  const int num_input_timesteps;
+  
   // Number of frequency channels in the input.
   // This will be expanded by a multiplicative factor of fft_size.
   const int num_coarse_channels;
 
-  // Number of polarities
-  const int npol;
-
-  // Number of timesteps in the input.
-  // This will be reduced by a factor of fft_size.
-  const int nsamp;
+  // The same in input and output
+  const int num_polarity;
+  const int num_antennas;
   
-  // The upchannelizer runs all its operations on one cuda stream.
-  const cudaStream_t stream;
-
-  Upchannelizer(cudaStream_t stream, int fft_size, int nants, int nblocks,
-                int num_coarse_channels, int npol, int nsamp);
+  Upchannelizer(cudaStream_t stream, int fft_size,
+                int num_input_timesteps, int num_coarse_channels,
+                int num_polarity, int num_antennas);
   ~Upchannelizer();
 
   // Calculate how large of an internal buffer is needed, measured in
