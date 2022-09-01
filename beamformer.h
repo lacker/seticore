@@ -64,7 +64,7 @@ class Beamformer {
 
   // Number of timesteps in the input.
   // This will be reduced by two multiplicative factors, fft_size and STI.
-  const int nsamp;
+  const int num_input_timesteps;
 
   // Number of timesteps for short time integration.
   const int sti;
@@ -73,7 +73,8 @@ class Beamformer {
   const cudaStream_t stream;
   
   Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
-             int nblocks, int num_coarse_channels, int npol, int nsamp, int sti);
+             int nblocks, int num_coarse_channels, int npol, int num_input_timesteps,
+             int sti);
   ~Beamformer();
 
   int numOutputChannels() const;
