@@ -26,7 +26,7 @@ TEST_CASE("cublasBeamform", "[beamformer]") {
   MultibeamBuffer output2(nbeams, beamformer.numOutputTimesteps(),
                           beamformer.numOutputChannels());
   beamformer.use_cublas_beamform = true;
-  beamformer.release_input = false;
+  beamformer.setReleaseInput(false);
   beamformer.run(input, output1, 0);
   beamformer.use_cublas_beamform = false;
   beamformer.run(input, output2, 0);

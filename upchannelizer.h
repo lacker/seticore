@@ -1,5 +1,10 @@
 #pragma once
 
+#include "complex_buffer.h"
+#include <cufft.h>
+#include "device_raw_buffer.h"
+#include "multiantenna_buffer.h"
+
 using namespace std;
 
 /*
@@ -35,7 +40,7 @@ class Upchannelizer {
   // This will be reduced by a factor of fft_size.
   const int nsamp;
   
-  // The upchannelizer runs all its oprations on one cuda stream.
+  // The upchannelizer runs all its operations on one cuda stream.
   const cudaStream_t stream;
 
   Upchannelizer(cudaStream_t stream, int fft_size, int nants, int nblocks,
@@ -46,9 +51,12 @@ class Upchannelizer {
   // amount of complex values
   size_t requiredInternalBufferSize() const;
 
-  // A buffer of the appropriate size must be provided once before running,
-  // and then it can be reused for all subsequent operation.
-  setInternalBuffer(shared_ptr<ComplexBuffer> buffer);
+  void run(DeviceRawBuffer& input, ComplexBuffer& buffer, MultiantennaBuffer& output);
 
-  void run(DeviceRawBuffer& input, MultiantennaBuffer& output);
-}
+  // Whether to release inputs when we're done with it.
+  bool release_input;
+  
+ private:
+  // The plan for the fft.
+  cufftHandle plan;
+};

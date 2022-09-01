@@ -1,13 +1,13 @@
 #pragma once
 
 #include "cublas_v2.h"
-#include <cufft.h>
 #include <thrust/complex.h>
 
 #include "complex_buffer.h"
 #include "device_raw_buffer.h"
 #include "multiantenna_buffer.h"
 #include "multibeam_buffer.h"
+#include "upchannelizer.h"
 
 using namespace std;
 
@@ -109,11 +109,12 @@ class Beamformer {
   // Selects which of two alternatives for the beamform kernel to use
   bool use_cublas_beamform;
 
-  // Whether to release the input buffer when we are done with it
-  bool release_input;
+  // Hack for unit testing
+  void setReleaseInput(bool flag);
   
  private:
-
+  unique_ptr<Upchannelizer> upchannelizer;
+  
   // The buffer is reused for a few different stages of the pipeline.
   //
   // The convertRaw kernel populates this buffer with row-major:
@@ -134,11 +135,6 @@ class Beamformer {
   // Its format is row-major:
   //   prebeam[time][channel][polarity][antenna]
   unique_ptr<MultiantennaBuffer> prebeam;
-  thrust::complex<float>* prebeam_data;
-  size_t prebeam_size;  
-
-  // The plan for the fft.
-  cufftHandle plan;
 
   cublasHandle_t cublas_handle;
 

@@ -67,6 +67,7 @@ srcs = [
     'run_dedoppler.cpp',
     'taylor.cu',
     'thread_util.cpp',
+    'upchannelizer.cu',
     'util.cpp',
     'vector_hit_recorder.cpp',
 ]

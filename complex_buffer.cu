@@ -2,6 +2,8 @@
 #include "complex_buffer.h"
 #include "cuda_util.h"
 
+using namespace std;
+
 ComplexBuffer::ComplexBuffer(size_t size) :
   size(size), bytes(sizeof(thrust::complex<float>) * size) {
 
