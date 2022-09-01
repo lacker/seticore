@@ -73,14 +73,14 @@ __global__ void convertRaw(const int8_t* input, int input_size,
     buffer[polarity][antenna][coarse-channel][time][fine-channel]
 
   to a format ready for beamforming:
-    prebeam[time][channel][polarity][antenna]
+    output[time][channel][polarity][antenna]
 
   We also toggle the high bit of the frequency fine channel. Hence "shift".
   This is like swapping the low half and the high half of the output of each FFT.
   It would be great for this comment to explain why this shift is necessary, but, I don't
   understand it myself, so I can't explain it.
  */
-__global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* prebeam,
+__global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* output,
                       int fft_size, int num_antennas, int num_polarity, int num_coarse_channels,
                       int num_timesteps) {
   int antenna = threadIdx.y;
@@ -96,7 +96,7 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* pr
   int output_index = index5d(time, coarse_chan, num_coarse_channels, output_fine_chan, fft_size,
                              pol, num_polarity, antenna, num_antennas);
 
-  prebeam[output_index] = buffer[input_index];
+  output[output_index] = buffer[input_index];
 }
 
 /*

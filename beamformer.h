@@ -14,7 +14,7 @@ using namespace std;
 /*
   The beamformer metadata is confusing because it's constantly reshaping the data it's
   operating on.
-  In particular, it uses an FFT to exchange time resolution for frequency resolution.
+  In particular, it upchannelizes to convert time resolution for frequency resolution.
   "Coarse channel" refers to the channel index in the input data.
   Within a coarse channel, there are further "fine channels".
   The combination of a coarse channel index plus a fine channel index can give you
@@ -25,14 +25,8 @@ using namespace std;
 
   The overall data flow is thus:
 
-  convertRaw:
-    input -> buffer
-
-  FFT:
-    buffer -> buffer
-
-  shift:
-    buffer -> prebeam
+  upchannelizer:
+    raw input -> prebeam
 
   incoherent:
     prebeam -> output
@@ -43,7 +37,7 @@ using namespace std;
   calculatePower:
     buffer -> output
 
-  Note that "buffer" is reused in several places.
+  Note that "buffer" is also used internally by the upchannelizer to save memory.
  */
 class Beamformer {
  public:
