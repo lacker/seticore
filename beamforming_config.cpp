@@ -30,9 +30,9 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   metadata.fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
   double output_bandwidth = file_group.obsbw / file_group.num_bands;
   metadata.foff = output_bandwidth / beamformer.numOutputChannels();
-  int beamformer_batches = file_group.num_blocks / beamformer.nblocks;
+  int beamformer_batches = file_group.num_blocks / beamformer.num_blocks;
   double time_per_block = file_group.tbin * file_group.timesteps_per_block;
-  double time_per_beamform = time_per_block * beamformer.nblocks;
+  double time_per_beamform = time_per_block * beamformer.num_blocks;
   metadata.tsamp = time_per_beamform / beamformer.numOutputTimesteps();
   metadata.tstart = unixTimeToMJD(file_group.getStartTime(0));
   metadata.src_raj = file_group.ra;
@@ -87,9 +87,9 @@ void BeamformingConfig::run() {
                         nsamp, sti);
 
   // Create a buffer large enough to hold all beamformer batches for one band  
-  int num_batches = file_group.num_blocks / beamformer.nblocks;
+  int num_batches = file_group.num_blocks / beamformer.num_blocks;
   int num_multibeam_timesteps = beamformer.numOutputTimesteps() * num_batches;
-  MultibeamBuffer multibeam(beamformer.nbeams + 1,
+  MultibeamBuffer multibeam(beamformer.num_beams + 1,
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels(),
                             beamformer.numOutputTimesteps());
@@ -127,7 +127,7 @@ void BeamformingConfig::run() {
     hit_recorder.reset(hfw);
   }
   
-  cout << "processing " << pluralize(beamformer.nbeams, "beam") << " and "
+  cout << "processing " << pluralize(beamformer.num_beams, "beam") << " and "
        << pluralize(num_bands_to_process, "band") << endl;
   cout << "each band has "
        << pluralize(beamformer.num_coarse_channels, "coarse channel")
@@ -148,7 +148,7 @@ void BeamformingConfig::run() {
     for (int batch = 0; batch < num_batches; ++batch) {
       cout << "beamforming band " << band << ", batch " << batch << "...\n";
     
-      int block_after_mid = batch * beamformer.nblocks + beamformer.nblocks / 2;
+      int block_after_mid = batch * beamformer.num_blocks + beamformer.num_blocks / 2;
       double mid_time = file_group.getStartTime(block_after_mid);
       int time_array_index = recipe.getTimeArrayIndex(mid_time);
       recipe.generateCoefficients(time_array_index, file_group.schan,
@@ -180,7 +180,7 @@ void BeamformingConfig::run() {
         // Write out data for this band and beam to a file
         cudaDeviceSynchronize();
         string beam_name = metadata.isCoherentBeam(beam) ?
-          fmt::format("beam{}", zeroPad(beam, numDigits(beamformer.nbeams))) :
+          fmt::format("beam{}", zeroPad(beam, numDigits(beamformer.num_beams))) :
           "incoherent";
         string h5_filename =
           fmt::format("{}/{}.band{}.{}.h5",

@@ -45,22 +45,22 @@ class Beamformer {
   // amount, and the time dimension will be shrunk by this amount.
   const int fft_size;
   
-  // Number of antennas
-  const int nants;
+  // Number of antennas in the input data
+  const int num_antennas;
 
   // Number of beams to form
-  const int nbeams;
+  const int num_beams;
 
   // Number of time-blocks that the input is provided in.
   // This only affects the format of the input array.
-  const int nblocks;
+  const int num_blocks;
   
   // Number of frequency channels in the input.
   // This will be expanded by a multiplicative factor of fft_size.
   const int num_coarse_channels;
 
   // Number of polarities
-  const int npol;
+  const int num_polarity;
 
   // Number of timesteps in the input.
   // This will be reduced by two multiplicative factors, fft_size and STI.
@@ -72,9 +72,9 @@ class Beamformer {
   // The beamformer runs all its operations on one stream.
   const cudaStream_t stream;
   
-  Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
-             int nblocks, int num_coarse_channels, int npol, int num_input_timesteps,
-             int sti);
+  Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int num_beams,
+             int num_blocks, int num_coarse_channels, int num_polarity,
+             int num_input_timesteps, int sti);
   ~Beamformer();
 
   int numOutputChannels() const;
