@@ -22,8 +22,8 @@ using namespace std;
   are leftover blocks when we are done reading batches, we just skip them and move
   on to the next band.
 
-  If you provide it with a different num_bands than the RawFileGroup has, it will
-  only process the provided number of bands.
+  num_bands doesn't have to match the underlying RawFileGroup. You can process only
+  a subrange by specifying start_band and num_bands.
 
   Externally, the RawFileGroupReader should be used from a single thread. Call
   read() to get the next RawBuffer, and when you're done with it, call
@@ -45,13 +45,14 @@ using namespace std;
 class RawFileGroupReader {
  public:
   RawFileGroup& file_group;
+  const int start_band;
   const int num_bands;
   const int num_batches;
   const int blocks_per_batch;
   const int coarse_channels_per_band;
   
-  RawFileGroupReader(RawFileGroup& file_group, int num_bands, int num_batches,
-                     int blocks_per_batch);
+  RawFileGroupReader(RawFileGroup& file_group, int start_band, int num_bands,
+                     int num_batches, int blocks_per_batch);
   ~RawFileGroupReader();
 
   // Makes a buffer of the same size the read() returns, in GPU memory

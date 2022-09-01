@@ -47,13 +47,13 @@ int main(int argc, char* argv[]) {
   po::notify(vm);
 
   string raw_prefix = vm["raw_prefix"].as<string>();
-  string output = vm["output"].as<string>();
+  string output_filename = vm["output"].as<string>();
   // int band = vm["band"].as<int>();
   int num_bands = vm["num_bands"].as<int>();
   // int coarse_channel = vm["coarse_channel"].as<int>();
   int fft_size = vm["fft_size"].as<int>();
   // int start_channel = vm["start_channel"].as<int>();
-  // int num_channels = vm["num_channels"].as<int>();
+  int num_channels = vm["num_channels"].as<int>();
   
   cout << fmt::format("extracting stamp from {}.*.raw\n", raw_prefix);
   vector<string> raw_files = getFilesMatchingPrefix(raw_prefix);
@@ -73,7 +73,8 @@ int main(int argc, char* argv[]) {
     assert(fft_size % file_group.timesteps_per_block == 0);
     blocks_per_batch = fft_size / file_group.timesteps_per_block;
   }
-
+  int num_batches = file_group.num_blocks / blocks_per_batch;
+  
   Upchannelizer upchannelizer(0, fft_size,
                               file_group.timesteps_per_block * blocks_per_batch,
                               file_group.num_coarse_channels,
@@ -82,10 +83,14 @@ int main(int argc, char* argv[]) {
 
   ComplexBuffer internal(upchannelizer.requiredInternalBufferSize());
 
-  MultiantennaBuffer multiantenna(upchannelizer.numOutputTimesteps(),
-                                  upchannelizer.numOutputChannels(),
-                                  file_group.npol,
-                                  file_group.nants);
+  MultiantennaBuffer fine(upchannelizer.numOutputTimesteps(),
+                          upchannelizer.numOutputChannels(),
+                          file_group.npol,
+                          file_group.nants);
 
-  
+  MultiantennaBuffer output_data(fine.num_timesteps * num_batches,
+                                 num_channels,
+                                 file_group.npol,
+                                 file_group.nants);
+
 }

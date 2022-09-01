@@ -27,4 +27,10 @@ class MultiantennaBuffer: public ComplexBuffer {
   // Causes a cuda sync so it's slow. Only useful for debugging or testing
   using ComplexBuffer::get;
   thrust::complex<float> get(int time, int channel, int pol, int antenna) const;
+
+  // Copies a range of channels to another buffer.
+  // Assumes that the range to copy is the entire width of the other buffer.
+  // Uses the default cuda stream and copies asynchronously.
+  void copyRange(int src_start_channel,
+                 MultiantennaBuffer& dest, int dest_start_time) const;
 };

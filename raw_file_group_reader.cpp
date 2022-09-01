@@ -10,10 +10,11 @@
 using namespace std;
 
 
-RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
-                                       int num_batches, int blocks_per_batch)
-  : file_group(file_group), num_bands(num_bands), num_batches(num_batches),
-    blocks_per_batch(blocks_per_batch),
+RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int start_band,
+                                       int num_bands, int num_batches,
+                                       int blocks_per_batch)
+  : file_group(file_group), start_band(start_band), num_bands(num_bands),
+    num_batches(num_batches), blocks_per_batch(blocks_per_batch),
     coarse_channels_per_band(file_group.num_coarse_channels / file_group.num_bands),
     destroy(false)  {
 
@@ -113,7 +114,7 @@ bool RawFileGroupReader::push(unique_ptr<RawBuffer> buffer) {
 // Reads all the input and passes it to the buffer_queue
 void RawFileGroupReader::runInputThread() {
   setThreadName("input");
-  for (int band = 0; band < num_bands; ++band) {
+  for (int band = start_band; band < start_band + num_bands; ++band) {
     file_group.resetBand(band);
     for (int batch = 0; batch < num_batches; ++batch) {
       auto buffer = makeBuffer();

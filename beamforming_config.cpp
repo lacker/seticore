@@ -94,7 +94,7 @@ void BeamformingConfig::run() {
                             beamformer.numOutputChannels(),
                             beamformer.numOutputTimesteps());
   
-  RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
+  RawFileGroupReader reader(file_group, 0, num_bands_to_process, num_batches,
                             blocks_per_batch);
   
   // Create a buffer for dedopplering a single coarse channel, padding

@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   
   // Only process some bands
   int num_bands_to_process = 2;
-  RawFileGroupReader reader(file_group, num_bands_to_process, num_batches,
+  RawFileGroupReader reader(file_group, 0, num_bands_to_process, num_batches,
                             blocks_per_batch);
 
   for (int band = 0; band < num_bands_to_process; ++band) {

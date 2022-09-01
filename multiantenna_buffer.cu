@@ -21,3 +21,30 @@ thrust::complex<float> MultiantennaBuffer::get(int time, int channel,
   return get(index);
 }
                                        
+void MultiantennaBuffer::copyRange(int src_start_channel,
+                                   MultiantennaBuffer& dest, int dest_start_time) const {
+  assert(src_start_channel >= 0);
+  assert(src_start_channel + dest.num_channels <= num_channels);
+  assert(dest_start_time >= 0);
+  assert(dest_start_time + num_timesteps <= dest.num_timesteps);
+  assert(num_polarity == dest.num_polarity);
+  assert(num_antennas == dest.num_antennas);
+
+  int src_index = index4d(0, src_start_channel, num_channels,
+                             0, num_polarity, 0, num_antennas);
+  int dest_index = index4d(dest_start_time, 0, dest.num_channels,
+                           0, num_polarity, 0, num_antennas);
+
+  size_t entry_size = sizeof(thrust::complex<float>) * num_polarity * num_antennas;
+  size_t src_pitch = entry_size * num_channels;
+  size_t dest_pitch = entry_size * dest.num_channels;
+
+  auto src_ptr = data + src_index;
+  auto dest_ptr = dest.data + dest_index;
+  
+  cudaMemcpy2DAsync(dest_ptr, dest_pitch,
+                    src_ptr, src_pitch,
+                    dest.num_channels, num_timesteps,
+                    cudaMemcpyDefault);
+  checkCuda("MultiantennaBuffer copyRange");
+}
