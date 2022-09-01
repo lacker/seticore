@@ -36,6 +36,28 @@ string getBasename(const string& filename) {
   return filename.substr(index + 1);
 }
 
+string getDirectory(const string& filename) {
+  auto index = filename.find_last_of("/");
+  assert(0 <= index && index < filename.size());
+  return filename.substr(0, index);
+}
+
+vector<string> getFilesMatchingPrefix(const string& prefix) {
+  string directory = getDirectory(prefix);
+  boost::filesystem::path dir{directory};
+  vector<string> filenames;
+  boost::filesystem::directory_iterator it{dir};
+  while (it != boost::filesystem::directory_iterator{}) {
+    string filename(it->path().c_str());
+    if (boost::starts_with(filename, prefix)) {
+      filenames.push_back(filename);
+    }
+    ++it;
+  }
+  sort(filenames.begin(), filenames.end());
+  return filenames;
+}
+
 RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   : current_file(-1), filenames(filenames), band(0),
     num_bands(num_bands) {

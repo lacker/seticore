@@ -11,6 +11,8 @@ using namespace std;
 
 vector<vector<string> > scanForRawFileGroups(const string& directory);
 
+vector<string> getFilesMatchingPrefix(const string& prefix);
+
 /*
   The RawFileGroup represents a set of raw files. They share a prefix on disk, like
   /my/dir/blah-blorp-qux.0000.raw

@@ -98,6 +98,10 @@ executable('taylor_benchmark',
            srcs + ['taylor_benchmark.cu'],
            dependencies: deps, cuda_args: cuda_args)
 
+executable('extract',
+           srcs + ['extract.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
+
 executable('file_io_benchmark',
            srcs + ['file_io_benchmark.cpp'],
            dependencies: deps, cuda_args: cuda_args)

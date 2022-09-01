@@ -48,6 +48,9 @@ class Upchannelizer {
 
   void run(DeviceRawBuffer& input, ComplexBuffer& buffer, MultiantennaBuffer& output);
 
+  int numOutputChannels() const;
+  int numOutputTimesteps() const;
+  
   // Whether to release inputs when we're done with it.
   bool release_input;
   
