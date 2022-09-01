@@ -2,6 +2,7 @@
 #include <fmt/core.h>
 #include <iostream>
 #include "raw_file_group.h"
+#include "raw_file_group_reader.h"
 #include "upchannelizer.h"
 
 using namespace std;
@@ -48,12 +49,14 @@ int main(int argc, char* argv[]) {
 
   string raw_prefix = vm["raw_prefix"].as<string>();
   string output_filename = vm["output"].as<string>();
-  // int band = vm["band"].as<int>();
+  int band = vm["band"].as<int>();
   int num_bands = vm["num_bands"].as<int>();
-  // int coarse_channel = vm["coarse_channel"].as<int>();
+  int coarse_channel = vm["coarse_channel"].as<int>();
   int fft_size = vm["fft_size"].as<int>();
-  // int start_channel = vm["start_channel"].as<int>();
+  int start_channel = vm["start_channel"].as<int>();
   int num_channels = vm["num_channels"].as<int>();
+
+  int fine_channel = coarse_channel * fft_size + start_channel;
   
   cout << fmt::format("extracting stamp from {}.*.raw\n", raw_prefix);
   vector<string> raw_files = getFilesMatchingPrefix(raw_prefix);
@@ -93,4 +96,31 @@ int main(int argc, char* argv[]) {
                                  file_group.npol,
                                  file_group.nants);
 
+  RawFileGroupReader reader(file_group, band, 1, num_batches, blocks_per_batch);
+
+  unique_ptr<RawBuffer> read_buffer;
+  shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.makeDeviceBuffer();
+
+  // Track where in output_data we're writing to
+  int output_time = 0;
+  
+  for (int batch = 0; batch < num_batches; ++batch) {
+    // The upchannelizer could still be using the raw buffers.
+    // Wait for it to finish.
+    device_raw_buffer->waitUntilUnused();
+
+    reader.returnBuffer(move(read_buffer));
+    read_buffer = reader.read();
+    device_raw_buffer->copyFromAsync(*read_buffer);
+    device_raw_buffer->waitUntilReady();
+
+    upchannelizer.run(*device_raw_buffer, internal, fine);
+
+    fine.copyRange(fine_channel, output_data, output_time);
+    output_time += fine.num_timesteps;
+  }
+
+  cudaDeviceSynchronize();
+
+  // TODO: output the file
 }

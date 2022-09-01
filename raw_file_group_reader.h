@@ -61,6 +61,7 @@ class RawFileGroupReader {
   unique_ptr<RawBuffer> read();
 
   // The caller can return ownership of extra buffers to avoid future mallocs
+  // For convenience, returning nullptr is a no-op
   void returnBuffer(unique_ptr<RawBuffer> buffer);
 
  private:
