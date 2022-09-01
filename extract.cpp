@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
   
   Upchannelizer upchannelizer(0, fft_size,
                               file_group.timesteps_per_block * blocks_per_batch,
-                              file_group.num_coarse_channels,
+                              file_group.num_coarse_channels / num_bands,
                               file_group.npol,
                               file_group.nants);
 
@@ -104,9 +104,9 @@ int main(int argc, char* argv[]) {
                           file_group.nants);
 
   MultiantennaBuffer output(fine.num_timesteps * num_batches,
-                                 num_channels,
-                                 file_group.npol,
-                                 file_group.nants);
+                            num_channels,
+                            file_group.npol,
+                            file_group.nants);
 
   RawFileGroupReader reader(file_group, band, 1, num_batches, blocks_per_batch);
 

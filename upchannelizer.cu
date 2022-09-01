@@ -155,9 +155,9 @@ void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
 }
 
 int Upchannelizer::numOutputChannels() const {
-  return num_coarse_channels / fft_size;
+  return num_coarse_channels * fft_size;
 }
 
 int Upchannelizer::numOutputTimesteps() const {
-  return num_coarse_channels * fft_size;
+  return num_input_timesteps / fft_size;
 }

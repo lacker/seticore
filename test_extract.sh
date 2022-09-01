@@ -14,7 +14,7 @@
     --coarse_channel=0 \
     --fft_size=131072 \
     --start_channel=86100 \
-    --num_channels=300
-
+    --num_channels=300 \
+    --telescope_id=64
 
 echo done
