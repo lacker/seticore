@@ -13,8 +13,8 @@ using namespace std;
 FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels)
   : num_timesteps(num_timesteps), num_channels(num_channels), managed(true),
     size(num_timesteps * num_channels),
-    data_bytes(sizeof(float) * size) {
-  cudaMallocManaged(&data, data_bytes);
+    bytes(sizeof(float) * size) {
+  cudaMallocManaged(&data, bytes);
   checkCuda("FilterbankBuffer data malloc");
 }
 
@@ -22,7 +22,7 @@ FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels)
 FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels, float* data)
   : num_timesteps(num_timesteps), num_channels(num_channels), managed(false),
     size(num_timesteps * num_channels),
-    data_bytes(sizeof(float) * size), data(data) {
+    bytes(sizeof(float) * size), data(data) {
 }
 
 FilterbankBuffer::~FilterbankBuffer() {

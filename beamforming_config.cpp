@@ -101,7 +101,7 @@ void BeamformingConfig::run() {
   // timesteps with zeros.
   FilterbankBuffer fb_buffer(roundUpToPowerOfTwo(multibeam.num_timesteps), fft_size);
   fb_buffer.zero();
-  cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.data_bytes) << endl;
+  cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.bytes) << endl;
   
   FilterbankMetadata metadata = combineMetadata(file_group, beamformer, recipe,
                                                 telescope_id);

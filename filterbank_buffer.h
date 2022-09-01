@@ -15,7 +15,7 @@ class FilterbankBuffer {
   const bool managed;
 
   const int size;
-  const size_t data_bytes;
+  const size_t bytes;
   
   /*
     Row-major indexed by:
