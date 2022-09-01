@@ -180,7 +180,7 @@ void Beamformer::runCublasBeamform(int time, int pol) {
   auto prebeam_start = (const cuComplex*) (prebeam + prebeam_offset);
   int voltage_offset = index5d(time, pol, npol, 0, num_coarse_channels, 0, fft_size,
                                0, nbeams);
-  auto voltage_start = (cuComplex*) (buffer + voltage_offset);
+  auto voltage_start = (cuComplex*) (buffer->data + voltage_offset);
 
   // Calculate strides
   // ldA, the A-m stride (since we are transposing. normally it would be A-k)
@@ -355,11 +355,10 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
  
   size_t fft_buffer_size = nants * npol * frame_size;
   size_t voltage_size = nbeams * npol * frame_size;
-  buffer_size = max(fft_buffer_size, voltage_size);
-  size_t buffer_bytes = buffer_size * sizeof(thrust::complex<float>);
-  cudaMallocManaged(&buffer, buffer_bytes);
-  checkCuda("Beamformer buffer malloc");
+  size_t buffer_size = max(fft_buffer_size, voltage_size);
 
+  buffer = make_unique<ComplexBuffer>(buffer_size);
+  
   prebeam_size = nants * npol * frame_size;
   size_t prebeam_bytes = prebeam_size * sizeof(thrust::complex<float>);
   cudaMallocManaged(&prebeam, prebeam_bytes);
@@ -372,7 +371,7 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
   cublasCreate(&cublas_handle);
   checkCuda("Beamformer cublas handle");
   
-  size_t total_bytes = coefficients_bytes + buffer_bytes + prebeam_bytes;
+  size_t total_bytes = coefficients_bytes + buffer->bytes + prebeam_bytes;
   if (total_bytes > 2000000) {
     cout << "beamformer memory: " << prettyBytes(total_bytes) << endl;
   }
@@ -380,7 +379,6 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int nants, int nbeams,
 
 Beamformer::~Beamformer() {
   cudaFree(coefficients);
-  cudaFree(buffer);
   cudaFree(prebeam);
   cufftDestroy(plan);
   cublasDestroy(cublas_handle);
@@ -432,7 +430,7 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   dim3 convert_raw_grid(cuda_blocks_per_block, nblocks, nants * num_coarse_channels);
   convertRaw<<<convert_raw_grid, convert_raw_block, 0, stream>>>
     (input.data, input.data_size,
-     buffer, buffer_size,
+     buffer->data, buffer->size,
      nants, nblocks, num_coarse_channels, npol, nsamp, time_per_block);
   checkCuda("Beamformer convertRaw");
 
@@ -446,7 +444,7 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   int batch_size = nants * npol;
   int num_batches = num_ffts / batch_size;
   for (int i = 0; i < num_batches; ++i) {
-    cuComplex* pointer = (cuComplex*) buffer + i * batch_size * fft_size;
+    cuComplex* pointer = (cuComplex*) buffer->data + i * batch_size * fft_size;
     cufftExecC2C(plan, pointer, pointer, CUFFT_FORWARD);
   }
   checkCuda("Beamformer fft operation");
@@ -454,7 +452,7 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   dim3 shift_block(1, nants, npol);
   dim3 shift_grid(fft_size, num_coarse_channels, nsamp / fft_size);
   shift<<<shift_grid, shift_block, 0, stream>>>
-    (buffer, prebeam, fft_size, nants, npol, num_coarse_channels, nsamp / fft_size);
+    (buffer->data, prebeam, fft_size, nants, npol, num_coarse_channels, nsamp / fft_size);
   checkCuda("Beamformer shift");
 
   if (incoherent) {
@@ -475,14 +473,14 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
     dim3 beamform_block(nants, 1, 1);
     dim3 beamform_grid(fft_size, num_coarse_channels, nbeams);
     beamform<<<beamform_grid, beamform_block, 0, stream>>>
-      (prebeam, coefficients, buffer, fft_size, nants, nbeams, num_coarse_channels,
-       npol, nsamp / fft_size, prebeam_size, buffer_size, coefficients_size);
+      (prebeam, coefficients, buffer->data, fft_size, nants, nbeams, num_coarse_channels,
+       npol, nsamp / fft_size, prebeam_size, buffer->size, coefficients_size);
   }
   
   dim3 power_block(sti, 1, 1);
   dim3 power_grid(numOutputChannels(), nbeams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block, 0, stream>>>
-    (buffer, output.data, nbeams, numOutputChannels(), npol, sti, output.num_timesteps,
+    (buffer->data, output.data, nbeams, numOutputChannels(), npol, sti, output.num_timesteps,
      power_time_offset);
   checkCuda("Beamformer calculatePower");
 }
@@ -512,7 +510,7 @@ thrust::complex<float> Beamformer::getFFTBuffer(int pol, int antenna, int coarse
   assert(last_index < fft_size);
   int i = index5d(pol, antenna, nants, coarse_channel, num_coarse_channels,
                   time, nsamp / fft_size, last_index, fft_size);
-  return buffer[i];
+  return buffer->data[i];
 }
 
 thrust::complex<float> Beamformer::getPrebeam(int time, int channel, int pol, int antenna) const {
@@ -534,6 +532,6 @@ thrust::complex<float> Beamformer::getVoltage(int time, int pol, int channel, in
   assert(channel < numOutputChannels());
   assert(beam < nbeams);
   int i = index4d(time, pol, npol, channel, numOutputChannels(), beam, nbeams);
-  return buffer[i];
+  return buffer->data[i];
 }
 

@@ -42,6 +42,7 @@ deps = [fmt_dep, boost_dep, hdf5_dep, cuda_dep, kj_dep, capnp_dep]
 srcs = [
     'beamformer.cu',
     'beamforming_config.cpp',
+    'complex_buffer.cu',
     'cuda_util.cu',
     'dedoppler.cu',
     'dedoppler_hit.cpp',

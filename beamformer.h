@@ -4,6 +4,7 @@
 #include <cufft.h>
 #include <thrust/complex.h>
 
+#include "complex_buffer.h"
 #include "device_raw_buffer.h"
 #include "multibeam_buffer.h"
 
@@ -125,8 +126,7 @@ class Beamformer {
   //
   // After beamforming, the voltage data is also placed here, in row-major:
   //   voltage[time][polarity][channel][beam]
-  thrust::complex<float>* buffer;
-  size_t buffer_size;
+  unique_ptr<ComplexBuffer> buffer;
   
   // The channelized input data, ready for beamforming.
   //
