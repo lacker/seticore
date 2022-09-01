@@ -81,7 +81,11 @@ class RawFileGroup {
   
   string obsid;
   string source_name;
+
+  // Time resolution in seconds
+  // The raw file version of "tsamp"
   double tbin;
+
   int timesteps_per_block;
 
   // Metadata used for timing

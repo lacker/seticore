@@ -30,7 +30,7 @@ struct Stamp {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 10, 2)
+    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 9, 2)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -83,12 +83,6 @@ public:
 
   inline bool hasData() const;
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Reader getData() const;
-
-  inline  ::int32_t getCoarseChannel() const;
-
-  inline  ::int32_t getFftSize() const;
-
-  inline  ::int32_t getStartChannel() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -165,15 +159,6 @@ public:
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Builder initData(unsigned int size);
   inline void adoptData(::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>>&& value);
   inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> disownData();
-
-  inline  ::int32_t getCoarseChannel();
-  inline void setCoarseChannel( ::int32_t value);
-
-  inline  ::int32_t getFftSize();
-  inline void setFftSize( ::int32_t value);
-
-  inline  ::int32_t getStartChannel();
-  inline void setStartChannel( ::int32_t value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -427,48 +412,6 @@ inline void Stamp::Builder::adoptData(
 inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> Stamp::Builder::disownData() {
   return ::capnp::_::PointerHelpers< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>>::disown(_builder.getPointerField(
       ::capnp::bounded<1>() * ::capnp::POINTERS));
-}
-
-inline  ::int32_t Stamp::Reader::getCoarseChannel() const {
-  return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
-}
-
-inline  ::int32_t Stamp::Builder::getCoarseChannel() {
-  return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<17>() * ::capnp::ELEMENTS);
-}
-inline void Stamp::Builder::setCoarseChannel( ::int32_t value) {
-  _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<17>() * ::capnp::ELEMENTS, value);
-}
-
-inline  ::int32_t Stamp::Reader::getFftSize() const {
-  return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<18>() * ::capnp::ELEMENTS);
-}
-
-inline  ::int32_t Stamp::Builder::getFftSize() {
-  return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<18>() * ::capnp::ELEMENTS);
-}
-inline void Stamp::Builder::setFftSize( ::int32_t value) {
-  _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<18>() * ::capnp::ELEMENTS, value);
-}
-
-inline  ::int32_t Stamp::Reader::getStartChannel() const {
-  return _reader.getDataField< ::int32_t>(
-      ::capnp::bounded<19>() * ::capnp::ELEMENTS);
-}
-
-inline  ::int32_t Stamp::Builder::getStartChannel() {
-  return _builder.getDataField< ::int32_t>(
-      ::capnp::bounded<19>() * ::capnp::ELEMENTS);
-}
-inline void Stamp::Builder::setStartChannel( ::int32_t value) {
-  _builder.setDataField< ::int32_t>(
-      ::capnp::bounded<19>() * ::capnp::ELEMENTS, value);
 }
 
 
