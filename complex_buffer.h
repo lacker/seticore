@@ -11,7 +11,7 @@ using namespace std;
 class ComplexBuffer {
  public:
   ComplexBuffer(size_t size);
-  ~ComplexBuffer();
+  virtual ~ComplexBuffer();
 
   // No copying
   ComplexBuffer(const ComplexBuffer&) = delete;

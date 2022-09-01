@@ -6,6 +6,7 @@
 
 #include "complex_buffer.h"
 #include "device_raw_buffer.h"
+#include "multiantenna_buffer.h"
 #include "multibeam_buffer.h"
 
 using namespace std;
@@ -132,7 +133,8 @@ class Beamformer {
   //
   // Its format is row-major:
   //   prebeam[time][channel][polarity][antenna]
-  thrust::complex<float>* prebeam;
+  unique_ptr<MultiantennaBuffer> prebeam;
+  thrust::complex<float>* prebeam_data;
   size_t prebeam_size;  
 
   // The plan for the fft.

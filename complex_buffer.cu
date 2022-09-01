@@ -1,7 +1,6 @@
 #include <assert.h>
 #include "complex_buffer.h"
 #include "cuda_util.h"
-#include <iostream>
 
 ComplexBuffer::ComplexBuffer(size_t size) :
   size(size), bytes(sizeof(thrust::complex<float>) * size) {
