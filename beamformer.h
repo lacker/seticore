@@ -60,7 +60,7 @@ class Beamformer {
   const int num_coarse_channels;
 
   // Number of polarities
-  const int num_polarity;
+  const int num_polarities;
 
   // Number of timesteps in the input.
   // This will be reduced by two multiplicative factors, fft_size and STI.
@@ -73,7 +73,7 @@ class Beamformer {
   const cudaStream_t stream;
   
   Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int num_beams,
-             int num_blocks, int num_coarse_channels, int num_polarity,
+             int num_blocks, int num_coarse_channels, int num_polarities,
              int num_input_timesteps, int sti);
   ~Beamformer();
 

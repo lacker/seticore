@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
   stamp.setTelescopeId(telescope_id);
   stamp.setNumTimesteps(output.num_timesteps);
   stamp.setNumChannels(output.num_channels);
-  stamp.setNumPolarities(output.num_polarity);
+  stamp.setNumPolarities(output.num_polarities);
   stamp.setNumAntennas(output.num_antennas);
   stamp.initData(2 * output.size);
   auto data = stamp.getData();

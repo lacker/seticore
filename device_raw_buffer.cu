@@ -8,13 +8,13 @@ using namespace std;
 
 DeviceRawBuffer::DeviceRawBuffer(int num_blocks, int num_antennas,
                                  int num_coarse_channels,
-                                 int timesteps_per_block, int num_polarity)
+                                 int timesteps_per_block, int num_polarities)
   : num_blocks(num_blocks), num_antennas(num_antennas),
     num_coarse_channels(num_coarse_channels),
-    timesteps_per_block(timesteps_per_block), num_polarity(num_polarity),
+    timesteps_per_block(timesteps_per_block), num_polarities(num_polarities),
     state(DeviceRawBufferState::unused) {
   size = sizeof(int8_t) * num_blocks * num_antennas * num_coarse_channels *
-    timesteps_per_block * num_polarity * 2;
+    timesteps_per_block * num_polarities * 2;
   cudaMalloc(&data, size);
   cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
   checkCuda("DeviceRawBuffer init");
