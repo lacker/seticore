@@ -44,7 +44,7 @@ void MultiantennaBuffer::copyRange(int src_start_channel,
   
   cudaMemcpy2DAsync(dest_ptr, dest_pitch,
                     src_ptr, src_pitch,
-                    dest.num_channels, num_timesteps,
+                    dest_pitch, num_timesteps,
                     cudaMemcpyDefault);
   checkCuda("MultiantennaBuffer copyRange");
 }
