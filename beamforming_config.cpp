@@ -112,12 +112,6 @@ void BeamformingConfig::run() {
   dedopplerer.print_hit_summary = true;
   cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
   
-  // These buffers hold data we have read from raw input while we are working on them
-  unique_ptr<RawBuffer> read_buffer;
-  shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.makeDeviceBuffer();
-  cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->size) << endl;
-
-  
   if (hit_recorder == nullptr) {
     string output_filename = fmt::format("{}/{}.hits", output_dir,
                                          file_group.prefix);
@@ -157,14 +151,7 @@ void BeamformingConfig::run() {
                                   beamformer.coefficients);
       int time_offset = beamformer.numOutputTimesteps() * batch;
 
-      // The beamformer could still be using the raw buffers.
-      // So we have to wait for it to finish.
-      device_raw_buffer->waitUntilUnused();
-
-      reader.returnBuffer(move(read_buffer));
-      read_buffer = reader.read();
-      device_raw_buffer->copyFromAsync(*read_buffer);
-      device_raw_buffer->waitUntilReady();
+      shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.readToDevice();
 
       // At this point, the beamformer could still be processing the
       // previous batch, but that's okay.

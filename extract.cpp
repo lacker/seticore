@@ -111,21 +111,11 @@ int main(int argc, char* argv[]) {
 
   RawFileGroupReader reader(file_group, band, 1, num_batches, blocks_per_batch);
 
-  unique_ptr<RawBuffer> read_buffer;
-  shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.makeDeviceBuffer();
-
   // Track where in output we're writing to
   int output_time = 0;
   
   for (int batch = 0; batch < num_batches; ++batch) {
-    // The upchannelizer could still be using the raw buffers.
-    // Wait for it to finish.
-    device_raw_buffer->waitUntilUnused();
-
-    reader.returnBuffer(move(read_buffer));
-    read_buffer = reader.read();
-    device_raw_buffer->copyFromAsync(*read_buffer);
-    device_raw_buffer->waitUntilReady();
+    shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.readToDevice();
 
     upchannelizer.run(*device_raw_buffer, internal, fine);
 

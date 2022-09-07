@@ -4,8 +4,8 @@
 #include <fmt/core.h>
 #include <iostream>
 #include <sys/sysinfo.h>
-
 #include "thread_util.h"
+#include "util.h"
 
 using namespace std;
 
@@ -38,6 +38,9 @@ RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int start_band,
   }
 
   io_thread = thread(&RawFileGroupReader::runInputThread, this);
+
+  device_raw_buffer = makeDeviceBuffer();
+  cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->size) << endl;
 }
 
 RawFileGroupReader::~RawFileGroupReader() {
@@ -75,7 +78,7 @@ shared_ptr<DeviceRawBuffer> RawFileGroupReader::makeDeviceBuffer() {
                                       file_group.npol);
 }
 
-unique_ptr<RawBuffer> RawFileGroupReader::read() {
+unique_ptr<RawBuffer> RawFileGroupReader::readToHost() {
   unique_lock<mutex> lock(m);
   while (buffer_queue.empty()) {
     cv.wait(lock);
@@ -133,4 +136,17 @@ void RawFileGroupReader::runInputThread() {
       }
     }
   }
+}
+
+shared_ptr<DeviceRawBuffer> RawFileGroupReader::readToDevice() {
+  // Client code could still be using the raw buffers.
+  // Wait for it to finish.
+  device_raw_buffer->waitUntilUnused();
+
+  returnBuffer(move(read_buffer));
+  read_buffer = readToHost();
+  device_raw_buffer->copyFromAsync(*read_buffer);
+  device_raw_buffer->waitUntilReady();
+
+  return device_raw_buffer;
 }
