@@ -8,6 +8,7 @@
 #include "raw_file_group_reader.h"
 #include "stamp.capnp.h"
 #include "upchannelizer.h"
+#include "util.h"
 
 using namespace std;
 
@@ -129,6 +130,7 @@ int main(int argc, char* argv[]) {
     upchannelizer.run(*device_raw_buffer, internal, fine);
 
     fine.copyRange(fine_channel, output, output_time);
+
     output_time += fine.num_timesteps;
   }
 
