@@ -17,9 +17,8 @@ class RawFile {
   
  public:
   const string filename;
-  const int num_bands;
 
-  RawFile(string filename, int num_bands);
+  RawFile(string filename);
   ~RawFile();
 
   RawFile(const RawFile&) = delete;

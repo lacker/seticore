@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
   cout << dir << " has " << pluralize(file_lists.size(), "raw file group") << ":\n";
 
   for (auto& file_list : file_lists) {
-    RawFileGroup group(file_list, 1);
+    RawFileGroup group(file_list);
     cout << endl;
     cout << pluralize(group.filenames.size(), "file") << " match " << group.prefix
          << ".*.raw\n";

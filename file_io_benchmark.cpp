@@ -27,15 +27,15 @@ int main(int argc, char* argv[]) {
   assert(file_lists.size() == 1);
 
   int num_bands = 16;
-  RawFileGroup file_group(file_lists[0], num_bands);
+  RawFileGroup file_group(file_lists[0]);
 
   int blocks_per_batch = 128;
   int num_batches = file_group.num_blocks / blocks_per_batch;
   
   // Only process some bands
   int num_bands_to_process = 2;
-  RawFileGroupReader reader(file_group, 0, num_bands_to_process, num_batches,
-                            blocks_per_batch);
+  RawFileGroupReader reader(file_group, num_bands, 0, num_bands_to_process - 1,
+                            num_batches, blocks_per_batch);
 
   for (int band = 0; band < num_bands_to_process; ++band) {
     long tstart = timeInMS();

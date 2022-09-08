@@ -4,8 +4,8 @@
 
 using namespace std;
 
-RawFile::RawFile(string filename, int num_bands)
-  : _reader(filename), filename(filename), num_bands(num_bands) {
+RawFile::RawFile(string filename)
+  : _reader(filename), filename(filename) {
 
   while (true) {
     raw::Header header;

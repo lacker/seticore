@@ -27,23 +27,17 @@ int main(int argc, char* argv[]) {
     ("output", po::value<string>(),
      "location to write the stamp file")
 
-    ("band", po::value<int>(),
-     "parameter for raw-file-group reading")
-
-    ("num_bands", po::value<int>(),
-     "parameter for raw-file-group reading")
-
     ("coarse_channel", po::value<int>(),
-     "coarse channel to extract data from (within the band)")
+     "coarse channel to extract data from")
 
     ("fft_size", po::value<int>(),
      "size of the fft to use for upchannelization")
 
     ("start_channel", po::value<int>(),
-     "channel to start extraction after fft")
+     "fine channel at which to start extraction")
 
     ("num_channels", po::value<int>(),
-     "how many post-fft channels to extract")
+     "how many fine channels to extract")
 
     ("telescope_id", po::value<int>(),
      "telescope id")
@@ -57,8 +51,6 @@ int main(int argc, char* argv[]) {
 
   string raw_prefix = vm["raw_prefix"].as<string>();
   string output_filename = vm["output"].as<string>();
-  int band = vm["band"].as<int>();
-  int num_bands = vm["num_bands"].as<int>();
   int coarse_channel = vm["coarse_channel"].as<int>();
   int fft_size = vm["fft_size"].as<int>();
   int start_channel = vm["start_channel"].as<int>();
@@ -72,7 +64,7 @@ int main(int argc, char* argv[]) {
     cout << "  " << f << endl;
   }
 
-  RawFileGroup file_group(raw_files, num_bands);
+  RawFileGroup file_group(raw_files);
   int fine_channel = coarse_channel * fft_size + start_channel;
   double global_fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
 
@@ -93,9 +85,7 @@ int main(int argc, char* argv[]) {
   
   Upchannelizer upchannelizer(0, fft_size,
                               file_group.timesteps_per_block * blocks_per_batch,
-                              file_group.num_coarse_channels / num_bands,
-                              file_group.npol,
-                              file_group.nants);
+                              1, file_group.npol, file_group.nants);
 
   ComplexBuffer internal(upchannelizer.requiredInternalBufferSize());
 
@@ -109,7 +99,10 @@ int main(int argc, char* argv[]) {
                             file_group.npol,
                             file_group.nants);
 
-  RawFileGroupReader reader(file_group, band, 1, num_batches, blocks_per_batch);
+  // Read just a single coarse channel, so one band equals one coarse channel
+  RawFileGroupReader reader(file_group, file_group.num_coarse_channels,
+                            coarse_channel, coarse_channel,
+                            num_batches, blocks_per_batch);
 
   // Track where in output we're writing to
   int output_time = 0;

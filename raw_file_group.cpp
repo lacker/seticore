@@ -58,9 +58,9 @@ vector<string> getFilesMatchingPrefix(const string& prefix) {
   return filenames;
 }
 
-RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
-  : current_file(-1), filenames(filenames), band(0),
-    num_bands(num_bands) {
+RawFileGroup::RawFileGroup(const vector<string>& filenames)
+  : current_file(-1), filenames(filenames), band(-1),
+    num_bands(-1), read_size(-1) {
   assert(!filenames.empty());
   prefix = getBasename(getRawFilePrefix(filenames[0]));
 
@@ -89,11 +89,6 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames, int num_bands)
   piperblk = header.getUnsignedInt("PIPERBLK", -1);
   assert(piperblk > 0);
 
-  // Calculate the size of each read
-  assert(0 == num_coarse_channels % num_bands);
-  int channels_per_band = num_coarse_channels / num_bands;
-  read_size = nants * channels_per_band * timesteps_per_block * npol * 2;
-  
   // Find the last block in the last file
   const RawFile& last_file(openFile(filenames[filenames.size() - 1]));
   int pktidx_diff = last_file.headers().back().pktidx - start_pktidx;
@@ -162,9 +157,17 @@ vector<vector<string> > scanForRawFileGroups(const string& directory) {
   return answer;
 }
 
-void RawFileGroup::resetBand(int new_band) {
-  assert(new_band < num_bands);
+void RawFileGroup::resetBand(int new_band, int new_num_bands) {
+  assert(0 <= new_band && new_band < new_num_bands);
+  assert(num_coarse_channels % new_num_bands == 0);
   band = new_band;
+  num_bands = new_num_bands;
+
+  // Calculate the size of each read
+  int channels_per_band = num_coarse_channels / num_bands;
+  read_size = nants * channels_per_band * timesteps_per_block * npol * 2;
+  
+  // Prepare for iteration
   current_file = -1;
   next_pktidx = start_pktidx;
 }
@@ -183,7 +186,7 @@ const raw::Header& RawFileGroup::getHeader() {
 
 const RawFile& RawFileGroup::openFile(const string& filename) {
   if (files.find(filename) == files.end()) {
-    files[filename] = make_unique<RawFile>(filename, num_bands);
+    files[filename] = make_unique<RawFile>(filename);
   }
   return *files[filename];
 }

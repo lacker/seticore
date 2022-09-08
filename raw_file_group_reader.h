@@ -54,13 +54,15 @@ using namespace std;
 class RawFileGroupReader {
  public:
   RawFileGroup& file_group;
-  const int start_band;
   const int num_bands;
+  const int first_band;
+  const int last_band;
   const int num_batches;
   const int blocks_per_batch;
   const int coarse_channels_per_band;
   
-  RawFileGroupReader(RawFileGroup& file_group, int start_band, int num_bands,
+  RawFileGroupReader(RawFileGroup& file_group, int num_bands,
+                     int first_band, int last_band,
                      int num_batches, int blocks_per_batch);
   ~RawFileGroupReader();
 

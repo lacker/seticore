@@ -68,7 +68,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   buffer.
 */
 void BeamformingConfig::run() {
-  RawFileGroup file_group(raw_files, num_bands);
+  RawFileGroup file_group(raw_files);
 
   cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
                       file_group.totalTime(), file_group.prefix);
@@ -94,8 +94,8 @@ void BeamformingConfig::run() {
                             beamformer.numOutputChannels(),
                             beamformer.numOutputTimesteps());
   
-  RawFileGroupReader reader(file_group, 0, num_bands_to_process, num_batches,
-                            blocks_per_batch);
+  RawFileGroupReader reader(file_group, num_bands, 0, num_bands_to_process - 1,
+                            num_batches, blocks_per_batch);
   
   // Create a buffer for dedopplering a single coarse channel, padding
   // timesteps with zeros.

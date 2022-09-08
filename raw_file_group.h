@@ -65,10 +65,6 @@ class RawFileGroup {
   // Has the directory name stripped
   string prefix;
   
-  // Defining a sub-band of the files we are reading in
-  int band;
-  const int num_bands;
-
   // Metadata that should be the same for all blocks
   int nants;
   int num_coarse_channels;
@@ -99,15 +95,16 @@ class RawFileGroup {
   // This includes missing blocks. 
   int num_blocks;
 
-  // How many bytes each read returns 
+  // We read one band at a time, defining these parameters.
+  // They start as -1 and are set when resetBand is called.
+  int band;
+  int num_bands;
   int read_size;
 
-  // Starts off reading band zero
-  RawFileGroup(const vector<string>& filenames, int num_bands);
-
+  RawFileGroup(const vector<string>& filenames);
   ~RawFileGroup();
 
-  void resetBand(int new_band);
+  void resetBand(int new_band, int new_num_bands);
 
   /*
     readTasks reads data from a band of the next block into buffer. Sort of.
