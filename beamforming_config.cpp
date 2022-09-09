@@ -68,8 +68,6 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   buffer.
 */
 void BeamformingConfig::run() {
-  RawFileGroup file_group(raw_files);
-
   cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
                       file_group.totalTime(), file_group.prefix);
   
@@ -191,11 +189,12 @@ void BeamformingConfig::run() {
 
         multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &fb_buffer);
 
-        vector<DedopplerHit> hits;
+        vector<DedopplerHit> local_hits;
         dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, min_drift, snr,
-                           &hits);
-        for (DedopplerHit hit : hits) {
+                           &local_hits);
+        for (DedopplerHit hit : local_hits) {
           hit_recorder->recordHit(hit, fb_buffer.data);
+          hits.push_back(hit);
         }
       }
     }

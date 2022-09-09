@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "hit_recorder.h"
+#include "raw_file_group.h"
 #include "util.h"
 
 class BeamformingConfig {
@@ -44,8 +45,14 @@ public:
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
       recipe_dir(recipe_dir), num_bands(num_bands), fft_size(fft_size),
       sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
-      min_drift(min_drift), num_bands_to_process(num_bands) {
+      min_drift(min_drift), num_bands_to_process(num_bands), file_group(raw_files) {
   }
 
   void run();
+
+  vector<DedopplerHit> hits;
+  
+private:
+  RawFileGroup file_group;
+  
 };
