@@ -24,6 +24,7 @@ thrust::complex<float> MultiantennaBuffer::get(int time, int channel,
 void MultiantennaBuffer::copyRange(int src_start_channel,
                                    MultiantennaBuffer& dest, int dest_start_time) const {
   assert(src_start_channel >= 0);
+  assert(src_start_channel < num_channels);
   assert(src_start_channel + dest.num_channels <= num_channels);
   assert(dest_start_time >= 0);
   assert(dest_start_time + num_timesteps <= dest.num_timesteps);

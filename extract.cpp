@@ -65,12 +65,11 @@ int main(int argc, char* argv[]) {
   }
 
   RawFileGroup file_group(raw_files);
-  int fine_channel = coarse_channel * fft_size + start_channel;
   double global_fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
 
   // Output metadata
   double foff = file_group.obsbw / file_group.num_coarse_channels / fft_size;
-  double fch1 = global_fch1 + fine_channel * foff;
+  double fch1 = global_fch1 + (coarse_channel * fft_size + start_channel) * foff;
   
   // One of the fft size and block duration should divide the other
   int blocks_per_batch;
@@ -112,7 +111,7 @@ int main(int argc, char* argv[]) {
 
     upchannelizer.run(*device_raw_buffer, internal, fine);
 
-    fine.copyRange(fine_channel, output, output_time);
+    fine.copyRange(start_channel, output, output_time);
 
     output_time += fine.num_timesteps;
   }

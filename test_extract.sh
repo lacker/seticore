@@ -2,16 +2,17 @@
 
 # Extracting a hit from blpn129
 
+STAMP=data/J1939.stamp
+
+rm -f $STAMP
 
 ./build/extract \
-    --raw_prefix=/buf0ro/20220816/guppi_59806_84779_003380_J1939-6342_0001 \
-    --output=/mydatag/test/lacker/20220816.stamp \
-    --band=12 \
-    --num_bands=16 \
-    --coarse_channel=0 \
+    --raw_prefix=../data/beamtest/guppi_59712_16307_003760_J1939-6342_0001 \
+    --output=$STAMP \
+    --coarse_channel=1 \
     --fft_size=131072 \
-    --start_channel=38417 \
-    --num_channels=80 \
+    --start_channel=86100 \
+    --num_channels=200 \
     --telescope_id=64
 
-echo done
+echo OK
