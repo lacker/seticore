@@ -1,6 +1,5 @@
 #include "beamforming_config.h"
 #include "raw_file_group.h"
-#include "vector_hit_recorder.h"
 
 #include <iostream>
 #include <string>

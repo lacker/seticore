@@ -70,7 +70,6 @@ srcs = [
     'thread_util.cpp',
     'upchannelizer.cu',
     'util.cpp',
-    'vector_hit_recorder.cpp',
 ]
 
 tests = [
