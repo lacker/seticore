@@ -15,4 +15,9 @@ rm -f $STAMP
     --num_channels=200 \
     --telescope_id=64
 
+if [[ `ls -la $STAMP | grep 3123336` == "" ]]; then
+    echo bad stamp file
+    exit 1
+fi
+
 echo OK
