@@ -65,6 +65,7 @@ srcs = [
     'raw_file_group_reader.cpp',
     'recipe_file.cpp',
     'run_dedoppler.cpp',
+    'stamp_extractor.cpp',
     'taylor.cu',
     'thread_util.cpp',
     'upchannelizer.cu',

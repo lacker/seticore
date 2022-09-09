@@ -58,10 +58,10 @@ We don't need the `hdf5plugin` install any more once its files have been copied 
 
 ## Testing on your machine
 
-You can run the regression tests with:
+You can run the unit tests with:
 
 ```
-./run_tests.sh
+./unit_tests.sh
 ```
 
 This will automatically download a few gigabytes of test data from Berkeley and ensure

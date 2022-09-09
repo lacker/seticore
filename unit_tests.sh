@@ -1,7 +1,8 @@
 #!/bin/bash -e
 #
-# Runs most of the unit tests and regression tests.
-# This doesn't run tests that require too much data to download everywhere.
+# Runs the unit tests and regression tests.
+# These are the tests that don't require too much data download, so we can
+# auto-download the data to any environment.
 
 echo unit testing...
 
