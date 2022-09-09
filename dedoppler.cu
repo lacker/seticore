@@ -262,10 +262,16 @@ void Dedopplerer::search(const FilterbankBuffer& input,
       float snr = (candidate_path_sum - median) / std_dev;
 
       if (abs(drift_rate) >= min_drift) {
-        DedopplerHit hit{candidate_freq, drift_bins, drift_rate, snr};
+        DedopplerHit hit{
+          .index=candidate_freq,
+          .drift_steps=drift_bins,
+          .drift_rate=drift_rate,
+          .snr=snr,
+          .beam=beam,
+          .coarse_channel=coarse_channel,
+        };
         if (print_hits) {
-          cout << "hit: coarse channel = " << coarse_channel << ", "
-               << hit.toString() << endl;
+          cout << "hit: " << hit.toString() << endl;
         }
         output->push_back(hit);
       }

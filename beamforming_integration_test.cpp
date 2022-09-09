@@ -52,9 +52,11 @@ int main(int argc, char* argv[]) {
   assert(67 == recorder->hits.size());
 
   assertStringEq(recorder->hits[10].toString(),
-                 "index = 106914, snr = 10.71197, drift rate = -0.31777 (-1 bin)");
+                 "coarse channel = 0, index = 106914, snr = 10.71197, "
+                 "drift rate = -0.31777 (-1 bin)");
   assertStringEq(recorder->hits[20].toString(),
-                 "index = 17237, snr = 7.07149, drift rate = -0.31777 (-1 bin)");
+                 "coarse channel = 1, index = 17237, snr = 7.07149, "
+                 "drift rate = -0.31777 (-1 bin)");
   
   return 0;
 }

@@ -8,6 +8,8 @@
 using namespace std;
 
 string DedopplerHit::toString() const {
-  return fmt::format("index = {}, snr = {:.5f}, drift rate = {:.5f} ({})",
-                     index, snr, drift_rate, pluralize(drift_steps, "bin"));
+  return fmt::format("coarse channel = {}, index = {}, snr = {:.5f}, "
+                     "drift rate = {:.5f} ({})",
+                     coarse_channel, index, snr, drift_rate,
+                     pluralize(drift_steps, "bin"));
 }

@@ -55,11 +55,10 @@ DatFileWriter::~DatFileWriter() {
 
 
 // Ignores the beam
-void DatFileWriter::recordHit(DedopplerHit hit, int beam, int coarse_channel,
-                              const float* input) {
+void DatFileWriter::recordHit(DedopplerHit hit, const float* input) {
   ++hit_count;
 
-  int global_index = coarse_channel * metadata.coarse_channel_size + hit.index;
+  int global_index = hit.coarse_channel * metadata.coarse_channel_size + hit.index;
   double frequency = metadata.fch1 + global_index * metadata.foff;
 
   // Currently we just output one frequency for all frequency-type columns.
@@ -69,6 +68,6 @@ void DatFileWriter::recordHit(DedopplerHit hit, int beam, int coarse_channel,
   file << fmt::format("{}\t{:10.6f}\t{:10.6f}\t{:14.6f}\t{:14.6f}\t{}\t{:14.6f}\t{:14.6f}\t",
                       hit_count, hit.drift_rate, hit.snr, frequency,
                       frequency, hit.index, frequency, frequency);
-  file << fmt::format("0.0\t0.000000\t{}\t1\t\n", coarse_channel);
+  file << fmt::format("0.0\t0.000000\t{}\t1\t\n", hit.coarse_channel);
   file << flush;
 }

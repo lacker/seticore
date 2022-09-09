@@ -4,8 +4,10 @@
 
 using namespace std;
 
+const int NO_BEAM = -1;
+
 struct DedopplerHit {
-  // Which frequency bin the hit starts at
+  // Which frequency bin the hit starts at, within the coarse channel
   int index;
 
   // How many bins the hit drifts over.
@@ -18,6 +20,12 @@ struct DedopplerHit {
 
   // The signal-to-noise ratio for the hit
   float snr;
+
+  // Which beam the hit is in. NO_BEAM if there is none, or for the incoherent beam.
+  int beam;
+
+  // Which coarse channel the hit is in.
+  int coarse_channel;
 
   string toString() const;
 };

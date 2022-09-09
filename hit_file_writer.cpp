@@ -27,17 +27,18 @@ HitFileWriter::~HitFileWriter() {
   close(fd);
 }
 
-void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_channel,
-                              const float* input) {
+void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
   ::capnp::MallocMessageBuilder message;
 
   Hit::Builder hit = message.initRoot<Hit>();
 
-  int output_beam = metadata.isCoherentBeam(beam) ? beam : NO_BEAM;
+  // Store incoherent beams as NO_BEAM
+  int output_beam = metadata.isCoherentBeam(dedoppler_hit.beam)
+    ? dedoppler_hit.beam : NO_BEAM;
   
   // Most of the signal is just copied from the dedoppler hit
   Signal::Builder signal = hit.getSignal();
-  int coarse_offset = coarse_channel * metadata.coarse_channel_size;
+  int coarse_offset = dedoppler_hit.coarse_channel * metadata.coarse_channel_size;
   int global_index = coarse_offset + dedoppler_hit.index;
   double frequency = metadata.fch1 + global_index * metadata.foff;
   signal.setFrequency(frequency);
@@ -45,20 +46,20 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, int beam, int coarse_c
   signal.setDriftSteps(dedoppler_hit.drift_steps);
   signal.setDriftRate(dedoppler_hit.drift_rate);
   signal.setSnr(dedoppler_hit.snr);
-  signal.setCoarseChannel(coarse_channel);
+  signal.setCoarseChannel(dedoppler_hit.coarse_channel);
   signal.setBeam(output_beam);
 
   // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
-  filterbank.setSourceName(metadata.getBeamSourceName(beam));
-  filterbank.setRa(metadata.getBeamRA(beam));
-  filterbank.setDec(metadata.getBeamDec(beam));
+  filterbank.setSourceName(metadata.getBeamSourceName(dedoppler_hit.beam));
+  filterbank.setRa(metadata.getBeamRA(dedoppler_hit.beam));
+  filterbank.setDec(metadata.getBeamDec(dedoppler_hit.beam));
   filterbank.setTelescopeId(metadata.telescope_id);
   filterbank.setFoff(metadata.foff);
   filterbank.setTsamp(metadata.tsamp);
   filterbank.setTstart(metadata.tstart);
   filterbank.setNumTimesteps(metadata.num_timesteps);
-  filterbank.setCoarseChannel(coarse_channel);
+  filterbank.setCoarseChannel(dedoppler_hit.coarse_channel);
   filterbank.setBeam(output_beam);
   
   // Extract the subset of columns near the hit

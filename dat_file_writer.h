@@ -23,5 +23,5 @@ class DatFileWriter: public HitRecorder {
                 double max_drift);
   ~DatFileWriter();
 
-  void recordHit(DedopplerHit hit, int beam, int coarse_channel, const float* input);
+  void recordHit(DedopplerHit hit, const float* input);
 };

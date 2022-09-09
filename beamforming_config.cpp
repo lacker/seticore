@@ -195,7 +195,7 @@ void BeamformingConfig::run() {
         dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, min_drift, snr,
                            &hits);
         for (DedopplerHit hit : hits) {
-          hit_recorder->recordHit(hit, beam, coarse_channel, fb_buffer.data);
+          hit_recorder->recordHit(hit, fb_buffer.data);
         }
       }
     }

@@ -26,5 +26,7 @@ TEST_CASE("basic functionality", "[dedoppler]") {
   REQUIRE(hits.size() == 1);
   REQUIRE(hits[0].index == 70);
   REQUIRE(hits[0].drift_steps == 3);
+  REQUIRE(hits[0].beam == NO_BEAM);
+  REQUIRE(hits[0].coarse_channel == 555);
 }
 
