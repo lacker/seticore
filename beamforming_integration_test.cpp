@@ -39,22 +39,20 @@ int main(int argc, char* argv[]) {
   BeamformingConfig config(groups[0], output_dir, recipe_dir, num_bands,
                            fft_size, sti, telescope_id, snr, max_drift, min_drift);
   config.num_bands_to_process = 1;
+  config.record_hits = false;
   
-  VectorHitRecorder* recorder = new VectorHitRecorder();
-  config.hit_recorder.reset(recorder);
-
   config.run();
 
-  assert(114049 == recorder->hits[0].index);
-  assert(-1 == recorder->hits[0].drift_steps);
-  assertFloatEq(7.03593, recorder->hits[0].snr);
-  assertFloatEq(-0.317774, recorder->hits[0].drift_rate);
-  assert(67 == recorder->hits.size());
+  assert(114049 == config.hits[0].index);
+  assert(-1 == config.hits[0].drift_steps);
+  assertFloatEq(7.03593, config.hits[0].snr);
+  assertFloatEq(-0.317774, config.hits[0].drift_rate);
+  assert(67 == config.hits.size());
 
-  assertStringEq(recorder->hits[10].toString(),
+  assertStringEq(config.hits[10].toString(),
                  "coarse channel = 0, index = 106914, snr = 10.71197, "
                  "drift rate = -0.31777 (-1 bin)");
-  assertStringEq(recorder->hits[20].toString(),
+  assertStringEq(config.hits[20].toString(),
                  "coarse channel = 1, index = 17237, snr = 7.07149, "
                  "drift rate = -0.31777 (-1 bin)");
   

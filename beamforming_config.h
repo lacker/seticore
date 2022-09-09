@@ -26,8 +26,8 @@ public:
   // If set, we only process a subset of the bands
   int num_bands_to_process;
 
-  // If set, use this to record hits instead of writing a file
-  unique_ptr<HitRecorder> hit_recorder;
+  // Whether to record hits to a file
+  bool record_hits;
 
   // If set, save the beamformed filterbanks as h5 files
   string h5_dir;
@@ -45,11 +45,12 @@ public:
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
       recipe_dir(recipe_dir), num_bands(num_bands), fft_size(fft_size),
       sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
-      min_drift(min_drift), num_bands_to_process(num_bands), file_group(raw_files) {
+      min_drift(min_drift), num_bands_to_process(num_bands), record_hits(true),
+      file_group(raw_files) {
   }
 
   void run();
-
+  
   vector<DedopplerHit> hits;
   
 private:

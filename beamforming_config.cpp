@@ -109,8 +109,9 @@ void BeamformingConfig::run() {
                           metadata.foff, metadata.tsamp, false);
   dedopplerer.print_hit_summary = true;
   cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
-  
-  if (hit_recorder == nullptr) {
+
+  unique_ptr<HitFileWriter> hit_recorder;
+  if (record_hits) {
     string output_filename = fmt::format("{}/{}.hits", output_dir,
                                          file_group.prefix);
     cout << "recording hits to " << output_filename << endl;
@@ -193,7 +194,9 @@ void BeamformingConfig::run() {
         dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, min_drift, snr,
                            &local_hits);
         for (DedopplerHit hit : local_hits) {
-          hit_recorder->recordHit(hit, fb_buffer.data);
+          if (record_hits) {
+            hit_recorder->recordHit(hit, fb_buffer.data);
+          }
           hits.push_back(hit);
         }
       }
