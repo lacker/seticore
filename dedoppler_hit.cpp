@@ -13,3 +13,11 @@ string DedopplerHit::toString() const {
                      coarse_channel, index, snr, drift_rate,
                      pluralize(drift_steps, "bin"));
 }
+
+int DedopplerHit::lowIndex() const {
+  return min(index, index + drift_steps);
+}
+
+int DedopplerHit::highIndex() const {
+  return max(index, index + drift_steps);
+}

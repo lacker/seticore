@@ -1,9 +1,9 @@
 #include <assert.h>
+#include "beamforming_pipeline.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <fmt/core.h>
 #include <iostream>
-#include "pipeline.h"
 #include "raw_file_group.h"
 #include "run_dedoppler.h"
 #include <string>
@@ -92,8 +92,8 @@ int main(int argc, char* argv[]) {
     auto groups = scanForRawFileGroups(input_dir);
     cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
     for (auto group : groups) {
-      Pipeline pipeline(group, output_dir, recipe_dir, num_bands,
-                        fft_size, sti, telescope_id, snr, max_drift, min_drift);
+      BeamformingPipeline pipeline(group, output_dir, recipe_dir, num_bands,
+                                   fft_size, sti, telescope_id, snr, max_drift, min_drift);
 
       if (vm.count("h5_dir")) {
         pipeline.h5_dir = vm["h5_dir"].as<string>();
@@ -123,7 +123,8 @@ int main(int argc, char* argv[]) {
   double min_drift = vm["min_drift"].as<double>();
 
   cout << "loading input from " << input << endl;
-  cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} snr={:.2f}\n",
+  cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} "
+                      "snr={:.2f}\n",
                       max_drift, min_drift, snr);
   cout << "writing output to " << output << endl;
   int tstart = time(NULL);

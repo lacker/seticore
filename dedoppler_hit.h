@@ -13,6 +13,7 @@ struct DedopplerHit {
   // How many bins the hit drifts over.
   // Like (ending index - starting index), this is positive for rightward drift,
   // negative for leftward drift.
+  // This is zero for a vertical line.
   int drift_steps;
 
   // The drift rate in Hz/s
@@ -28,6 +29,12 @@ struct DedopplerHit {
   int coarse_channel;
 
   string toString() const;
+
+  // Lowest index that contains a bin with this signal
+  int lowIndex() const;
+
+  // Highest index that contains a bin with this signal
+  int highIndex() const;
 };
 
 

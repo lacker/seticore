@@ -1,4 +1,4 @@
-#include "pipeline.h"
+#include "beamforming_pipeline.h"
 #include "raw_file_group.h"
 
 #include <iostream>
@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
   assert(groups.size() == 1);
   assert(groups[0].size() == 2);
 
-  Pipeline pipeline(groups[0], output_dir, recipe_dir, num_bands,
-                    fft_size, sti, telescope_id, snr, max_drift, min_drift);
+  BeamformingPipeline pipeline(groups[0], output_dir, recipe_dir, num_bands,
+                               fft_size, sti, telescope_id, snr, max_drift, min_drift);
   pipeline.num_bands_to_process = 1;
   pipeline.record_hits = false;
   

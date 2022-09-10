@@ -7,7 +7,7 @@
 #include "raw_file_group.h"
 #include "util.h"
 
-class Pipeline {
+class BeamformingPipeline {
 public:
   // Required parameters for the run
   const vector<string> raw_files;
@@ -32,16 +32,16 @@ public:
   // If set, save the beamformed filterbanks as h5 files
   string h5_dir;
   
-  Pipeline(const vector<string>& raw_files,
-           const string& output_dir,
-           const string& recipe_dir,
-           int num_bands,
-           int fft_size,
-           int sti,
-           int telescope_id,
-           float snr,
-           float max_drift,
-           float min_drift)
+  BeamformingPipeline(const vector<string>& raw_files,
+                      const string& output_dir,
+                      const string& recipe_dir,
+                      int num_bands,
+                      int fft_size,
+                      int sti,
+                      int telescope_id,
+                      float snr,
+                      float max_drift,
+                      float min_drift)
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
       recipe_dir(recipe_dir), num_bands(num_bands), fft_size(fft_size),
       sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
@@ -49,8 +49,7 @@ public:
       file_group(raw_files) {
   }
 
-  void findHits();
-  
+  void findHits();  
   vector<DedopplerHit> hits;
   
 private:

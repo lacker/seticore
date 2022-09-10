@@ -41,6 +41,7 @@ deps = [fmt_dep, boost_dep, hdf5_dep, cuda_dep, kj_dep, capnp_dep]
 
 srcs = [
     'beamformer.cu',
+    'beamforming_pipeline.cpp',
     'complex_buffer.cu',
     'cuda_util.cu',
     'dedoppler.cu',
@@ -58,7 +59,6 @@ srcs = [
     'hit_recorder.cpp',
     'multiantenna_buffer.cu',
     'multibeam_buffer.cu',
-    'pipeline.cpp',
     'raw_buffer.cu',
     'raw_file.cpp',
     'raw_file_group.cpp',
@@ -90,8 +90,8 @@ executable('tests', srcs + tests + ['tests.cpp'],
 
 # Other binaries
 
-executable('pipeline_integration_test',
-           srcs + ['pipeline_integration_test.cpp'],
+executable('beamforming_integration_test',
+           srcs + ['beamforming_integration_test.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
 executable('taylor_benchmark',
