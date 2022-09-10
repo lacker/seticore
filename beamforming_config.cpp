@@ -67,7 +67,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   within a band, we run a dedoppler search on the power values in the accumulated
   buffer.
 */
-void BeamformingConfig::run() {
+void BeamformingConfig::findHits() {
   cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
                       file_group.totalTime(), file_group.prefix);
   

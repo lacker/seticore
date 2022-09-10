@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   config.num_bands_to_process = 1;
   config.record_hits = false;
   
-  config.run();
+  config.findHits();
 
   assert(114049 == config.hits[0].index);
   assert(-1 == config.hits[0].drift_steps);

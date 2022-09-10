@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
       if (vm.count("h5_dir")) {
         config.h5_dir = vm["h5_dir"].as<string>();
       }
-      config.run();
+      config.findHits();
     }
     return 0;
   }

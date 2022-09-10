@@ -49,7 +49,7 @@ public:
       file_group(raw_files) {
   }
 
-  void run();
+  void findHits();
   
   vector<DedopplerHit> hits;
   
