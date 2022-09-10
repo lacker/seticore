@@ -5,6 +5,6 @@
 
 echo integration testing...
 
-./build/beamforming_integration_test
+./build/pipeline_integration_test
 
 ./test_extract.sh

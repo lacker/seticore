@@ -90,8 +90,8 @@ executable('tests', srcs + tests + ['tests.cpp'],
 
 # Other binaries
 
-executable('beamforming_integration_test',
-           srcs + ['beamforming_integration_test.cpp'],
+executable('pipeline_integration_test',
+           srcs + ['pipeline_integration_test.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
 executable('taylor_benchmark',
