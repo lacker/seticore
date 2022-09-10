@@ -1,9 +1,9 @@
 #include <assert.h>
-#include "beamforming_config.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <fmt/core.h>
 #include <iostream>
+#include "pipeline.h"
 #include "raw_file_group.h"
 #include "run_dedoppler.h"
 #include <string>
@@ -92,13 +92,13 @@ int main(int argc, char* argv[]) {
     auto groups = scanForRawFileGroups(input_dir);
     cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
     for (auto group : groups) {
-      BeamformingConfig config(group, output_dir, recipe_dir, num_bands,
-                               fft_size, sti, telescope_id, snr, max_drift, min_drift);
+      Pipeline pipeline(group, output_dir, recipe_dir, num_bands,
+                        fft_size, sti, telescope_id, snr, max_drift, min_drift);
 
       if (vm.count("h5_dir")) {
-        config.h5_dir = vm["h5_dir"].as<string>();
+        pipeline.h5_dir = vm["h5_dir"].as<string>();
       }
-      config.findHits();
+      pipeline.findHits();
     }
     return 0;
   }
