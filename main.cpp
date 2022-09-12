@@ -99,6 +99,7 @@ int main(int argc, char* argv[]) {
         pipeline.h5_dir = vm["h5_dir"].as<string>();
       }
       pipeline.findHits();
+      pipeline.makeStamps();
     }
     return 0;
   }
