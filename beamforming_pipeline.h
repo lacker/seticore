@@ -26,7 +26,7 @@ public:
   // If set, we only process a subset of the bands
   int num_bands_to_process;
 
-  // Whether to record hits to a file
+  // Whether to save hits to a file
   bool record_hits;
 
   // If set, save the beamformed filterbanks as h5 files
@@ -51,6 +51,8 @@ public:
 
   void findHits();  
   vector<DedopplerHit> hits;
+
+  void makeStamps();
   
 private:
   RawFileGroup file_group;

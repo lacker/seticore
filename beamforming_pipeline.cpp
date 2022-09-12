@@ -6,6 +6,8 @@
 #include "beamformer.h"
 #include "cuda_util.h"
 #include "dedoppler.h"
+#include "dedoppler_hit.h"
+#include "dedoppler_hit_group.h"
 #include "h5_writer.h"
 #include "hit_file_writer.h"
 #include "hit_recorder.h"
@@ -17,6 +19,7 @@
 #include "raw_file_group_reader.h"
 #include "raw_buffer.h"
 #include "recipe_file.h"
+#include "stamp_extractor.h"
 #include "util.h"
 
 // Construct metadata for the data created by a RawFileGroup and Beamformer.
@@ -202,4 +205,42 @@ void BeamformingPipeline::findHits() {
       }
     }
   }
+}
+
+/*
+  Runs the beamforming pipeline from hits to stamps.
+ */
+void BeamformingPipeline::makeStamps() {
+  int margin = 30;
+  int max_stamps = 3;
+
+  string output_filename = fmt::format("{}/{}.stamps", output_dir,
+                                       file_group.prefix);
+  StampExtractor extractor(file_group, fft_size, telescope_id, output_filename);
+
+  int stamps_created = 0;
+  vector<DedopplerHitGroup> groups = makeHitGroups(hits, margin);
+  for (const DedopplerHitGroup& group : groups) {
+    if (stamps_created >= max_stamps) {
+      break;
+    }
+    
+    if (group.topHit().drift_steps == 0) {
+      // This is a vertical line. No drift = terrestrial. Skip it
+      continue;
+    }
+
+    // Extract the stamp
+    int first_channel = max(0, group.topHit().lowIndex() - margin);
+    int last_channel = min(fft_size - 1, group.topHit().highIndex() + margin);
+    cout << "top hit: " << group.topHit().toString() << endl;
+    cout << fmt::format("extracting fine channels {} to {} from coarse channel {}\n",
+                        first_channel, last_channel, group.topHit().coarse_channel);
+    extractor.extract(group.topHit().coarse_channel,
+                      first_channel,
+                      last_channel - first_channel + 1);
+    
+    stamps_created++;
+  }
+
 }

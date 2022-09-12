@@ -9,13 +9,28 @@ DedopplerHitGroup::DedopplerHitGroup(DedopplerHit hit)
   hits.push_back(hit);
   low_index = hit.lowIndex();
   high_index = hit.highIndex();
+  top_hit_index = 0;
 }
 
 void DedopplerHitGroup::add(DedopplerHit hit) {
   assert(hit.coarse_channel == coarse_channel);
   low_index = min(low_index, hit.lowIndex());
   high_index = max(high_index, hit.highIndex());
+  if (hit.snr > topHit().snr) {
+    top_hit_index = hits.size();
+  }
   hits.push_back(hit);
+}
+
+const DedopplerHit& DedopplerHitGroup::topHit() const {
+  return hits[top_hit_index];
+}
+
+/*
+  Sorts so that the highest top hit snrs come first
+*/
+bool operator<(const DedopplerHitGroup& lhs, const DedopplerHitGroup& rhs) {
+  return rhs.topHit().snr < lhs.topHit().snr;
 }
 
 /*
@@ -44,5 +59,6 @@ vector<DedopplerHitGroup> makeHitGroups(vector<DedopplerHit>& hits, int margin) 
     output.emplace_back(hit);
   }
 
+  sort(output.begin(), output.end());
   return output;
 }
