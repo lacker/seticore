@@ -38,4 +38,4 @@ struct DedopplerHit {
 };
 
 
-
+bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs);

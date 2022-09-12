@@ -21,3 +21,5 @@ class DedopplerHitGroup {
   void add(DedopplerHit hit);
   ~DedopplerHitGroup() {}
 };
+
+vector<DedopplerHitGroup> makeHitGroups(vector<DedopplerHit>& hits, int margin);

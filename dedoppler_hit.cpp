@@ -21,3 +21,14 @@ int DedopplerHit::lowIndex() const {
 int DedopplerHit::highIndex() const {
   return max(index, index + drift_steps);
 }
+
+// Sort first by coarse channel, then by low index, then by high index
+bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs) {
+  if (lhs.coarse_channel != rhs.coarse_channel) {
+    return lhs.coarse_channel < rhs.coarse_channel;
+  }
+  if (lhs.lowIndex() != rhs.lowIndex()) {
+    return lhs.lowIndex() < rhs.lowIndex();
+  }
+  return lhs.highIndex() < rhs.highIndex();
+}
