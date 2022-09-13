@@ -15,6 +15,12 @@ def read_hits(filename):
         for hit in hits:
             yield hit
 
+def read_stamps(filename):
+    with open(filename) as f:
+        stamps = stamp_capnp.Stamp.read_multiple(f)
+        for stamp in stamps:
+            yield stamps
+            
 def beam_name(hit):
     n = hit.filterbank.beam
     if n < 0:
