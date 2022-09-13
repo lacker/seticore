@@ -46,13 +46,14 @@ OUTPUT_DIR="/mydatag/test/lacker/"
 rm -f *qdrep
 
 # Use nvidia profiling tools
-nsys profile -t nvtx,cuda \
+# nsys profile -t nvtx,cuda \
+
 /home/lacker/seticore/build/seticore \
     --input $INPUT_DIR \
     --output $OUTPUT_DIR \
     --max_drift 10.0 \
     --min_drift 0.0 \
-    --snr 10.0 \
+    --snr 6.0 \
     --recipe_dir $RECIPE_DIR \
     --num_bands $NUM_BANDS \
     --fft_size $FFT_SIZE \
