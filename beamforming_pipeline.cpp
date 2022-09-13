@@ -243,4 +243,6 @@ void BeamformingPipeline::makeStamps() {
     stamps_created++;
   }
 
+  cout << "saved " << pluralize(stamps_created, "stamp") << " to " << output_filename
+       << endl;
 }
