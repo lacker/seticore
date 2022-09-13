@@ -72,8 +72,8 @@ class RawFileGroup {
   int schan;
   double obsbw;    // Mhz
   double obsfreq;  // Mhz
-  double ra;       // radians
-  double dec;      // radians
+  double ra;       // hours
+  double dec;      // degrees
   
   string obsid;
   string source_name;

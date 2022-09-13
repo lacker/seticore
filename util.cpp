@@ -131,6 +131,14 @@ double hoursToRadians(double hours) {
   return hours * M_PI / 12.0;
 }
 
+double radiansToHours(double radians) {
+  return radians * 12.0 / M_PI;
+}
+
 double degreesToRadians(double degrees) {
   return degrees * M_PI / 180.0;
+}
+
+double radiansToDegrees(double radians) {
+  return radians * 180.0 / M_PI;
 }

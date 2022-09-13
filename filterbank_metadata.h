@@ -33,13 +33,16 @@ class FilterbankMetadata {
   // It's a bit of a hack and if there is more per-beam metadata like this, we might
   // want a different interface.
   vector<string> source_names;
-  vector<double> ras;  // radians
-  vector<double> decs; // radians
+  vector<double> ras;  // hours
+  vector<double> decs; // degrees
 
   double fch1, foff, tstart, tsamp;
 
-  // We try to use radians, but in practice this seems inconsistent
-  double src_dej, src_raj;
+  // src_raj should be in hours (i.e. radians * 12/pi)
+  double src_raj;
+
+  // src_dej should be in degrees (i.e. radians * 180/pi)
+  double src_dej;
 
   int num_timesteps, num_channels, coarse_channel_size, num_coarse_channels, telescope_id;
   
@@ -50,7 +53,11 @@ class FilterbankMetadata {
   // Providing information about beams when metadata is split among beams
   bool isCoherentBeam(int beam) const;
   string getBeamSourceName(int beam) const;
+
+  // Hours
   double getBeamRA(int beam) const;
+
+  // Degrees
   double getBeamDec(int beam) const;
   
  protected:

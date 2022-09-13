@@ -41,8 +41,8 @@ struct Filterbank {
   foff @2 :Float64;
   tstart @3 :Float64;
   tsamp @4 :Float64;
-  ra @5 :Float64;
-  dec @6 :Float64;
+  ra @5 :Float64;  # Hours
+  dec @6 :Float64; # Degrees
   telescopeId @7 :Int32;
   numTimesteps @8 :Int32;
   numChannels @9 :Int32;

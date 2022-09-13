@@ -22,14 +22,19 @@ class RecipeFile {
   template <class T> vector<T> getVectorData(const string& name, hid_t hdf5_type) const;
   long getLongScalarData(const string& name) const;
   vector<thrust::complex<float> > getComplexVectorData(const string& name) const;
+
+  // Note that these are in radians, and in most places they are stored in hours/degrees.
+  // They are private to keep people from accidentally screwing up and using the
+  // radians directly.
+  const vector<double> ras;
+  const vector<double> decs;
   
  public:
   const string obsid;
   const vector<string> src_names;
   const vector<double> delays;
   const vector<double> time_array;
-  const vector<double> ras;
-  const vector<double> decs;
+
   const long npol;
   const long nbeams;
   const vector<thrust::complex<float> > cal_all;
@@ -52,4 +57,7 @@ class RecipeFile {
                             int start_channel, int num_channels,
                             float center_frequency, float bandwidth,
                             thrust::complex<float>* coefficients) const;
+
+  vector<double> getRAsInHours() const;
+  vector<double> getDecsInDegrees() const;
 };

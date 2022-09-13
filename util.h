@@ -21,4 +21,6 @@ string prettyBytes(size_t n);
 long timeInMS();
 double unixTimeToMJD(double unix_time);
 double hoursToRadians(double hours);
+double radiansToHours(double radians);
 double degreesToRadians(double degrees);
+double radiansToDegrees(double radians);

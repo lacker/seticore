@@ -4,6 +4,7 @@
 #include "hdf5.h"
 #include <iostream>
 #include <math.h>
+#include "util.h"
 #include <vector>
 
 #include "recipe_file.h"
@@ -27,12 +28,12 @@ long evenlyDivide(long a, long b) {
 
 RecipeFile::RecipeFile(const string& filename) :
   file(openFile(filename)),
+  ras(getVectorData<double>("/beaminfo/ras", H5T_IEEE_F64LE)),
+  decs(getVectorData<double>("/beaminfo/decs", H5T_IEEE_F64LE)),
   obsid(getStringData("/obsinfo/obsid")),
   src_names(getStringVectorData("/beaminfo/src_names")),
   delays(getVectorData<double>("/delayinfo/delays", H5T_IEEE_F64LE)),
   time_array(getVectorData<double>("/delayinfo/time_array", H5T_IEEE_F64LE)),
-  ras(getVectorData<double>("/beaminfo/ras", H5T_IEEE_F64LE)),
-  decs(getVectorData<double>("/beaminfo/decs", H5T_IEEE_F64LE)),
   npol(getLongScalarData("/diminfo/npol")),
   nbeams(getLongScalarData("/diminfo/nbeams")),
   cal_all(getComplexVectorData("/calinfo/cal_all")),
@@ -272,4 +273,20 @@ void RecipeFile::generateCoefficients(int time_array_index,
       }
     }
   }
+}
+
+vector<double> RecipeFile::getRAsInHours() const {
+  vector<double> output;
+  for (double ra : ras) {
+    output.push_back(radiansToHours(ra));
+  }
+  return output;
+}
+
+vector<double> RecipeFile::getDecsInDegrees() const {
+  vector<double> output;
+  for (double dec : decs) {
+    output.push_back(radiansToDegrees(dec));
+  }
+  return output;
 }

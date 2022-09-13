@@ -73,8 +73,8 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
   npol = header.npol;
   obsbw = header.obsbw;
   obsfreq = header.obsfreq;
-  ra = hoursToRadians(header.ra);
-  dec = degreesToRadians(header.dec);
+  ra = header.ra;
+  dec = header.dec;
   obsid = header.getString("OBSID");
   source_name = header.src_name;
   start_pktidx = header.pktidx;

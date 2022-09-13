@@ -46,8 +46,8 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   metadata.coarse_channel_size = beamformer.fft_size;
   metadata.num_coarse_channels = metadata.num_channels / metadata.coarse_channel_size;
   metadata.source_names = recipe.src_names;
-  metadata.ras = recipe.ras;
-  metadata.decs = recipe.decs;
+  metadata.ras = recipe.getRAsInHours();
+  metadata.decs = recipe.getDecsInDegrees();
   
   return metadata;
 }
