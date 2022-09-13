@@ -7,4 +7,4 @@ seticore
 perf.*
 *.qdrep
 *.qdstrm
-example.ipynb
+*.ipynb

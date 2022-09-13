@@ -137,6 +137,7 @@ pip install -r requirements.txt
 jupyter notebook example.ipynb
 ```
 
-The notebook demonstrates how to display the hits for voyager data.
+The notebook demonstrates some basic reading of hit files and stamp files.
 
-You can also read the [Cap'n Proto schema](hit.capnp) for the hit output.
+You can also read the schemas for the [hit file](hit.capnp) and the
+[stamp file](stamp.capnp).
