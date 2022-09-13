@@ -15,12 +15,6 @@ def read_hits(filename):
         for hit in hits:
             yield hit
 
-def read_stamps(filename):
-    with open(filename) as f:
-        stamps = stamp_capnp.Stamp.read_multiple(f)
-        for stamp in stamps:
-            yield stamps
-            
 def beam_name(hit):
     n = hit.filterbank.beam
     if n < 0:
@@ -43,13 +37,11 @@ def show_hit(hit):
 
     
 class Stamp(object):
-    def __init__(self, filename):
+    def __init__(self, stamp):
         """
         self.stamp stores the proto data.
         """
-        with open(filename) as f:
-            stamps = stamp_capnp.Stamp.read_multiple(f)
-            self.stamp = list(stamps)[0]
+        self.stamp = stamp
 
     def real_array(self):
         dimensions = (self.stamp.numTimesteps,
@@ -63,6 +55,12 @@ class Stamp(object):
         real = self.real_array()
         return real[:, :, :, :, 0] + 1.0j * real[:, :, :, :, 1]
 
+
+def read_stamps(filename):
+    with open(filename) as f:
+        stamps = stamp_capnp.Stamp.read_multiple(f)
+        for s in stamps:
+            yield Stamp(s)
     
 def main():
     for hit in read_hits("data/voyager.hits"):
