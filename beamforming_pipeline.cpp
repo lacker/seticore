@@ -191,7 +191,7 @@ void BeamformingPipeline::findHits() {
         multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &fb_buffer);
 
         vector<DedopplerHit> local_hits;
-        dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, min_drift, snr,
+        dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, 0.0, snr,
                            &local_hits);
         for (DedopplerHit hit : local_hits) {
           if (record_hits) {

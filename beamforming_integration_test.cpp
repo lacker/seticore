@@ -29,14 +29,13 @@ int main(int argc, char* argv[]) {
   int telescope_id = 64;
   float snr = 7.0;
   float max_drift = 0.01;
-  float min_drift = 0.01;
 
   auto groups = scanForRawFileGroups(input_dir);
   assert(groups.size() == 1);
   assert(groups[0].size() == 2);
 
   BeamformingPipeline pipeline(groups[0], output_dir, recipe_dir, num_bands,
-                               fft_size, sti, telescope_id, snr, max_drift, min_drift);
+                               fft_size, sti, telescope_id, snr, max_drift);
   pipeline.num_bands_to_process = 1;
   pipeline.record_hits = false;
   
@@ -46,12 +45,19 @@ int main(int argc, char* argv[]) {
   assert(-1 == pipeline.hits[0].drift_steps);
   assertFloatEq(7.03593, pipeline.hits[0].snr);
   assertFloatEq(-0.317774, pipeline.hits[0].drift_rate);
-  assert(67 == pipeline.hits.size());
 
-  assertStringEq(pipeline.hits[10].toString(),
+  vector<DedopplerHit> nonzero;
+  for (const DedopplerHit& hit : pipeline.hits) {
+    if (hit.drift_steps != 0) {
+      nonzero.push_back(hit);
+    }
+  }
+  assert(67 == nonzero.size());
+
+  assertStringEq(nonzero[10].toString(),
                  "coarse channel = 0, index = 106914, snr = 10.71197, "
                  "drift rate = -0.31777 (-1 bin)");
-  assertStringEq(pipeline.hits[20].toString(),
+  assertStringEq(nonzero[20].toString(),
                  "coarse channel = 1, index = 17237, snr = 7.07149, "
                  "drift rate = -0.31777 (-1 bin)");
   

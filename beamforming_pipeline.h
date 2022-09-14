@@ -19,7 +19,6 @@ public:
   const int telescope_id;
   const float snr;
   const float max_drift;
-  const float min_drift;
 
   // Optional additional ways to modify the config
 
@@ -40,12 +39,11 @@ public:
                       int sti,
                       int telescope_id,
                       float snr,
-                      float max_drift,
-                      float min_drift)
+                      float max_drift)
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
       recipe_dir(recipe_dir), num_bands(num_bands), fft_size(fft_size),
       sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
-      min_drift(min_drift), num_bands_to_process(num_bands), record_hits(true),
+      num_bands_to_process(num_bands), record_hits(true),
       file_group(raw_files) {
   }
 

@@ -15,7 +15,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.2.0";
+const string VERSION = "0.2.1";
 
 int beamformingMode(const po::variables_map& vm) {
   cout << "running in beamforming mode.\n";
@@ -29,13 +29,12 @@ int beamformingMode(const po::variables_map& vm) {
   int telescope_id = vm["telescope_id"].as<int>();
   float snr = vm["snr"].as<double>();
   float max_drift = vm["max_drift"].as<double>();
-  float min_drift = vm["min_drift"].as<double>();
 
   auto groups = scanForRawFileGroups(input_dir);
   cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
   for (auto group : groups) {
     BeamformingPipeline pipeline(group, output_dir, recipe_dir, num_bands,
-                                 fft_size, sti, telescope_id, snr, max_drift, min_drift);
+                                 fft_size, sti, telescope_id, snr, max_drift);
 
     if (vm.count("h5_dir")) {
       pipeline.h5_dir = vm["h5_dir"].as<string>();
