@@ -135,14 +135,12 @@ void BeamformingPipeline::findHits() {
                       file_group.coarseChannelBandwidth() / fft_size * 1'000'000);
 
   for (int band = 0; band < num_bands_to_process; ++band) {
-    cout << endl;
-
     // We read data into the read buffer, and copy data to the GPU from the
     // work buffer.
     // At the start of this loop, neither buffer is being used, because
     // dedoppler analysis for any previous loop synchronized cuda devices.
+    cout << "beamforming band " << band << "...\n";
     for (int batch = 0; batch < num_batches; ++batch) {
-      cout << "beamforming band " << band << ", batch " << batch << "...\n";
     
       int block_after_mid = batch * beamformer.num_blocks + beamformer.num_blocks / 2;
       double mid_time = file_group.getStartTime(block_after_mid);
@@ -161,7 +159,6 @@ void BeamformingPipeline::findHits() {
       beamformer.run(*device_raw_buffer, multibeam, time_offset);
     }
 
-    cout << endl;
     for (int beam = 0; beam < multibeam.num_beams; ++beam) {
       multibeam.hintReadingBeam(beam);
       

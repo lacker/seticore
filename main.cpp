@@ -17,6 +17,72 @@ namespace po = boost::program_options;
 
 const string VERSION = "0.1.16";
 
+int beamformingMode(const po::variables_map& vm) {
+  cout << "running in beamforming mode.\n";
+
+  string input_dir = vm["input"].as<string>();
+  string output_dir = vm["output"].as<string>();
+  string recipe_dir = vm["recipe_dir"].as<string>();
+  int num_bands = vm["num_bands"].as<int>();
+  int fft_size = vm["fft_size"].as<int>();
+  int sti = vm["sti"].as<int>();
+  int telescope_id = vm["telescope_id"].as<int>();
+  float snr = vm["snr"].as<double>();
+  float max_drift = vm["max_drift"].as<double>();
+  float min_drift = vm["min_drift"].as<double>();
+
+  auto groups = scanForRawFileGroups(input_dir);
+  cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
+  for (auto group : groups) {
+    BeamformingPipeline pipeline(group, output_dir, recipe_dir, num_bands,
+                                 fft_size, sti, telescope_id, snr, max_drift, min_drift);
+
+    if (vm.count("h5_dir")) {
+      pipeline.h5_dir = vm["h5_dir"].as<string>();
+    }
+    int tstart = time(NULL);
+    pipeline.findHits();
+    int tmid = time(NULL);
+    cerr << fmt::format("time to find hits: {:d}s\n", tmid - tstart);
+    pipeline.makeStamps();
+    int tstop = time(NULL);
+    cerr << fmt::format("time to make stamps: {:d}s\n", tstop - tmid);
+  }
+  return 0;
+}
+
+int dedopplerMode(const po::variables_map& vm) {
+  cout << "running in dedoppler mode.\n";
+  string input = vm["input"].as<string>();
+  string output;
+  if (!vm.count("output")) {
+    // By default, output to a .dat file in the same location as the input file
+    auto index = input.find_last_of(".");
+    if (index >= input.size()) {
+      cerr << "unrecognized input filename: " << input << endl;
+      return 1;
+    }
+    output = input.substr(0, index) + ".dat";
+  } else {
+    output = vm["output"].as<string>();
+  }
+
+  double max_drift = vm["max_drift"].as<double>();
+  double snr = vm["snr"].as<double>();
+  double min_drift = vm["min_drift"].as<double>();
+
+  cout << "loading input from " << input << endl;
+  cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} "
+                      "snr={:.2f}\n",
+                      max_drift, min_drift, snr);
+  cout << "writing output to " << output << endl;
+  int tstart = time(NULL);
+  runDedoppler(input, output, max_drift, min_drift, snr);
+  int tstop = time(NULL);
+  cerr << fmt::format("dedoppler elapsed time: {:d}s\n", tstop - tstart);
+  return 0;
+}
+  
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
 int main(int argc, char* argv[]) {
@@ -77,60 +143,9 @@ int main(int argc, char* argv[]) {
   cout << "welcome to seticore, version " << VERSION << endl;
 
   if (vm.count("recipe_dir")) {
-    cout << "running in beamforming mode.\n";
-    string input_dir = vm["input"].as<string>();
-    string output_dir = vm["output"].as<string>();
-    string recipe_dir = vm["recipe_dir"].as<string>();
-    int num_bands = vm["num_bands"].as<int>();
-    int fft_size = vm["fft_size"].as<int>();
-    int sti = vm["sti"].as<int>();
-    int telescope_id = vm["telescope_id"].as<int>();
-    float snr = vm["snr"].as<double>();
-    float max_drift = vm["max_drift"].as<double>();
-    float min_drift = vm["min_drift"].as<double>();
-
-    auto groups = scanForRawFileGroups(input_dir);
-    cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
-    for (auto group : groups) {
-      BeamformingPipeline pipeline(group, output_dir, recipe_dir, num_bands,
-                                   fft_size, sti, telescope_id, snr, max_drift, min_drift);
-
-      if (vm.count("h5_dir")) {
-        pipeline.h5_dir = vm["h5_dir"].as<string>();
-      }
-      pipeline.findHits();
-      pipeline.makeStamps();
-    }
-    return 0;
+    return beamformingMode(vm);
   }
   
-  cout << "running in dedoppler mode.\n";
-  string input = vm["input"].as<string>();
-  string output;
-  if (!vm.count("output")) {
-    // By default, output to a .dat file in the same location as the input file
-    auto index = input.find_last_of(".");
-    if (index >= input.size()) {
-      cerr << "unrecognized input filename: " << input << endl;
-      return 1;
-    }
-    output = input.substr(0, index) + ".dat";
-  } else {
-    output = vm["output"].as<string>();
-  }
-
-  double max_drift = vm["max_drift"].as<double>();
-  double snr = vm["snr"].as<double>();
-  double min_drift = vm["min_drift"].as<double>();
-
-  cout << "loading input from " << input << endl;
-  cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} "
-                      "snr={:.2f}\n",
-                      max_drift, min_drift, snr);
-  cout << "writing output to " << output << endl;
-  int tstart = time(NULL);
-  runDedoppler(input, output, max_drift, min_drift, snr);
-  int tstop = time(NULL);
-  cerr << fmt::format("dedoppler elapsed time {:d}s\n", tstop - tstart);
+  return dedopplerMode(vm);
 }
 
