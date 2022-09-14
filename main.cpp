@@ -15,7 +15,7 @@ using namespace std;
 
 namespace po = boost::program_options;
 
-const string VERSION = "0.1.16";
+const string VERSION = "0.2.0";
 
 int beamformingMode(const po::variables_map& vm) {
   cout << "running in beamforming mode.\n";
