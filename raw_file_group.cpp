@@ -274,7 +274,7 @@ float RawFileGroup::coarseChannelBandwidth() const {
     https://github.com/UCBerkeleySETI/bl_docs/wiki/calculating-fch1
 */
 double RawFileGroup::getFch1(int fft_size) const {
-  double fcchan0 = obsfreq - (num_coarse_channels -1 ) / (2 * num_coarse_channels) * obsbw;
+  double fcchan0 = obsfreq - (num_coarse_channels - 1) / (2 * num_coarse_channels) * obsbw;
   double fch1 = fcchan0 - floor(fft_size /2 ) * obsbw / (num_coarse_channels * fft_size);
   return fch1;
 }
