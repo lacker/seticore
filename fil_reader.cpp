@@ -3,9 +3,26 @@ using namespace std;
 #include <assert.h>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <vector>
 
 #include "fil_reader.h"
+
+/*
+  ra and dec are stored in fil files as:
+  HHMMSS.S
+  This converts to the more-sane "number of hours with a fraction" format.
+ */
+double convertFromSigprocRaOrDec(double sigproc) {
+  bool negative = sigproc < 0;
+  double abs_val = abs(sigproc);
+  int hours_or_degrees = floor(abs_val / 10000.0);
+  double remnant = abs_val - hours_or_degrees;
+  int minutes = floor(remnant / 100.0);
+  double seconds = remnant - minutes;
+  double abs_answer = hours_or_degrees + (minutes / 60.0) + (seconds / 3600.0);
+  return negative ? -abs_answer : abs_answer;
+}
 
 /*
   Opens a sigproc filterbank file for reading.
@@ -72,9 +89,9 @@ FilReader::FilReader(const string& filename) : FilterbankFileReader(filename),
     } else if (attr_name == "period") {
       readBasic<double>();
     } else if (attr_name == "src_raj") {
-      src_raj = readBasic<double>();
+      src_raj = convertFromSigprocRaOrDec(readBasic<double>());
     } else if (attr_name == "src_dej") {
-      src_dej = readBasic<double>();
+      src_dej = convertFromSigprocRaOrDec(readBasic<double>());
     } else if (attr_name == "HEADER_END") {
       break;
     } else {
