@@ -267,3 +267,14 @@ float RawFileGroup::totalDataGB() const {
 float RawFileGroup::coarseChannelBandwidth() const {
   return obsbw / num_coarse_channels;
 }
+
+/*
+  This formula is weird because FFTs aren't just dividing up buckets into
+  smaller buckets. See:
+    https://github.com/UCBerkeleySETI/bl_docs/wiki/calculating-fch1
+*/
+double RawFileGroup::getFch1(int fft_size) const {
+  double fcchan0 = obsfreq - (num_coarse_channels -1 ) / (2 * num_coarse_channels) * obsbw;
+  double fch1 = fcchan0 - floor(fft_size /2 ) * obsbw / (num_coarse_channels * fft_size);
+  return fch1;
+}

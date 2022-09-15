@@ -130,4 +130,7 @@ class RawFileGroup {
 
   // The bandwidth of a coarse channel, in Mhz
   float coarseChannelBandwidth() const;
+
+  // Calculate fch1 for the entire file
+  double getFch1(int fft_size) const;
 };

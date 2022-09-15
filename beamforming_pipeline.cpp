@@ -30,7 +30,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
                                    int telescope_id) {
   FilterbankMetadata metadata;
   metadata.source_name = file_group.source_name;
-  metadata.fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
+  metadata.fch1 = file_group.getFch1(beamformer.fft_size);
   double output_bandwidth = file_group.obsbw / file_group.num_bands;
   metadata.foff = output_bandwidth / beamformer.numOutputChannels();
   int beamformer_batches = file_group.num_blocks / beamformer.num_blocks;

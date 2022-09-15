@@ -27,7 +27,7 @@ StampExtractor::~StampExtractor() {
 }
 
 void StampExtractor::extract(int coarse_channel, int start_channel, int num_channels) {
-  double global_fch1 = file_group.obsfreq - 0.5 * file_group.obsbw;
+  double global_fch1 = file_group.getFch1(fft_size);
 
   // Output metadata
   double foff = file_group.obsbw / file_group.num_coarse_channels / fft_size;
