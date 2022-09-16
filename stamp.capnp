@@ -8,6 +8,9 @@
 # This data has been upchannelized with an FFT but is still multi-antenna
 # complex voltages.
 struct Stamp {
+  # The seticore version that generated this data.     
+  seticoreVersion @13 :Text;
+
   # source, ra, and dec refer to the boresight target.
   sourceName @0 :Text;
   ra @1 :Float64;
@@ -32,15 +35,8 @@ struct Stamp {
   #   data[timestep][channel][polarity][antenna][real vs imag]
   data @12 :List(Float32);
 
-  # TODO: we want more metadata but it seems like we number the channels
-  # inconsistently depending on whether they are part of a sub-band or not.
-  # Let's fix that and then re-add data to the stamp file if it's clean.
-  #
-  # Metadata describing how this stamp was extracted from raw files.
-  # Which of the coarse channels in the input data this stamp is from
-  # coarseChannel @13 :Int32;
-  # The size of the FFT we used to upchannelize
-  # fftSize @14 :Int32;
-  # Column zero in the data corresponds to this column in the post-FFT coarse channel
-  # startChannel @15 :Int32;
 }
+
+# Additional fields we might want:
+# coarseChannel, fftSize, startChannel to describe the data we extracted
+# information about the drift rate so that we can create a mask

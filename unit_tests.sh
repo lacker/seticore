@@ -17,7 +17,7 @@ echo regression testing...
 ./build/seticore data/$H5 --max_drift=0.4 --snr=10 --min_drift=0 --output=data/testout.hits \
     | tee data/output.txt
 echo diffing against expected output.
-diff data/output.txt data/golden.txt | tee data/diff.txt
+grep -v version data/output.txt | diff - data/golden.txt | tee data/diff.txt
 
 if [ -s data/diff.txt ]; then
     echo output did not match. either fix the bug, or if the new behavior is correct,

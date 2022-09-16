@@ -5,6 +5,8 @@
 
 using namespace std;
 
+const string VERSION = "0.2.3";
+
 int roundUpToPowerOfTwo(int n);
 bool isPowerOfTwo(int n);
 int numDigits(int n);

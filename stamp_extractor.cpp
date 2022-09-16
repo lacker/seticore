@@ -12,7 +12,20 @@ using namespace std;
 
 StampExtractor::StampExtractor(RawFileGroup& file_group, int fft_size, int telescope_id,
                                const string& output_filename)
-  : file_group(file_group), fft_size(fft_size), telescope_id(telescope_id) {
+  : file_group(file_group), fft_size(fft_size), telescope_id(telescope_id),
+    output_filename(output_filename), opened(false) {
+}
+
+StampExtractor::~StampExtractor() {
+  if (opened) {
+    close(fd);
+  }
+}
+
+void StampExtractor::openOutputFile() {
+  if (opened) {
+    return;
+  }
   fd = open(output_filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
     int err = errno;
@@ -20,10 +33,7 @@ StampExtractor::StampExtractor(RawFileGroup& file_group, int fft_size, int teles
          << err << endl;
     exit(1);
   }
-}
-
-StampExtractor::~StampExtractor() {
-  close(fd);
+  opened = true;
 }
 
 void StampExtractor::extract(int coarse_channel, int start_channel, int num_channels) {
@@ -103,5 +113,6 @@ void StampExtractor::extract(int coarse_channel, int start_channel, int num_chan
     data.set(2 * i + 1, value.imag());
   }
 
+  openOutputFile();
   writeMessageToFd(fd, message);
 }
