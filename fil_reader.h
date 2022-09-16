@@ -7,6 +7,8 @@
 
 using namespace std;
 
+double convertFromSigprocRaOrDec(double sigproc);
+
 /*
   This class reads in sigproc filterbank files, typically ending in the .fil suffix.
  */

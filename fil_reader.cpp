@@ -1,5 +1,3 @@
-using namespace std;
-
 #include <assert.h>
 #include <fstream>
 #include <iostream>
@@ -8,6 +6,8 @@ using namespace std;
 
 #include "fil_reader.h"
 
+using namespace std;
+
 /*
   ra and dec are stored in fil files as:
   HHMMSS.S
@@ -15,11 +15,11 @@ using namespace std;
  */
 double convertFromSigprocRaOrDec(double sigproc) {
   bool negative = sigproc < 0;
-  double abs_val = abs(sigproc);
+  double abs_val = fabs(sigproc);
   int hours_or_degrees = floor(abs_val / 10000.0);
-  double remnant = abs_val - hours_or_degrees;
+  double remnant = abs_val - (hours_or_degrees * 10000.0);
   int minutes = floor(remnant / 100.0);
-  double seconds = remnant - minutes;
+  double seconds = remnant - (minutes * 100.0);
   double abs_answer = hours_or_degrees + (minutes / 60.0) + (seconds / 3600.0);
   return negative ? -abs_answer : abs_answer;
 }

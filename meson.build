@@ -76,6 +76,7 @@ srcs = [
 tests = [
     'beamformer_test.cpp',
     'dedoppler_test.cpp',
+    'fil_reader_test.cpp',
     'h5_test.cpp',
     'multibeam_buffer_test.cpp',
     'taylor_test.cu',
