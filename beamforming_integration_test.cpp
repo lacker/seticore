@@ -55,10 +55,10 @@ int main(int argc, char* argv[]) {
   assert(67 == nonzero.size());
 
   assertStringEq(nonzero[10].toString(),
-                 "coarse channel = 0, index = 106914, snr = 10.71197, "
+                 "coarse channel = 0, index = 97506, snr = 8.49805, "
                  "drift rate = -0.31777 (-1 bin)");
   assertStringEq(nonzero[20].toString(),
-                 "coarse channel = 1, index = 17237, snr = 7.07149, "
+                 "coarse channel = 1, index = 17237, snr = 7.37628, "
                  "drift rate = -0.31777 (-1 bin)");
   
   return 0;

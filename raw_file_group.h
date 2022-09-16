@@ -85,9 +85,9 @@ class RawFileGroup {
   int timesteps_per_block;
 
   // Metadata used for timing
-  int synctime;
   int piperblk;  
-
+  double start_time;
+  
   // Metadata for the very first block
   int start_pktidx;
   

@@ -84,8 +84,17 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
 
   schan = header.getInt("SCHAN", -1);
   assert(schan >= 0);
-  synctime = header.getUnsignedInt("SYNCTIME", -1);
-  assert(synctime > 0);
+  start_time = header.getStartTime();
+
+  // Sanity check
+  double calculated_mjd = unixTimeToMJD(start_time);
+  double read_mjd = header.mjd;
+  if (fabs(calculated_mjd - read_mjd) > 0.0001) {
+    cerr << "MJD mismatch. calculated " << calculated_mjd << " but header has "
+         << read_mjd << endl;
+    exit(1);
+  }
+  
   piperblk = header.getUnsignedInt("PIPERBLK", -1);
   assert(piperblk > 0);
 
@@ -251,7 +260,7 @@ void RawFileGroup::readTasks(char* buffer, vector<function<bool()> >* tasks) {
 double RawFileGroup::getStartTime(int block) const {
   assert(block < num_blocks);
   double time_per_block = tbin * timesteps_per_block;
-  return synctime + block * time_per_block;
+  return start_time + block * time_per_block;
 }
 
 float RawFileGroup::totalTime() const {
