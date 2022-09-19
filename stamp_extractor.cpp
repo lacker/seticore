@@ -92,6 +92,7 @@ void StampExtractor::extract(int coarse_channel, int start_channel, int num_chan
 
   ::capnp::MallocMessageBuilder message;
   Stamp::Builder stamp = message.initRoot<Stamp>();
+  stamp.setSeticoreVersion(VERSION);
   stamp.setSourceName(file_group.source_name);
   stamp.setRa(file_group.ra);
   stamp.setDec(file_group.dec);
