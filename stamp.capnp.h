@@ -30,7 +30,7 @@ struct Stamp {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 9, 2)
+    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 9, 3)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -83,6 +83,9 @@ public:
 
   inline bool hasData() const;
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Reader getData() const;
+
+  inline bool hasSeticoreVersion() const;
+  inline  ::capnp::Text::Reader getSeticoreVersion() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -159,6 +162,13 @@ public:
   inline  ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>::Builder initData(unsigned int size);
   inline void adoptData(::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>>&& value);
   inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> disownData();
+
+  inline bool hasSeticoreVersion();
+  inline  ::capnp::Text::Builder getSeticoreVersion();
+  inline void setSeticoreVersion( ::capnp::Text::Reader value);
+  inline  ::capnp::Text::Builder initSeticoreVersion(unsigned int size);
+  inline void adoptSeticoreVersion(::capnp::Orphan< ::capnp::Text>&& value);
+  inline ::capnp::Orphan< ::capnp::Text> disownSeticoreVersion();
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -412,6 +422,40 @@ inline void Stamp::Builder::adoptData(
 inline ::capnp::Orphan< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>> Stamp::Builder::disownData() {
   return ::capnp::_::PointerHelpers< ::capnp::List<float,  ::capnp::Kind::PRIMITIVE>>::disown(_builder.getPointerField(
       ::capnp::bounded<1>() * ::capnp::POINTERS));
+}
+
+inline bool Stamp::Reader::hasSeticoreVersion() const {
+  return !_reader.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS).isNull();
+}
+inline bool Stamp::Builder::hasSeticoreVersion() {
+  return !_builder.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS).isNull();
+}
+inline  ::capnp::Text::Reader Stamp::Reader::getSeticoreVersion() const {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::get(_reader.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS));
+}
+inline  ::capnp::Text::Builder Stamp::Builder::getSeticoreVersion() {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::get(_builder.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS));
+}
+inline void Stamp::Builder::setSeticoreVersion( ::capnp::Text::Reader value) {
+  ::capnp::_::PointerHelpers< ::capnp::Text>::set(_builder.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS), value);
+}
+inline  ::capnp::Text::Builder Stamp::Builder::initSeticoreVersion(unsigned int size) {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::init(_builder.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS), size);
+}
+inline void Stamp::Builder::adoptSeticoreVersion(
+    ::capnp::Orphan< ::capnp::Text>&& value) {
+  ::capnp::_::PointerHelpers< ::capnp::Text>::adopt(_builder.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS), kj::mv(value));
+}
+inline ::capnp::Orphan< ::capnp::Text> Stamp::Builder::disownSeticoreVersion() {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::disown(_builder.getPointerField(
+      ::capnp::bounded<2>() * ::capnp::POINTERS));
 }
 
 

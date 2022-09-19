@@ -111,3 +111,7 @@ executable('file_io_benchmark',
 executable('rawls',
            srcs + ['rawls.cpp'],
            dependencies: deps, cuda_args: cuda_args)
+
+executable('stampls',
+           srcs + ['stampls.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
