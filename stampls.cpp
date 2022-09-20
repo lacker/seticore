@@ -5,6 +5,7 @@
 #include <fmt/core.h>
 #include <iostream>
 #include "stamp.capnp.h"
+#include <time.h>
 #include <unistd.h>
 #include "util.h"
 
@@ -45,7 +46,17 @@ int main(int argc, char* argv[]) {
     cout << "dec: " << stamp.getDec() << endl;
     cout << "fch1: " << stamp.getFch1() << endl;
     cout << "foff: " << stamp.getFoff() << endl;
-    cout << "tstart: " << stamp.getTstart() << endl;
+
+    double tstart = stamp.getTstart();
+    long num_seconds = (long) tstart;
+    double remainder = tstart - num_seconds;
+    long microseconds = floor(remainder * 1000000);
+    time_t time = num_seconds;
+    int n = 100;
+    char date_string[n];
+    strftime(date_string, n, "%F %T", gmtime(&time));
+    cout << "tstart: " << date_string << fmt::format(".{:06d}", microseconds) << endl;
+
     cout << "tsamp: " << stamp.getTsamp() << endl;
     cout << "telescope: " << stamp.getTelescopeId() << endl;
     cout << "timesteps: " << stamp.getNumTimesteps() << endl;
