@@ -42,20 +42,33 @@ class Stamp(object):
         self.stamp stores the proto data.
         """
         self.stamp = stamp
-
+        self._real_array = None
+        
     def real_array(self):
-        dimensions = (self.stamp.numTimesteps,
-                      self.stamp.numChannels,
-                      self.stamp.numPolarities,
-                      self.stamp.numAntennas,
-                      2)
-        return np.array(self.stamp.data).reshape(dimensions)
+        if self._real_array is None:
+            dimensions = (self.stamp.numTimesteps,
+                          self.stamp.numChannels,
+                          self.stamp.numPolarities,
+                          self.stamp.numAntennas,
+                          2)
+            self._real_array = np.array(self.stamp.data).reshape(dimensions)
+        return self._real_array
 
     def complex_array(self):
         real = self.real_array()
         return real[:, :, :, :, 0] + 1.0j * real[:, :, :, :, 1]
 
+    def show_incoherent(self):
+        incoherent = np.square(self.real_array()).sum(axis=(2, 3, 4))
+        show_array(incoherent)
+    
+    def show_antennas(self):
+        antennas = np.square(self.real_array()).sum(axis=(2, 4))
+        for i in range(antennas.shape[2]):
+            print("antenna", i)
+            show_array(antennas[:, :, i])
 
+            
 def read_stamps(filename):
     with open(filename) as f:
         stamps = stamp_capnp.Stamp.read_multiple(f)
