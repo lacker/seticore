@@ -22,7 +22,7 @@ def beam_name(hit):
     return f"beam {n}"
 
 def show_array(arr):
-    fig, ax = plt.subplots(figsize=arr.shape)
+    fig, ax = plt.subplots(figsize=(15, 15))
     ax.imshow(arr, rasterized=True, interpolation="nearest", cmap="viridis")
     display(fig)
     plt.close()
@@ -61,7 +61,12 @@ class Stamp(object):
     def show_incoherent(self):
         incoherent = np.square(self.real_array()).sum(axis=(2, 3, 4))
         show_array(incoherent)
-    
+
+    def show_antenna(self, index):
+        voltages = self.real_array()[:, :, :, index, :]
+        powers = np.square(voltages).sum(axis=(2, 3))
+        show_array(powers)
+        
     def show_antennas(self):
         antennas = np.square(self.real_array()).sum(axis=(2, 4))
         for i in range(antennas.shape[2]):
