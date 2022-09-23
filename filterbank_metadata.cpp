@@ -34,7 +34,7 @@ FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
     num_coarse_channels
  */
 void FilterbankMetadata::inferMetadata() {
-  if (num_timesteps == 16 && num_channels % 1048576 == 0) {
+  if ((num_timesteps == 16 || num_timesteps == 32) && num_channels % 1048576 == 0) {
     // Looks like Green Bank data
     assert(telescope_id == NO_TELESCOPE_ID || telescope_id == GREEN_BANK);
     if (coarse_channel_size == 0) {
