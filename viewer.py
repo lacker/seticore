@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 import capnp
 import hit_capnp
+import math
 import numpy as np
 import stamp_capnp
 
@@ -69,9 +70,21 @@ class Stamp(object):
         
     def show_antennas(self):
         antennas = np.square(self.real_array()).sum(axis=(2, 4))
-        for i in range(antennas.shape[2]):
-            print("antenna", i)
-            show_array(antennas[:, :, i])
+        cols = 12
+        rows = math.ceil(antennas.shape[2] / cols)
+        fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
+        for i in range(rows * cols):
+            row = i // cols
+            col = i % cols
+            ax = axs[row, col]
+            if i < antennas.shape[2]:
+                ax.set_title(f"antenna {i}", fontsize=10)
+                ax.imshow(antennas[:, :, i], rasterized=True, interpolation="nearest",
+                          cmap="viridis")
+            else:
+                ax.axis("off")
+            
+        fig.tight_layout()
 
             
 def read_stamps(filename):
