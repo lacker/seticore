@@ -8,6 +8,7 @@ import capnp
 import hit_capnp
 import math
 import numpy as np
+import os
 import stamp_capnp
 
 def read_hits(filename):
@@ -23,7 +24,11 @@ def beam_name(hit):
     return f"beam {n}"
 
 def show_array(arr):
-    fig, ax = plt.subplots(figsize=(15, 15))
+    if arr.shape[1] > 1000:
+        size = 30
+    else:
+        size = 15
+    fig, ax = plt.subplots(figsize=(size, size))
     ax.imshow(arr, rasterized=True, interpolation="nearest", cmap="viridis")
     display(fig)
     plt.close()
@@ -70,7 +75,10 @@ class Stamp(object):
         
     def show_antennas(self):
         antennas = np.square(self.real_array()).sum(axis=(2, 4))
-        cols = 12
+        if antennas.shape[1] > antennas.shape[0]:
+            cols = 4
+        else:
+            cols = 12
         rows = math.ceil(antennas.shape[2] / cols)
         fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
         for i in range(rows * cols):
@@ -85,11 +93,13 @@ class Stamp(object):
                 ax.axis("off")
             
         fig.tight_layout()
+        plt.show()
+        plt.close()
 
             
 def read_stamps(filename):
     with open(filename) as f:
-        stamps = stamp_capnp.Stamp.read_multiple(f)
+        stamps = stamp_capnp.Stamp.read_multiple(f, traversal_limit_in_words=2**30)
         for s in stamps:
             yield Stamp(s)
     
@@ -97,6 +107,29 @@ def main():
     for hit in read_hits("data/voyager.hits"):
         print(hit.filterbank.numChannels, "x", hit.filterbank.numTimesteps,
               "=", len(hit.filterbank.data))
-    
+
+def find_stamp_files(directory):
+    "Find all stamp files under this directory."
+    for root, dirs, files in os.walk(directory, topdown=False):
+        for f in files:
+            full = os.path.join(root, f)
+            if full.endswith(".stamps"):
+                yield full
+                
+def scan_dir(directory):
+    """
+    Display antenna data for each stamp file under this directory.
+    """
+    count = 0
+    for stamp_filename in find_stamp_files(directory):
+        try:
+            for (i, stamp) in enumerate(read_stamps(stamp_filename)):
+                print(f"stamp {i} from {stamp_filename}")
+                stamp.show_antennas()
+                count += 1
+        except Exception as e:
+            print(f"error opening {stamp_filename}: {e}")
+    print(count, "stamps shown total")
+        
 if __name__ == "__main__":
     main()
