@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
 
   for (auto& file_list : file_lists) {
     RawFileGroup group(file_list);
+    group.resetBand(0, 1);
     cout << endl;
     cout << pluralize(group.filenames.size(), "file") << " match " << group.prefix
          << ".*.raw\n";
