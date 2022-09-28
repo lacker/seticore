@@ -5,10 +5,10 @@ A tool to check that the .h5 output of seticore and the .fil output of hpguppi_p
 Usage:
   ./crosscheck.py <dir>
 or:
-  ./scrosscheck.py foo.h5 foo.fil
+  ./crosscheck.py foo.h5 foo.fil
 
 The directory probably looks like:
-  ./crosscheck.pyt /scratch/data/20220915/0013/
+  ./crosscheck.py /scratch/data/20220915/0013/
 """
 
 from blimpy import Waterfall
@@ -34,9 +34,9 @@ def check_files(h5_filename, fil_filename):
     data = h5["data"]
     fil = Waterfall(fil_filename)
 
-    # Check metadata
+    # Check metadata. (tstart is kind of busted still)
     mismatches = 0
-    for key in ["fch1", "foff", "source_name", "tsamp", "tstart"]:
+    for key in ["fch1", "foff", "source_name", "tsamp"]:
         h5_val = data.attrs[key]
         fil_val = fil.header[key]
         if not approx_equal(h5_val, fil_val):

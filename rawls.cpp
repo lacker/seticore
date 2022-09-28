@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
     cout << pluralize(group.nants, "antenna") << endl;
     cout << fmt::format("{:.1f} MHz bandwidth\n", group.obsbw);
     cout << fmt::format("{:.1f} MHz center frequency\n", group.obsfreq);
+    cout << fmt::format("start time: {:.8f} MJD\n", group.getStartTime(0));
     cout << pluralize(group.num_coarse_channels, "coarse channel") << endl;
     cout << pluralize(group.timesteps_per_block, "timestep") << " per block\n";
     cout << (group.read_size / 1024 / 1024) << " MB block size\n";
