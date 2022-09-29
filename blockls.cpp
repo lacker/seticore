@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   RawFile f(fname);
   for (auto& header : f.headers()) {
     vector<char> buffer(header.blocsize);
-    f.reader().readBand(header, 0, 1, &buffer[0]);
+    assert(f.reader().readBand(header, 0, 1, &buffer[0]));
     cout << "pktidx " << header.pktidx << ", data[0] = " << (int)(buffer[0]) << endl;
   }
 }
