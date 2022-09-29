@@ -96,6 +96,10 @@ executable('beamforming_integration_test',
            srcs + ['beamforming_integration_test.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
+executable('blockls',
+           srcs + ['blockls.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
+
 executable('taylor_benchmark',
            srcs + ['taylor_benchmark.cu'],
            dependencies: deps, cuda_args: cuda_args)
