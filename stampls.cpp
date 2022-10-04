@@ -63,6 +63,9 @@ int main(int argc, char* argv[]) {
     cout << "channels: " << stamp.getNumChannels() << endl;
     cout << "polarities: " << stamp.getNumPolarities() << endl;
     cout << "antennas: " << stamp.getNumAntennas() << endl;
+    cout << "coarse channel: " << stamp.getCoarseChannel() << endl;
+    cout << "fft size: " << stamp.getFftSize() << endl;
+    cout << "start channel: " << stamp.getStartChannel() << endl;
     cout << endl;
     ++count;
   }
