@@ -148,6 +148,10 @@ shared_ptr<DeviceRawBuffer> RawFileGroupReader::readToDevice() {
 
   returnBuffer(move(read_buffer));
   read_buffer = readToHost();
+  
+  // Useful for debugging the output of raw file reading
+  // cerr << "read_buffer[0] = " << (int) read_buffer->data[0] << endl;
+
   device_raw_buffer->copyFromAsync(*read_buffer);
   device_raw_buffer->waitUntilReady();
 

@@ -19,12 +19,13 @@ OUTPUT_DIR="/mydatag/test/lacker/"
 
 # Testing the Sep 28 dataset on blpn130
 if true; then
-    INPUT_DIR="/buf0ro/lacker/small"
+    VARIANT="macs"
+    INPUT_DIR="/buf0ro/lacker/$VARIANT"
     RECIPE_DIR="/home/obs/bfr5/"
     FFT_SIZE=$FFT4K
     NUM_BANDS=16
-    OUTPUT_DIR="/scratch/data/lacker/seticore/"
-    EXTRA_FLAGS="--h5_dir $OUTPUT_DIR"
+    OUTPUT_DIR="/scratch/data/$VARIANT/seticore_search/"
+    EXTRA_FLAGS="--h5_dir /scratch/data/$VARIANT/seticore_beamformer/"
 fi
 
 # Testing the August 1 dataset on blpn131
