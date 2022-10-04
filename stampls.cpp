@@ -19,7 +19,7 @@ using namespace std;
  */
 int main(int argc, char* argv[]) {
   if (argc != 2) {
-    cerr << "usage: stamps <filename>\n";
+    cerr << "usage: stampls <filename>\n";
     exit(1);
   }
 

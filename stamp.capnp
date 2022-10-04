@@ -35,6 +35,22 @@ struct Stamp {
   #   data[timestep][channel][polarity][antenna][real vs imag]
   data @12 :List(Float32);
 
+  # Metadata describing how exactly we extracted this stamp.
+  # The coarse channel in the original file that we extracted data from.
+  # Matches coarseChannel in the hit.
+  coarseChannel @14 :Int32;
+
+  # The size of FFT we used to create fine channels.
+  fftSize @15 :Int32;
+
+  # The first post-FFT channel that we extracted.
+  # So column zero in `data` corresponds to this column in the original
+  # post-FFT data.
+  # This will not exactly match startChannel in a hit, because we combine
+  # adjacent hits and may use different window sizes. But if you consider the
+  # intervals [startChannel, startChannel + numChannels), the interval for
+  # the stamp should overlap with the interval for any relevant hits.
+  startChannel @16 :Int32;
 }
 
 # Additional fields we might want:

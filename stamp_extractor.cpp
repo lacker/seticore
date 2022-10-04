@@ -114,6 +114,10 @@ void StampExtractor::extract(int coarse_channel, int start_channel, int num_chan
     data.set(2 * i + 1, value.imag());
   }
 
+  stamp.setCoarseChannel(coarse_channel);
+  stamp.setFftSize(fft_size);
+  stamp.setStartChannel(start_channel);
+  
   openOutputFile();
   writeMessageToFd(fd, message);
 }

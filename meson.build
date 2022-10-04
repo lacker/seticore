@@ -100,6 +100,10 @@ executable('blockls',
            srcs + ['blockls.cpp'],
            dependencies: deps, cuda_args: cuda_args)
 
+executable('hitls',
+           srcs + ['hitls.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
+
 executable('taylor_benchmark',
            srcs + ['taylor_benchmark.cu'],
            dependencies: deps, cuda_args: cuda_args)
