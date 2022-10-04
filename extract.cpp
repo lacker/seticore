@@ -44,6 +44,12 @@ int main(int argc, char* argv[]) {
   po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
   po::notify(vm);
 
+  if (!vm.count("raw_prefix") || !vm.count("output")) {
+    cerr << "usage: all flags are mandatory. sorry for the inconvenience\n";
+    cerr << desc << endl;
+    return 1;
+  }
+  
   string raw_prefix = vm["raw_prefix"].as<string>();
   string output_filename = vm["output"].as<string>();
   int coarse_channel = vm["coarse_channel"].as<int>();
