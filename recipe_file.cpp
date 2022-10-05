@@ -228,38 +228,53 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
 
   time_array_index corresponds to which entry in time_array to use.
 
-  For the frequency range we need more data to describe the subband we are beamforming for.
-  A subband corresponds to a subset of the channels that the recipe file has data for.
-  start_channel and num_channels define what subset of the channels in the recipe to use.
-  start_channel is the first one of the range, num_channels is the size of the range.
-  center_frequency is the center of the entire raw file in MHz.
+  Some parameters describe the underlying raw file.
+  raw_start_channel is what channel in the recipe file the raw file starts at
+    (the SCHAN header)
+  raw_num_channels is how many (coarse) channels the raw file has has
+  raw_center_mhz is the center of the entire raw file.
     (the OBSFREQ header)
-  bandwidth is the width of the entire raw file in MHz, negative for reversed.
+  raw_bandwidth_mhz is the width of the entire raw file, negative for reversed.
     (the OBSBW header)
+
+  We only want coefficients for one subband of the raw file, specified by
+  subband_start and subband_size. These are indices relative to the raw file.
  */
 void RecipeFile::generateCoefficients(int time_array_index,
-                                      int start_channel, int num_channels,
-                                      float center_frequency, float bandwidth,
+				      int raw_start_channel,
+                                      int raw_num_channels,
+                                      float raw_center_mhz,
+				      float raw_bandwidth_mhz,
+				      int subband_start,
+				      int subband_size,
                                       thrust::complex<float>* coefficients) const {
+  assert(subband_start + subband_size <= raw_num_channels);
+  assert(raw_start_channel + raw_num_channels <= nchans);
+  
+  float chan_bandwidth_ghz = raw_bandwidth_mhz / raw_num_channels * 0.001;
+  float raw_center_index = (raw_num_channels - 1.0) / 2.0;
+
   int output_index = 0;
-  for (int freq = 0; freq < num_channels; ++freq) {
-    int global_channel_index = freq + start_channel;
-    assert(global_channel_index < nchans);
+  for (int i = 0; i < subband_size; ++i) {
+    // Index within the raw file
+    int raw_channel_index = subband_start + i;
+
+    // Index within the recipe file
+    int recipe_channel_index = raw_start_channel + raw_channel_index;
+    assert(recipe_channel_index < nchans);
     
-    // Calculate the center of this coarse channel in GHz
-    float chan_bandwidth = bandwidth / nchans * 0.001;
-    float center_index = (nchans - 1.0) / 2.0;
-    float chan_center = center_frequency * 0.001 +
-      (global_channel_index - center_index) * chan_bandwidth;
+    // Calculate the center of this coarse channel
+    float chan_center_ghz = raw_center_mhz * 0.001 +
+      (raw_channel_index - raw_center_index) * chan_bandwidth_ghz;
 
     for (int beam = 0; beam < nbeams; ++beam) {
       for (int polarity = 0; polarity < npol; ++polarity) {
         for (int antenna = 0; antenna < nants; ++antenna) {
           float tau = getDelay(time_array_index, beam, antenna);
-          auto cal = getCal(global_channel_index, polarity, antenna);
+          auto cal = getCal(recipe_channel_index, polarity, antenna);
 
           // Figure out how much to rotate
-          float angle = 2 * M_PI * chan_center * tau;
+          float angle = 2 * M_PI * chan_center_ghz * tau;
           float cos_val = cos(angle);
           float sin_val = sin(angle);
 

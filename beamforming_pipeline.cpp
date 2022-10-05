@@ -145,10 +145,15 @@ void BeamformingPipeline::findHits() {
       int block_after_mid = batch * beamformer.num_blocks + beamformer.num_blocks / 2;
       double mid_time = file_group.getStartTime(block_after_mid);
       int time_array_index = recipe.getTimeArrayIndex(mid_time);
-      recipe.generateCoefficients(time_array_index, file_group.schan,
-                                  beamformer.num_coarse_channels,
-                                  file_group.obsfreq, file_group.obsbw,
+      recipe.generateCoefficients(time_array_index,
+				  file_group.schan,
+				  file_group.num_coarse_channels,
+				  file_group.obsfreq,
+				  file_group.obsbw,
+				  coarse_channels_per_band * band,
+                                  coarse_channels_per_band,
                                   beamformer.coefficients);
+
       int time_offset = beamformer.numOutputTimesteps() * batch;
 
       shared_ptr<DeviceRawBuffer> device_raw_buffer = reader.readToDevice();

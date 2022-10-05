@@ -54,9 +54,13 @@ class RecipeFile {
   thrust::complex<float> getCal(int frequency, int polarity, int antenna) const;
 
   void generateCoefficients(int time_array_index,
-                            int start_channel, int num_channels,
-                            float center_frequency, float bandwidth,
-                            thrust::complex<float>* coefficients) const;
+			    int raw_start_channel,
+			    int raw_num_channels,
+			    float raw_center_mhz,
+			    float raw_bandwidth_mhz,
+			    int subband_start,
+			    int subband_size,
+			    thrust::complex<float>* coefficients) const;
 
   vector<double> getRAsInHours() const;
   vector<double> getDecsInDegrees() const;
