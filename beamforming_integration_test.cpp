@@ -16,7 +16,8 @@ using namespace std;
   https://bldata.berkeley.edu/pipeline/tmp/guppi_59712_16307_003760_J1939-6342_0001.0000.raw
   https://bldata.berkeley.edu/pipeline/tmp/guppi_59712_16307_003760_J1939-6342_0001.0001.raw
 
-  TODO: make this based on smaller files which are generally available
+  TODO: make this based on smaller files which are generally available, and which
+  are actually correct!
  */
 int main(int argc, char* argv[]) {
   // Specifying parameters
@@ -53,12 +54,15 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  assert(72 == nonzero.size());
-  cerr << nonzero.size() << endl;
+  if (73 != nonzero.size()) {
+    cerr << "nonzero size was: " << nonzero.size() << endl;
+    return 1;
+  }
+  
   assertStringEq(nonzero[10].toString(),
-                 "coarse channel = 0, index = 105344, snr = 8.59008, drift rate = 0.31777 (1 bin)");
+                 "coarse channel = 1, index = 18176, snr = 7.75743, drift rate = 0.31777 (1 bin)");
   assertStringEq(nonzero[20].toString(),
-                 "coarse channel = 1, index = 46713, snr = 7.34176, drift rate = -0.31777 (-1 bin)");
+                 "coarse channel = 1, index = 87231, snr = 7.01010, drift rate = 0.31777 (1 bin)");
   
   return 0;
 }
