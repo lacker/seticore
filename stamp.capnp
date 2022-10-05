@@ -52,7 +52,3 @@ struct Stamp {
   # the stamp should overlap with the interval for any relevant hits.
   startChannel @16 :Int32;
 }
-
-# Additional fields we might want:
-# coarseChannel, fftSize, startChannel to describe the data we extracted
-# information about the drift rate so that we can create a mask
