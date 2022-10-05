@@ -52,14 +52,13 @@ int main(int argc, char* argv[]) {
       nonzero.push_back(hit);
     }
   }
-  assert(67 == nonzero.size());
 
+  assert(72 == nonzero.size());
+  cerr << nonzero.size() << endl;
   assertStringEq(nonzero[10].toString(),
-                 "coarse channel = 0, index = 97506, snr = 8.49805, "
-                 "drift rate = -0.31777 (-1 bin)");
+                 "coarse channel = 0, index = 105344, snr = 8.59008, drift rate = 0.31777 (1 bin)");
   assertStringEq(nonzero[20].toString(),
-                 "coarse channel = 1, index = 17237, snr = 7.37628, "
-                 "drift rate = -0.31777 (-1 bin)");
+                 "coarse channel = 1, index = 46713, snr = 7.34176, drift rate = -0.31777 (-1 bin)");
   
   return 0;
 }

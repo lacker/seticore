@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const string VERSION = "0.2.7";
+const string VERSION = "0.2.8";
 
 int roundUpToPowerOfTwo(int n);
 bool isPowerOfTwo(int n);

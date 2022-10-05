@@ -232,32 +232,30 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   A subband corresponds to a subset of the channels that the recipe file has data for.
   start_channel and num_channels define what subset of the channels in the recipe to use.
   start_channel is the first one of the range, num_channels is the size of the range.
-  center_frequency is the center of the subband in MHz. (the OBSFREQ header)
-  bandwidth is the width of the subband in MHz, negative for reversed. (the OBSBW header)
+  center_frequency is the center of the entire raw file in MHz.
+    (the OBSFREQ header)
+  bandwidth is the width of the entire raw file in MHz, negative for reversed.
+    (the OBSBW header)
  */
 void RecipeFile::generateCoefficients(int time_array_index,
                                       int start_channel, int num_channels,
                                       float center_frequency, float bandwidth,
                                       thrust::complex<float>* coefficients) const {
-  assert(start_channel + num_channels <= nchans);
-  
   int output_index = 0;
   for (int freq = 0; freq < num_channels; ++freq) {
-
+    int global_channel_index = freq + start_channel;
+    assert(global_channel_index < nchans);
+    
     // Calculate the center of this coarse channel in GHz
-    bool use_buggy_logic = true; // for compatibility with hpguppi_proc
-    float chan_bandwidth = bandwidth / num_channels * 0.001;
-    float center_index = (num_channels - 1.0) / 2.0;
-    if (use_buggy_logic) {
-      center_index -= 0.5;
-    }
-    float chan_center = center_frequency * 0.001 + (freq - center_index) * chan_bandwidth;
+    float chan_bandwidth = bandwidth / nchans * 0.001;
+    float center_index = (nchans - 1.0) / 2.0;
+    float chan_center = center_frequency * 0.001 +
+      (global_channel_index - center_index) * chan_bandwidth;
 
     for (int beam = 0; beam < nbeams; ++beam) {
       for (int polarity = 0; polarity < npol; ++polarity) {
         for (int antenna = 0; antenna < nants; ++antenna) {
           float tau = getDelay(time_array_index, beam, antenna);
-          int global_channel_index = freq + start_channel;
           auto cal = getCal(global_channel_index, polarity, antenna);
 
           // Figure out how much to rotate
