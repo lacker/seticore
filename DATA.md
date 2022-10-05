@@ -57,6 +57,9 @@ def read_hits(filename):
             print("the beam is:", hit.filterbank.beam)
 ```
 
+For more example code of how to read this data and display in a
+Jupyter notebook, see [viewer.py](viewer.py).
+
 More docs for pycapnp are [here](http://capnproto.github.io/pycapnp/).
 
 # Languages that aren't Python
