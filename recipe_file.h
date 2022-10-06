@@ -16,7 +16,7 @@ using namespace std;
 class RecipeFile {
  private:
   const hid_t file;
-
+  
   string getStringData(const string& name) const;
   vector<string> getStringVectorData(const string& name) const;
   template <class T> vector<T> getVectorData(const string& name, hid_t hdf5_type) const;
@@ -30,6 +30,7 @@ class RecipeFile {
   const vector<double> decs;
   
  public:
+  const string filename;
   const string obsid;
   const vector<string> src_names;
   const vector<double> delays;

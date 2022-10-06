@@ -26,10 +26,11 @@ long evenlyDivide(long a, long b) {
   return a / b;
 }
 
-RecipeFile::RecipeFile(const string& filename) :
-  file(openFile(filename)),
+RecipeFile::RecipeFile(const string& _filename) :
+  file(openFile(_filename)),
   ras(getVectorData<double>("/beaminfo/ras", H5T_IEEE_F64LE)),
   decs(getVectorData<double>("/beaminfo/decs", H5T_IEEE_F64LE)),
+  filename(_filename),
   obsid(getStringData("/obsinfo/obsid")),
   src_names(getStringVectorData("/beaminfo/src_names")),
   delays(getVectorData<double>("/delayinfo/delays", H5T_IEEE_F64LE)),
@@ -186,6 +187,9 @@ int RecipeFile::getTimeArrayIndex(double time) const {
   auto right_iter = lower_bound(time_array.begin(), time_array.end(), time);
   if (time_array.begin() == right_iter) {
     return 0;
+  }
+  if (time_array.end() == right_iter) {
+    return time_array.size() - 1;
   }
   auto left_iter = right_iter - 1;
 
