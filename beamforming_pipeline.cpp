@@ -75,7 +75,8 @@ void BeamformingPipeline::findHits() {
                       file_group.totalTime(), file_group.prefix);
   
   RecipeFile recipe(recipe_dir, file_group.obsid);
-
+  cout << "using beamforming recipe from " << recipe.filename << endl;
+  
   // Do enough blocks per beamformer batch to handle one STI block
   assert((sti * fft_size) % file_group.timesteps_per_block == 0);
   int blocks_per_batch = (sti * fft_size) / file_group.timesteps_per_block;
