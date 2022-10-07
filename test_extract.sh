@@ -15,7 +15,7 @@ rm -f $STAMP
     --num_channels=200 \
     --telescope_id=64
 
-if [[ `./build/stampls data/J1939.stamp | grep 1170` == "" ]]; then
+if [[ `./build/stampls data/J1939.stamp | grep 1163` == "" ]]; then
     echo bad stamp file
     exit 1
 fi

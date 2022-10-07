@@ -279,12 +279,14 @@ float RawFileGroup::coarseChannelBandwidth() const {
 }
 
 /*
+  Gets the frequency for the first channel of this file after it's FFT'd.
+
   This formula is weird because FFTs aren't just dividing up buckets into
   smaller buckets. See:
     https://github.com/UCBerkeleySETI/bl_docs/wiki/calculating-fch1
 */
 double RawFileGroup::getFch1(int fft_size) const {
-  double fcchan0 = obsfreq - (num_coarse_channels - 1) / (2 * num_coarse_channels) * obsbw;
-  double fch1 = fcchan0 - floor(fft_size /2 ) * obsbw / (num_coarse_channels * fft_size);
+  double fcchan0 = obsfreq - obsbw * (num_coarse_channels - 1) / (2 * num_coarse_channels);
+  double fch1 = fcchan0 - floor(fft_size / 2) * obsbw / (num_coarse_channels * fft_size);
   return fch1;
 }

@@ -42,7 +42,7 @@ void StampExtractor::extract(int coarse_channel, int start_channel, int num_chan
   // Output metadata
   double foff = file_group.obsbw / file_group.num_coarse_channels / fft_size;
   double fch1 = global_fch1 + (coarse_channel * fft_size + start_channel) * foff;
-  
+
   // One of the fft size and block duration should divide the other
   int blocks_per_batch;
   if (file_group.timesteps_per_block >= fft_size) {
