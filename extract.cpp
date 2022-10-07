@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
   int telescope_id = vm["telescope_id"].as<int>();
   
   cout << fmt::format("extracting stamp from {}.*.raw\n", raw_prefix);
-  vector<string> raw_files = getFilesMatchingPrefix(raw_prefix);
+  vector<string> raw_files = getRawFilesMatchingPrefix(raw_prefix);
   cout << fmt::format("reading {} raw files:\n", raw_files.size());
   for (auto f : raw_files) {
     cout << "  " << f << endl;

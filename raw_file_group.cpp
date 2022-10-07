@@ -42,14 +42,15 @@ string getDirectory(const string& filename) {
   return filename.substr(0, index);
 }
 
-vector<string> getFilesMatchingPrefix(const string& prefix) {
+vector<string> getRawFilesMatchingPrefix(const string& prefix) {
   string directory = getDirectory(prefix);
   boost::filesystem::path dir{directory};
   vector<string> filenames;
   boost::filesystem::directory_iterator it{dir};
   while (it != boost::filesystem::directory_iterator{}) {
     string filename(it->path().c_str());
-    if (boost::starts_with(filename, prefix)) {
+    if (boost::starts_with(filename, prefix) &&
+        boost::ends_with(filename, ".raw")) {
       filenames.push_back(filename);
     }
     ++it;
