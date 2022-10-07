@@ -49,7 +49,7 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   for (int pol = 0; pol < num_polarities; ++pol) {
     int coeff_index = index4d(coarse_chan, beam, num_beams, pol, num_polarities,
                               antenna, num_antennas);
-    assert(2 * coeff_index + 1 < coefficients_size);
+    assert(coeff_index < coefficients_size);
     thrust::complex<float> conjugated = thrust::conj(coefficients[coeff_index]);
     for (int time = 0; time < num_timesteps; ++time) {
       int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
@@ -286,8 +286,8 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int 
   
   int frame_size = num_coarse_channels * num_input_timesteps;
   
-  coefficients_size = 2 * num_antennas * num_beams * num_coarse_channels * num_polarities;
-  size_t coefficients_bytes = coefficients_size * sizeof(float);
+  coefficients_size = num_antennas * num_beams * num_coarse_channels * num_polarities;
+  size_t coefficients_bytes = coefficients_size * sizeof(thrust::complex<float>);
   cudaMallocManaged(&coefficients, coefficients_bytes);
   checkCuda("Beamformer coefficients malloc");
  
@@ -401,6 +401,7 @@ thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam
   assert(coarse_channel < num_coarse_channels);
   int i = index4d(coarse_channel, beam, num_beams, pol, num_polarities,
                   antenna, num_antennas);
+  assert(i < coefficients_size);
   return coefficients[i];
 }
 
