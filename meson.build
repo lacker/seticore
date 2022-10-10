@@ -9,7 +9,7 @@ basic_cuda_args = [ '--std=c++14' ]
 newer_cuda_args = [ '--display-error-number',
                     '--diag-suppress=1675' ]
 
-nvcc_release = run_command('./nvcc_release.sh', check: true).stdout().strip()
+nvcc_release = '11.4' # run_command('./nvcc_release.sh', check: true).stdout().strip()
 if nvcc_release <= '11.0'
     cuda_args = basic_cuda_args
 else
@@ -18,7 +18,9 @@ endif
     
 cmake = import('cmake')
 
-fmt_subproj = cmake.subproject('fmt')
+fmt_opts = cmake.subproject_options()
+fmt_opts.add_cmake_defines({'CMAKE_POSITION_INDEPENDENT_CODE': true})
+fmt_subproj = cmake.subproject('fmt', options: fmt_opts)
 fmt_dep = fmt_subproj.dependency('fmt')
 
 boost_dep = dependency('boost', modules: [
@@ -33,6 +35,7 @@ cuda_dep = dependency('cuda', version: '>=11', modules: ['cublas', 'cufft'])
 
 capnp_opt = cmake.subproject_options()
 capnp_opt.set_override_option('warning_level', '0')
+capnp_opt.add_cmake_defines({'CMAKE_POSITION_INDEPENDENT_CODE': true})
 capnp_subproj = cmake.subproject('capnproto', options: capnp_opt)
 kj_dep = capnp_subproj.dependency('kj')
 capnp_dep = capnp_subproj.dependency('capnp')
@@ -81,6 +84,20 @@ tests = [
     'multibeam_buffer_test.cpp',
     'taylor_test.cu',
 ]
+
+# Dependency objects for super-project_version
+
+lib_seticore_dep = declare_dependency(
+    include_directories : include_directories('.'),
+    dependencies: deps,
+    link_with: library(
+        'seticore',
+        srcs,
+        include_directories : include_directories('.'),
+        dependencies: deps,
+        install: true
+    ),
+)
 
 # The main binaries
 
