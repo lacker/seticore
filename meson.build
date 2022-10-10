@@ -88,12 +88,12 @@ tests = [
 # Dependency objects for super-project_version
 
 lib_seticore_dep = declare_dependency(
-    include_directories : include_directories('.'),
+    include_directories : [include_directories('.'), include_directories('raw')],
     dependencies: deps,
     link_with: library(
         'seticore',
         srcs,
-        include_directories : include_directories('.'),
+        include_directories : [include_directories('.'), include_directories('raw')],
         dependencies: deps,
         install: true
     ),
