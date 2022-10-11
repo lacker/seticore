@@ -96,7 +96,7 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
     exit(1);
   }
   
-  piperblk = header.getUnsignedInt("PIPERBLK", -1);
+  piperblk = header.getUnsignedInt("PIPERBLK", 0);
   assert(piperblk > 0);
 
   // Find the last block in the last file
