@@ -119,6 +119,10 @@ RawFileGroup::~RawFileGroup() {}
   with numerical ids, be sure that they are the same length.
  */
 vector<vector<string> > scanForRawFileGroups(const string& directory) {
+  if (!boost::filesystem::is_directory(directory)) {
+    cerr << directory << " is not a directory.\n";
+    exit(1);
+  }
   boost::filesystem::path dir{directory};
   vector<string> filenames;
   boost::filesystem::directory_iterator it{dir};
