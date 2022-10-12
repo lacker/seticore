@@ -28,6 +28,10 @@ int beamformingMode(const po::variables_map& vm) {
   float snr = vm["snr"].as<double>();
   float max_drift = vm["max_drift"].as<double>();
 
+  if (vm.count("min_drift")) {
+    cout << "the min_drift flag is ignored in beamforming mode.\n";
+  }
+  
   auto groups = scanForRawFileGroups(input_dir);
   cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
   for (auto group : groups) {

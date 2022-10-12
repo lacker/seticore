@@ -134,7 +134,7 @@ Set up Python 3.9 in whichever way you prefer (such as a fresh conda env) and th
 
 ```
 pip install -r requirements.txt
-jupyter notebook example.ipynb
+jupyter-lab example.ipynb
 ```
 
 The notebook demonstrates some basic reading of hit files and stamp files.

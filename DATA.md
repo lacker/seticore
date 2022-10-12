@@ -25,7 +25,18 @@ by each past version of the software, and ensures backward
 compatibility. Code using an older version of the schema can still
 read newer files, and vice versa.
 
-# Python instructions
+# Python Quickstart
+
+* Get an account at the Berkeley datacenter.
+* Go to one of the compute machines, like `blpc0`.
+* Clone the `seticore` repository and cd into it.
+* `pip install -r requirements.txt`
+* `jupyter-lab example.ipynb`
+* Look at the notebook in your browser, either via ssh tunnel or your preferred method
+
+# Python Slowstart
+
+Follow these instructions if the quickstart doesn't cover your use case.
 
 You need the `pycapnp` library.
 
