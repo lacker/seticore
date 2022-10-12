@@ -44,10 +44,10 @@ int beamformingMode(const po::variables_map& vm) {
     int tstart = time(NULL);
     pipeline.findHits();
     int tmid = time(NULL);
-    cerr << fmt::format("time to find hits: {:d}s\n", tmid - tstart);
+    cout << fmt::format("time to find hits: {:d}s\n", tmid - tstart);
     pipeline.makeStamps();
     int tstop = time(NULL);
-    cerr << fmt::format("time to make stamps: {:d}s\n", tstop - tmid);
+    cout << fmt::format("time to make stamps: {:d}s\n", tstop - tmid);
   }
   return 0;
 }
