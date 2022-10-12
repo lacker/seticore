@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-FFT_SIZE=
-INPUT_DIR="/buf0ro/lacker/$VARIANT"
-RECIPE_DIR="/home/obs/bfr5/"
-NUM_BANDS=
-OUTPUT_DIR=
+FFT_SIZE=16384
+INPUT_DIR="/home/lacker/test"
+RECIPE_DIR="/home/lacker/test"
+NUM_BANDS=1
+OUTPUT_DIR="/home/lacker/output"
 EXTRA_FLAGS=
 
 /home/lacker/seticore/build/seticore \
