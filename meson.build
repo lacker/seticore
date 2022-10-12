@@ -16,12 +16,7 @@ else
     cuda_args = basic_cuda_args + newer_cuda_args
 endif
     
-cmake = import('cmake')
-
-fmt_opts = cmake.subproject_options()
-fmt_opts.add_cmake_defines({'CMAKE_POSITION_INDEPENDENT_CODE': true})
-fmt_subproj = cmake.subproject('fmt', options: fmt_opts)
-fmt_dep = fmt_subproj.dependency('fmt')
+fmt_dep = subproject('fmt').get_variable('fmt_dep')
 
 boost_dep = dependency('boost', modules: [
     'filesystem',
@@ -33,6 +28,7 @@ hdf5_dep = dependency('hdf5', language: 'c')
 
 cuda_dep = dependency('cuda', version: '>=11', modules: ['cublas', 'cufft'])
 
+cmake = import('cmake')
 capnp_opt = cmake.subproject_options()
 capnp_opt.set_override_option('warning_level', '0')
 capnp_opt.add_cmake_defines({'CMAKE_POSITION_INDEPENDENT_CODE': true})
