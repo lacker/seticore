@@ -1,11 +1,13 @@
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
 #include <errno.h>
+#include <fmt/core.h>
 #include "hit.capnp.h"
 #include "hit_file_writer.h"
 #include <fcntl.h>
 #include <iostream>
 #include <unistd.h>
+#include "util.h"
 
 using namespace std;
 
@@ -18,8 +20,7 @@ HitFileWriter::HitFileWriter(const string& filename,
   fd = open(filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
     int err = errno;
-    cerr << "could not open " << filename << " for writing. errno = " << err << endl;
-    exit(1);
+    fatal(fmt::format("could not open {} for writing. errno = {}", filename, err));
   }
 }
 

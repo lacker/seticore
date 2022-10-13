@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const string VERSION = "0.2.12";
+const string VERSION = "0.2.13";
 
 int roundUpToPowerOfTwo(int n);
 bool isPowerOfTwo(int n);
@@ -26,3 +26,5 @@ double hoursToRadians(double hours);
 double radiansToHours(double radians);
 double degreesToRadians(double degrees);
 double radiansToDegrees(double radians);
+void fatal(const string& message);
+void fatal(const string& message1, const string& message2);

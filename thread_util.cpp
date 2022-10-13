@@ -3,6 +3,7 @@
 #include <iostream>
 #include <pthread.h>
 #include <thread>
+#include "util.h"
 
 TaskList::TaskList(vector<function<bool()> > tasks)
   : tasks(tasks), indexes(tasks.size()) {
@@ -16,8 +17,7 @@ void TaskList::runTempWorkerThread() {
   int index;
   while (indexes.pop(index)) {
     if (!tasks[index]()) {
-      cerr << "worker task failed\n";
-      exit(1);
+      fatal("worker task failed");
     }
   }
 }

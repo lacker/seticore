@@ -29,9 +29,7 @@ void StampExtractor::openOutputFile() {
   fd = open(output_filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
     int err = errno;
-    cerr << "could not open " << output_filename << " for writing. errno = "
-         << err << endl;
-    exit(1);
+    fatal(fmt::format("could not open {} for writing. errno = {}", output_filename, err));
   }
   opened = true;
 }

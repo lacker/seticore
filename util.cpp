@@ -2,7 +2,9 @@
 
 #include <assert.h>
 #include <chrono>
+#include <ctime>
 #include <fmt/core.h>
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <pthread.h>
@@ -50,11 +52,11 @@ string stripAnyTrailingSlash(const string& s) {
 void assertComplexEq(thrust::complex<float> c, float real, float imag) {
   if (abs(c.real() - real) > 0.001) {
     cerr << "c.real() = " << c.real() << " but real = " << real << endl;
-    exit(1);
+    exit(2);
   }
   if (abs(c.imag() - imag) > 0.001) {
     cerr << "c.imag() = " << c.imag() << " but imag = " << imag << endl;
-    exit(1);
+    exit(2);
   }
 }
 
@@ -74,7 +76,7 @@ void assertFloatEq(float a, float b, const string& tag) {
       cerr << tag << ": ";
     }
     cerr << fmt::format("{:.3f} != {:.3f}\n", initial_a, initial_b);
-    exit(1);
+    exit(2);
   }
 }
 
@@ -89,7 +91,7 @@ void assertStringEq(const string& lhs, const string& rhs, const string& tag) {
   }
   cerr << "lhs: " << lhs << endl;
   cerr << "rhs: " << rhs << endl;
-  exit(1);
+  exit(2);
 }
 
 void assertStringEq(const string& lhs, const string& rhs) {
@@ -141,4 +143,16 @@ double degreesToRadians(double degrees) {
 
 double radiansToDegrees(double radians) {
   return radians * 180.0 / M_PI;
+}
+
+void fatal(const string& message) {
+  time_t t = time(nullptr);
+  tm local = *localtime(&t);
+  cerr << "[" << put_time(&local, "%Y-%m-%d %H:%M:%S %Z") << "] " << message << endl;
+  exit(1);
+}
+
+void fatal(const string& message1, const string& message2) {
+  string s = message1 + " " + message2;
+  fatal(s);
 }

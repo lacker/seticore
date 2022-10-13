@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <cstdlib>
+#include <fmt/core.h>
 #include "hdf5.h"
 #include <iostream>
 #include <string.h>
+#include "util.h"
 
 #include "h5_reader.h"
 
@@ -17,17 +19,14 @@ using namespace std;
 H5Reader::H5Reader(const string& filename) : FilterbankFileReader(filename) {
   file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file == H5I_INVALID_HID) {
-    cerr << "could not open file for reading: " << filename << endl;
-    exit(1);
+    fatal("could not open file for reading:", filename);
   }
   dataset = H5Dopen2(file, "data", H5P_DEFAULT);
   if (dataset == H5I_INVALID_HID) {
-    cerr << "could not open dataset\n";
-    exit(1);
+    fatal("could not open dataset");
   }
   if (!H5Tequal(H5Dget_type(dataset), H5T_NATIVE_FLOAT)) {
-    cerr << "dataset is not float\n";
-    exit(1);
+    fatal("dataset is not float");
   }
     
   fch1 = getDoubleAttr("fch1");
@@ -40,18 +39,15 @@ H5Reader::H5Reader(const string& filename) : FilterbankFileReader(filename) {
   
   dataspace = H5Dget_space(dataset);
   if (dataspace == H5I_INVALID_HID) {
-    cerr << "could not open dataspace\n";
-    exit(1);
+    fatal("could not open dataspace");
   }
   if (H5Sget_simple_extent_ndims(dataspace) != 3) {
-    cerr << "data is not three-dimensional\n";
-    exit(1);
+    fatal("data is not three-dimensional");
   }
   hsize_t dims[3];
   H5Sget_simple_extent_dims(dataspace, dims, NULL);
   if (dims[1] != 1) {
-    cerr << "unexpected second dimension: " << dims[1] << endl;
-    exit(1);
+    fatal(fmt::format("unexpected second dimension: {}", dims[1]));
   }
   num_timesteps = dims[0];
   num_channels = dims[2];
@@ -69,12 +65,10 @@ double H5Reader::getDoubleAttr(const string& name) const {
   double output;
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
-    cerr << "could not access attr " << name << endl;
-    exit(1);
+    fatal("could not access attr", name);
   }
   if (H5Aread(attr, H5T_NATIVE_DOUBLE, &output) < 0) {
-    cerr << "attr " << name << " could not be read as double\n";
-    exit(1);
+    fatal("attr could not be read as double:", name);
   }
   H5Aclose(attr);
   return output;
@@ -84,12 +78,10 @@ long H5Reader::getLongAttr(const string& name) const {
   long output;
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
-    cerr << "could not access attr " << name << endl;
-    exit(1);
+    fatal("could not access attr", name);
   }
   if (H5Aread(attr, H5T_NATIVE_LONG, &output) < 0) {
-    cerr << "attr " << name << " could not be read as long\n";
-    exit(1);
+    fatal("attr could not be read as long:", name);
   }
   H5Aclose(attr);
   return output;  
@@ -98,8 +90,7 @@ long H5Reader::getLongAttr(const string& name) const {
 bool H5Reader::attrExists(const string& name) const {
   auto answer = H5Aexists(dataset, name.c_str());
   if (answer < 0) {
-    cerr << "existence check for attr " << name << " failed\n";
-    exit(1);
+    fatal("existence check failed for attr", name);
   }
   return answer > 0;
 }
@@ -114,31 +105,26 @@ bool H5Reader::attrExists(const string& name) const {
 string H5Reader::getStringAttr(const string& name) const {
   auto attr = H5Aopen(dataset, name.c_str(), H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
-    cerr << "could not access attr " << name << endl;
-    exit(1);
+    fatal("could not access attr", name);
   }
 
   // Check the attribute's character type
   auto attr_type = H5Aget_type(attr);
   auto cset = H5Tget_cset(attr_type);
   if (cset < 0) {
-    cerr << "H5Tget_cset failed\n";
-    exit(1);
+    fatal("H5Tget_cset failed");
   }
   
   // Create mem_type for variable-length string of our character type
   auto mem_type = H5Tcopy(H5T_C_S1);
   if (H5Tset_size(mem_type, H5T_VARIABLE) < 0) {
-    cerr << "H5Tset_size failed\n";
-    exit(1);
+    fatal("H5Tset_size failed");
   }
   if (H5Tset_strpad(mem_type, H5T_STR_NULLTERM) < 0) {
-    cerr << "H5Tset_strpad failed\n";
-    exit(1);
+    fatal("H5Tset_strpad failed");
   }
   if (H5Tset_cset(mem_type, cset) < 0) {
-    cerr << "H5Tset_cset failed\n";
-    exit(1);
+    fatal("H5Tset_cset failed");
   }
 
   // We need to add one ourselves for a null
@@ -151,14 +137,12 @@ string H5Reader::getStringAttr(const string& name) const {
   bool variable_length = H5Tequal(mem_type, attr_type);
   if (variable_length) {
     if (H5Aread(attr, mem_type, &buffer) < 0) {
-      cerr << "variable-length H5Aread failed for " << name << endl;
-      exit(1);
+      fatal("variable-length H5Aread failed for", name);
     }
   } else {
     auto fixed_type = H5Tcopy(attr_type);
     if (H5Aread(attr, fixed_type, buffer) < 0) {
-      cerr << "fixed-length H5Aread failed for " << name << endl;
-      exit(1);
+      fatal("fixed-length H5Aread failed for", name);
     }
     H5Tclose(fixed_type);
   }
@@ -190,21 +174,20 @@ void H5Reader::loadCoarseChannel(int i, FilterbankBuffer* buffer) const {
                                          unsigned(coarse_channel_size)};
   if (H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
                           offset, NULL, coarse_channel_dim, NULL) < 0) {
-    cerr << "failed to select coarse channel hyperslab\n";
-    exit(1);
+    fatal("failed to select coarse channel hyperslab");
   }
 
   // Define a memory dataspace
   hid_t memspace = H5Screate_simple(3, coarse_channel_dim, NULL);
   if (memspace == H5I_INVALID_HID) {
-    cerr << "failed to create memspace\n";
-    exit(1);
+    fatal("failed to create memspace");
   }
     
   // Copy from dataspace to memspace
-  if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, buffer->data) < 0) {    
-    cerr << "h5 read failed. make sure that plugin files are in the plugin directory: " << H5_DEFAULT_PLUGINDIR << "\n";
-    exit(1);
+  if (H5Dread(dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT,
+              buffer->data) < 0) {    
+    fatal("h5 read failed. make sure that plugin files are in the plugin directory:",
+          H5_DEFAULT_PLUGINDIR);
   }
     
   H5Sclose(memspace);

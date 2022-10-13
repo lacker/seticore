@@ -60,8 +60,7 @@ int dedopplerMode(const po::variables_map& vm) {
     // By default, output to a .dat file in the same location as the input file
     auto index = input.find_last_of(".");
     if (index >= input.size()) {
-      cerr << "unrecognized input filename: " << input << endl;
-      return 1;
+      fatal(fmt::format("unrecognized input filename: {}", input));
     }
     output = input.substr(0, index) + ".dat";
   } else {

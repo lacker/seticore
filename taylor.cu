@@ -146,7 +146,7 @@ const float* basicTaylorTree(const float* input, float* buffer1, float* buffer2,
       target_buffer = buffer1;
     } else {
       cerr << "programmer error; control flow should not reach here\n";
-      exit(1);
+      exit(2);
     }
   }
 
@@ -283,7 +283,7 @@ void tiledTaylorTree(const float* input, float* output, int num_timesteps,
     break;
   default:
     cerr << "cannot run tiledTaylorTree on num_timesteps = " << num_timesteps << endl;
-    exit(1);
+    exit(2);
   }
   
   checkCuda("tiledTaylorTree");

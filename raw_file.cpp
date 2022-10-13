@@ -1,6 +1,8 @@
 #include "raw_file.h"
 
+#include <fmt/core.h>
 #include <iostream>
+#include "util.h"
 
 using namespace std;
 
@@ -16,14 +18,11 @@ RawFile::RawFile(string filename)
   }
 
   if (_reader.error()) {
-    cerr << "error reading " << filename << endl;
-    cerr << _reader.errorMessage() << endl;
-    exit(1);
+    fatal(fmt::format("error reading {} : {}", filename, _reader.errorMessage()));
   }
 
   if (_headers.empty()) {
-    cerr << "no headers found in " << filename << endl;
-    exit(1);
+    fatal("no headers found in", filename);
   }
 }
 
