@@ -24,14 +24,14 @@ RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
   // Limit queue size depending on total memory.
   struct sysinfo info;
   sysinfo(&info);
-  int mb = 1024 * 1024;
-  int gb = mb * 1024;
-  if ((int) info.totalram > 50 * gb) {
+  size_t mb = 1024 * 1024;
+  size_t gb = mb * 1024;
+  if ((size_t) info.totalram > 50 * gb) {
     // Looks like a production machine.
-    int buffer_size = rawBufferSize(blocks_per_batch, file_group.nants,
-                                    coarse_channels_per_band,
-                                    file_group.timesteps_per_block,
-                                    file_group.npol);
+    size_t buffer_size = rawBufferSize(blocks_per_batch, file_group.nants,
+                                       coarse_channels_per_band,
+                                       file_group.timesteps_per_block,
+                                       file_group.npol);
     buffer_queue_max_size = (int) (0.25 * info.totalram / buffer_size);
     cout << fmt::format("limiting raw file input buffer memory to {:.1f} GB\n",
                         1.0 * buffer_queue_max_size * buffer_size / gb);
@@ -86,6 +86,7 @@ unique_ptr<RawBuffer> RawFileGroupReader::readToHost() {
   while (buffer_queue.empty()) {
     cv.wait(lock);
   }
+
   auto buffer = move(buffer_queue.front());
   buffer_queue.pop();
   lock.unlock();
@@ -108,6 +109,7 @@ bool RawFileGroupReader::push(unique_ptr<RawBuffer> buffer) {
   while (!destroy && (int) buffer_queue.size() >= buffer_queue_max_size) {
     cv.wait(lock);
   }
+
   if (destroy) {
     return false;
   }

@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   int num_bands = 1;
   RawFileGroup file_group(file_lists[0]);
 
-  int blocks_per_batch = 128;
+  int blocks_per_batch = 32;
   int num_batches = file_group.num_blocks / blocks_per_batch;
   
   // Only process some bands
