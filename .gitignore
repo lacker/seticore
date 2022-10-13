@@ -8,3 +8,5 @@ perf.*
 *.qdrep
 *.qdstrm
 *.ipynb
+subprojects/fmt-9.0.0
+subprojects/packagecache
