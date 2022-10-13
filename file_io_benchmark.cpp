@@ -26,14 +26,14 @@ int main(int argc, char* argv[]) {
   auto file_lists = scanForRawFileGroups(dir);
   assert(file_lists.size() == 1);
 
-  int num_bands = 16;
+  int num_bands = 1;
   RawFileGroup file_group(file_lists[0]);
 
   int blocks_per_batch = 128;
   int num_batches = file_group.num_blocks / blocks_per_batch;
   
   // Only process some bands
-  int num_bands_to_process = 2;
+  int num_bands_to_process = 1;
   RawFileGroupReader reader(file_group, num_bands, 0, num_bands_to_process - 1,
                             num_batches, blocks_per_batch);
 

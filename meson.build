@@ -123,3 +123,7 @@ executable('rawls',
 executable('stampls',
            srcs + ['stampls.cpp'],
            dependencies: deps, cuda_args: cuda_args)
+
+executable('mmap_benchmark',
+           srcs + ['mmap_benchmark.cpp'],
+           dependencies: deps, cuda_args: cuda_args)
