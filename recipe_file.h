@@ -45,7 +45,10 @@ class RecipeFile {
   const int nchans;
   
   RecipeFile(const string& filename);
-  RecipeFile(const string& directory, const string& obsid);
+
+  // filename can be a directory, in which case we open the right file within the directory
+  RecipeFile(const string& filename, const string& obsid);
+
   ~RecipeFile();
 
   int getTimeArrayIndex(double time) const;

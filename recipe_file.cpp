@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <assert.h>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 #include <fmt/core.h>
 #include "hdf5.h"
 #include <iostream>
@@ -47,16 +49,24 @@ RecipeFile::RecipeFile(const string& _filename) :
   }
 }
 
-string makeRecipeFilename(const string& directory, const string& obsid) {
+string makeRecipeFilename(const string& filename, const string& obsid) {
+  if (boost::algorithm::ends_with(filename, ".bfr5")) {
+    // It's just this filename
+    return filename;
+  }
+  if (!boost::filesystem::is_directory(filename)) {
+    fatal("recipe directory does not exist:", filename);
+  }
+
   string fixed_obsid = obsid;
   // Someone changed their mind and all the colons should actually
   // be hyphens in obsid's
   replace(fixed_obsid.begin(), fixed_obsid.end(), ':', '-');
-  return fmt::format("{}/{}.bfr5", directory, fixed_obsid);
+  return fmt::format("{}/{}.bfr5", filename, fixed_obsid);
 }
 
-RecipeFile::RecipeFile(const string& directory, const string& obsid)
-  : RecipeFile(makeRecipeFilename(directory, obsid)) {}
+RecipeFile::RecipeFile(const string& _filename, const string& obsid)
+  : RecipeFile(makeRecipeFilename(_filename, obsid)) {}
 
 RecipeFile::~RecipeFile() {
   H5Fclose(file);

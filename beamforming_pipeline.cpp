@@ -74,7 +74,7 @@ void BeamformingPipeline::findHits() {
   cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
                       file_group.totalTime(), file_group.prefix);
   
-  RecipeFile recipe(recipe_dir, file_group.obsid);
+  RecipeFile recipe(recipe_filename, file_group.obsid);
   cout << "using beamforming recipe from " << recipe.filename << endl;
   
   // Do enough blocks per beamformer batch to handle one STI block

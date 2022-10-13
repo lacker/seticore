@@ -12,7 +12,7 @@ public:
   // Required parameters for the run
   const vector<string> raw_files;
   const string output_dir;
-  const string recipe_dir;
+  const string recipe_filename;
   const int num_bands;
   const int fft_size;
   const int sti;
@@ -30,10 +30,11 @@ public:
 
   // If set, save the beamformed filterbanks as h5 files
   string h5_dir;
-  
+
+  // recipe_filename can either be a file ending in .bfr5 or a directory
   BeamformingPipeline(const vector<string>& raw_files,
                       const string& output_dir,
-                      const string& recipe_dir,
+                      const string& recipe_filename,
                       int num_bands,
                       int fft_size,
                       int sti,
@@ -41,7 +42,7 @@ public:
                       float snr,
                       float max_drift)
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
-      recipe_dir(recipe_dir), num_bands(num_bands), fft_size(fft_size),
+      recipe_filename(recipe_filename), num_bands(num_bands), fft_size(fft_size),
       sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
       num_bands_to_process(num_bands), record_hits(true),
       file_group(raw_files) {

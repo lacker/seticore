@@ -20,7 +20,26 @@ int beamformingMode(const po::variables_map& vm) {
 
   string input_dir = vm["input"].as<string>();
   string output_dir = vm["output"].as<string>();
-  string recipe_dir = vm["recipe_dir"].as<string>();
+
+  string recipe_filename;
+  if (vm.count("recipe")) {
+    if (vm.count("recipe_dir")) {
+      fatal("you cannot specify both --recipe and --recipe_dir");
+    }
+    recipe_filename = vm["recipe"].as<string>();
+    if (!boost::algorithm::ends_with(recipe_filename, ".bfr5")) {
+      fatal("expected --recipe to end with .bfr5 but it is", recipe_filename);
+    }
+  } else {
+    if (!vm.count("recipe_dir")) {
+      fatal("you must specify --recipe or --recipe_dir to beamform");
+    }
+    recipe_filename = vm["recipe_dir"].as<string>();
+    if (boost::algorithm::ends_with(recipe_filename, ".bfr5")) {
+      fatal("expected a directory for --recipe_dir but got", recipe_filename);
+    }
+  }
+
   int num_bands = vm["num_bands"].as<int>();
   int fft_size = vm["fft_size"].as<int>();
   int sti = vm["sti"].as<int>();
@@ -31,11 +50,11 @@ int beamformingMode(const po::variables_map& vm) {
   if (vm.count("min_drift")) {
     cout << "the min_drift flag is ignored in beamforming mode.\n";
   }
-  
+
   auto groups = scanForRawFileGroups(input_dir);
   cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
   for (auto group : groups) {
-    BeamformingPipeline pipeline(group, output_dir, recipe_dir, num_bands,
+    BeamformingPipeline pipeline(group, output_dir, recipe_filename, num_bands,
                                  fft_size, sti, telescope_id, snr, max_drift);
 
     if (vm.count("h5_dir")) {
@@ -110,6 +129,9 @@ int main(int argc, char* argv[]) {
     ("recipe_dir", po::value<string>(),
      "the directory to find beamforming recipes in. set this to beamform.")
 
+    ("recipe", po::value<string>(),
+     "the beamforming recipe file. set this to beamform.")
+    
     ("h5_dir", po::value<string>(),
      "optional directory to save .h5 files containing post-beamform data")
     
@@ -142,7 +164,7 @@ int main(int argc, char* argv[]) {
 
   cout << "welcome to seticore, version " << VERSION << endl;
 
-  if (vm.count("recipe_dir")) {
+  if (vm.count("recipe_dir") || vm.count("recipe")) {
     return beamformingMode(vm);
   }
   
