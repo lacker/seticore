@@ -15,8 +15,7 @@ using namespace std;
 hid_t openFile(const string& filename) {
   auto file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file == H5I_INVALID_HID) {
-    cerr << "could not open file: " << filename << endl;
-    exit(1);
+    fatal("could not open file:", filename);
   }
   return file;
 }
@@ -41,12 +40,10 @@ RecipeFile::RecipeFile(const string& _filename) :
   nants(evenlyDivide(delays.size(), nbeams * time_array.size())),
   nchans(evenlyDivide(cal_all.size(), nants * npol)) {
   if ((int) ras.size() < nbeams) {
-    cerr << fmt::format("could only load {} ras but nbeams = {}\n", ras.size(), nbeams);
-    exit(1);
+    fatal(fmt::format("could only load {} ras but nbeams = {}", ras.size(), nbeams));
   }
   if ((int) decs.size() < nbeams) {
-    cerr << fmt::format("could only load {} decs but nbeams = {}\n", decs.size(), nbeams);
-    exit(1);
+    fatal(fmt::format("could only load {} decs but nbeams = {}", decs.size(), nbeams));
   }
 }
 
@@ -76,8 +73,7 @@ string RecipeFile::getStringData(const string& name) const {
   
   vector<char> buffer(size);
   if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer[0]) < 0) {
-    cerr << "dataset " << name << " could not be read as string\n";
-    exit(1);
+    fatal(name, "dataset could not be read as string");
   }
 
   H5Tclose(native_type);
@@ -103,8 +99,7 @@ vector<string> RecipeFile::getStringVectorData(const string& name) const {
   vector<hvl_t> sequences(npoints);
 
   if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &sequences[0]) < 0) {
-    cerr << "dataset " << name << " could not be read as string vector\n";
-    exit(1);
+    fatal(name, "dataset could not be read as string vector");
   }
 
   vector<string> output;
@@ -133,8 +128,7 @@ vector<T> RecipeFile::getVectorData(const string& name, hid_t hdf5_type) const {
   int npoints = H5Sget_simple_extent_npoints(dataspace);
   vector<T> output(npoints);
   if (H5Dread(dataset, hdf5_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output[0]) < 0) {
-    cerr << "dataset " << name << " could not be read with getVectorData\n";
-    exit(1);
+    fatal(name, "dataset could not be read with getVectorData");
   }
   
   H5Sclose(dataspace);
@@ -162,14 +156,12 @@ long RecipeFile::getLongScalarData(const string& name) const {
   auto dataspace = H5Dget_space(dataset);
   int npoints = H5Sget_simple_extent_npoints(dataspace);
   if (npoints != 1) {
-    cerr << "expected scalar at " << name << " but got " << npoints << " data values\n";
-    exit(1);
+    fatal(fmt::format("expected scalar at {} but got {} data values", name, npoints));;
   }
 
   long output;
   if (H5Dread(dataset, H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output) < 0) {
-    cerr << "dataset " << name << " could not be read with getLongScalarData\n";
-    exit(1);
+    fatal(name, "dataset could not be read with getLongScalarData");
   }
   
   H5Sclose(dataspace);

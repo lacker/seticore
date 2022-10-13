@@ -1,5 +1,6 @@
 #include "hdf5.h"
 #include <iostream>
+#include "util.h"
 
 #include "h5_writer.h"
 
@@ -10,8 +11,7 @@ H5Writer::H5Writer(const string& filename, const FilterbankMetadata& metadata)
   // Deletes any already-existing file there
   file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   if (file == H5I_INVALID_HID) {
-    cerr << "could not open file for writing: " << filename << endl;
-    exit(1);
+    fatal("could not open file for writing:", filename);
   }
 
   hsize_t dims[3];
@@ -20,16 +20,14 @@ H5Writer::H5Writer(const string& filename, const FilterbankMetadata& metadata)
   dims[2] = metadata.num_channels;
   dataspace = H5Screate_simple(3, dims, NULL);
   if (dataspace == H5I_INVALID_HID) {
-    cerr << "could not create dataspace\n";
-    exit(1);
+    fatal("could not create dataspace");
   }
 
   // For now, don't set chunking or use bitshuffle.
   dataset = H5Dcreate2(file, "data", H5T_NATIVE_FLOAT, dataspace,
                        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (dataset == H5I_INVALID_HID) {
-    cerr << "could not create dataset\n";
-    exit(1);
+    fatal("could not create dataset");
   }
 
   setDoubleAttr("fch1", metadata.fch1);
@@ -50,8 +48,7 @@ H5Writer::~H5Writer() {
 void H5Writer::setData(const float* data) {
   auto status = H5Dwrite(dataset, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
   if (status < 0) {
-    cerr << "hdf5 data write failed\n";
-    exit(1);
+    fatal("hdf5 data write failed");
   }
 }
 
@@ -72,12 +69,10 @@ void H5Writer::setAttr(const string& name, hid_t type, const void* value) {
   auto attr = H5Acreate2(dataset, name.c_str(), type, scalar,
                          H5P_DEFAULT, H5P_DEFAULT);
   if (attr == H5I_INVALID_HID) {
-    cerr << "could not create attr " << name << endl;
-    exit(1);
+    fatal("could not create attr", name);
   }
   if (H5Awrite(attr, type, value) < 0) {
-    cerr << "could not write to attr " << name << endl;
-    exit(1);
+    fatal("could not write to attr", name);
   }
   H5Aclose(attr);
   H5Sclose(scalar);

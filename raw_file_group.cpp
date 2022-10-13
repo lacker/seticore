@@ -91,9 +91,8 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
   double calculated_mjd = unixTimeToMJD(start_time);
   double read_mjd = header.mjd;
   if (fabs(calculated_mjd - read_mjd) > 0.0001) {
-    cerr << "MJD mismatch. calculated " << calculated_mjd << " but header has "
-         << read_mjd << endl;
-    exit(1);
+    fatal(fmt::format("MJD mismatch. calculated {} but header has {}",
+                      calculated_mjd, read_mjd));
   }
   
   piperblk = header.getUnsignedInt("PIPERBLK", 0);
@@ -119,6 +118,9 @@ RawFileGroup::~RawFileGroup() {}
   with numerical ids, be sure that they are the same length.
  */
 vector<vector<string> > scanForRawFileGroups(const string& directory) {
+  if (!boost::filesystem::is_directory(directory)) {
+    fatal(directory, "is not a directory");
+  }
   boost::filesystem::path dir{directory};
   vector<string> filenames;
   boost::filesystem::directory_iterator it{dir};
@@ -232,10 +234,8 @@ void RawFileGroup::readTasks(char* buffer, vector<function<bool()> >* tasks) {
       openNextFile();
       const raw::Header& h(getHeader());
       if (h.pktidx < next_pktidx) {
-        cerr << "first pktidx in " << getFile().filename << " is only "
-             << h.pktidx << " when we expected at least " << next_pktidx
-             << endl;
-        exit(1);
+        fatal(fmt::format("first pktidx in {} is only {} when we expected at least {}",
+                          getFile().filename, h.pktidx, next_pktidx));
       }
     }
   }

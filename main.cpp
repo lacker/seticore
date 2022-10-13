@@ -28,6 +28,10 @@ int beamformingMode(const po::variables_map& vm) {
   float snr = vm["snr"].as<double>();
   float max_drift = vm["max_drift"].as<double>();
 
+  if (vm.count("min_drift")) {
+    cout << "the min_drift flag is ignored in beamforming mode.\n";
+  }
+  
   auto groups = scanForRawFileGroups(input_dir);
   cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
   for (auto group : groups) {
@@ -40,10 +44,10 @@ int beamformingMode(const po::variables_map& vm) {
     int tstart = time(NULL);
     pipeline.findHits();
     int tmid = time(NULL);
-    cerr << fmt::format("time to find hits: {:d}s\n", tmid - tstart);
+    cout << fmt::format("time to find hits: {:d}s\n", tmid - tstart);
     pipeline.makeStamps();
     int tstop = time(NULL);
-    cerr << fmt::format("time to make stamps: {:d}s\n", tstop - tmid);
+    cout << fmt::format("time to make stamps: {:d}s\n", tstop - tmid);
   }
   return 0;
 }
@@ -56,8 +60,7 @@ int dedopplerMode(const po::variables_map& vm) {
     // By default, output to a .dat file in the same location as the input file
     auto index = input.find_last_of(".");
     if (index >= input.size()) {
-      cerr << "unrecognized input filename: " << input << endl;
-      return 1;
+      fatal(fmt::format("unrecognized input filename: {}", input));
     }
     output = input.substr(0, index) + ".dat";
   } else {
