@@ -18,7 +18,7 @@ MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_chann
   if (bytes > 2000000) {
     cout << "multibeam buffer memory: " << prettyBytes(bytes) << endl;
   }
-  checkCuda("MultibeamBuffer data malloc");
+  checkCudaMalloc("MultibeamBuffer", bytes);
 
   cudaStreamCreateWithFlags(&prefetch_stream, cudaStreamNonBlocking);
   checkCuda("MultibeamBuffer stream init");

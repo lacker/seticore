@@ -2,6 +2,7 @@
 #include "cublas_v2.h"
 #include <cuda.h>
 #include <cufft.h>
+#include <fmt/core.h>
 #include <iostream>
 
 #include "beamformer.h"
@@ -284,19 +285,32 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int 
                                              num_input_timesteps, num_coarse_channels,
                                              num_polarities, num_antennas);
   
-  int frame_size = num_coarse_channels * num_input_timesteps;
+  size_t frame_size = num_coarse_channels * num_input_timesteps;
   
   coefficients_size = num_antennas * num_beams * num_coarse_channels * num_polarities;
   size_t coefficients_bytes = coefficients_size * sizeof(thrust::complex<float>);
   cudaMallocManaged(&coefficients, coefficients_bytes);
-  checkCuda("Beamformer coefficients malloc");
- 
+  checkCudaMalloc("Beamformer coefficients", coefficients_bytes);
+
+  // Sanity checking parameters for better debug messages
+  size_t upper_bound = (size_t) 16 * 1024 * 1024 * 1024;
+  
   size_t fft_buffer_size = num_antennas * num_polarities * frame_size;
+
+  if (fft_buffer_size > upper_bound) {
+    fatal(fmt::format("fft buffer size is too large. it's a product of: "
+                      "num_antennas = {}, "
+                      "num_polarities = {}, "
+                      "num_coarse_channels = {}, "
+                      "num_input_timesteps = {}",
+                      num_antennas, num_polarities,
+                      num_coarse_channels, num_input_timesteps));
+  }
+
   size_t voltage_size = num_beams * num_polarities * frame_size;
   size_t buffer_size = max(fft_buffer_size, voltage_size);
 
   buffer = make_unique<ComplexBuffer>(buffer_size);
-
   prebeam = make_unique<MultiantennaBuffer>(num_input_timesteps / fft_size,
                                             num_coarse_channels * fft_size,
                                             num_polarities, num_antennas);

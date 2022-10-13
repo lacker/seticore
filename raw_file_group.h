@@ -45,7 +45,7 @@ class RawFileGroup {
   int header_index;
   
   // The next pktidx that we will return from read()
-  int next_pktidx;
+  long next_pktidx;
 
   // Helper to open the file with the given name
   const RawFile& openFile(const string& filename);
@@ -89,7 +89,7 @@ class RawFileGroup {
   double start_time;
   
   // Metadata for the very first block
-  int start_pktidx;
+  long start_pktidx;
   
   // The total number of blocks in this set of raw files.
   // This includes missing blocks. 

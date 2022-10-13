@@ -8,7 +8,7 @@ ComplexBuffer::ComplexBuffer(size_t size) :
   size(size), bytes(sizeof(thrust::complex<float>) * size) {
 
   cudaMallocManaged(&data, bytes);
-  checkCuda("ComplexBuffer malloc");
+  checkCudaMalloc("ComplexBuffer", bytes);
 }
 
 ComplexBuffer::~ComplexBuffer() {

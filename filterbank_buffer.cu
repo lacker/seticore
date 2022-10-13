@@ -15,7 +15,7 @@ FilterbankBuffer::FilterbankBuffer(int num_timesteps, int num_channels)
     size(num_timesteps * num_channels),
     bytes(sizeof(float) * size) {
   cudaMallocManaged(&data, bytes);
-  checkCuda("FilterbankBuffer data malloc");
+  checkCudaMalloc("FilterbankBuffer", bytes);
 }
 
 // Creates a buffer that is a view on memory owned by the caller.

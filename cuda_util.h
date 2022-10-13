@@ -11,6 +11,7 @@ const int CUDA_MAX_THREADS = 1024;
 
 // Helpers to nicely display cuda errors
 void checkCuda(const string& tag);
+void checkCudaMalloc(const string& tag, size_t size);
 
 // Helper to check errors and clean up
 class Stream {

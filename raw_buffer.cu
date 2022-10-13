@@ -21,7 +21,7 @@ RawBuffer::RawBuffer(int num_blocks, int num_antennas,
   size = rawBufferSize(num_blocks, num_antennas, num_coarse_channels,
                             timesteps_per_block, npol);
   cudaMallocHost(&data, size);
-  checkCuda("RawBuffer malloc");
+  checkCudaMalloc("RawBuffer", size);
 }
 
 RawBuffer::~RawBuffer() {

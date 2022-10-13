@@ -255,6 +255,14 @@ void RecipeFile::generateCoefficients(int time_array_index,
 				      int subband_size,
                                       thrust::complex<float>* coefficients) const {
   assert(subband_start + subband_size <= raw_num_channels);
+
+  if (raw_start_channel + raw_num_channels > nchans) {
+    fatal(fmt::format("the raw file has {} coarse channels, "
+                      "starting at coarse channel {}, "
+                      "but the recipe file only has {} channels",
+                      raw_num_channels, raw_start_channel, nchans));
+  }
+
   assert(raw_start_channel + raw_num_channels <= nchans);
   
   float chan_bandwidth_ghz = raw_bandwidth_mhz / raw_num_channels * 0.001;

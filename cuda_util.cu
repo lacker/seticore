@@ -12,6 +12,15 @@ void checkCuda(const string& tag) {
   }
 }
 
+void checkCudaMalloc(const string& tag, size_t bytes) {
+  auto err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    cerr << tag << ": cuda error " << err << " allocating " <<
+      bytes << " bytes: " << cudaGetErrorString(err) << endl;
+    exit(2);
+  }
+}
+
 Stream::Stream() {
   cudaStreamCreate(&stream);
   checkCuda("cudaStreamCreate");
