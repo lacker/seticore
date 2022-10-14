@@ -77,7 +77,8 @@ class RawFileGroup {
   
   string obsid;
   string source_name;
-
+  string telescope;
+  
   // Time resolution in seconds
   // The raw file version of "tsamp"
   double tbin;
@@ -133,4 +134,6 @@ class RawFileGroup {
 
   // Calculate fch1 for the entire file
   double getFch1(int fft_size) const;
+
+  int getTelescopeID() const;
 };

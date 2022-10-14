@@ -4,6 +4,7 @@
 
 #include "h5_reader.h"
 #include "h5_writer.h"
+#include "util.h"
 
 TEST_CASE("h5 write then read", "[h5]") {
   string dir = boost::filesystem::temp_directory_path().c_str();

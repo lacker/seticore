@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <iostream>
+#include "util.h"
 
 #include "filterbank_metadata.h"
 

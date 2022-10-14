@@ -86,7 +86,7 @@ Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, doubl
 
   drift_rate_resolution = 1e6 * foff / (drift_timesteps * tsamp);
     
-  // Allocate everything we need for GPU processing
+  // Allocate everything we need for GPU processing 
 
   cudaMalloc(&buffer1, num_channels * rounded_num_timesteps * sizeof(float));
   checkCuda("Dedopplerer buffer1 malloc");

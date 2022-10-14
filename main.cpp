@@ -141,8 +141,8 @@ int main(int argc, char* argv[]) {
     ("fft_size", po::value<int>(),
      "size of the fft for upchannelization")
 
-    ("telescope_id", po::value<int>(),
-     "SIGPROC standard id for the telescope that provided this data")
+    ("telescope_id", po::value<int>()->default_value(NO_TELESCOPE_ID),
+     "SIGPROC standard id for the telescope. If not provided, try to infer from input.")
 
     ("sti", po::value<int>()->default_value(8),
      "duration of the Short Time Integration to compress post-beamforming data")

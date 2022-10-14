@@ -1,6 +1,7 @@
 #include "util.h"
 
 #include <assert.h>
+#include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <ctime>
 #include <fmt/core.h>
@@ -155,4 +156,13 @@ void fatal(const string& message) {
 void fatal(const string& message1, const string& message2) {
   string s = message1 + " " + message2;
   fatal(s);
+}
+
+int telescopeID(const string& telescope) {
+  string lower = boost::algorithm::to_lower_copy(telescope);
+  if (boost::starts_with(lower, "meerkat")) {
+    return MEERKAT;
+  }
+  cerr << "warning: unrecognized telescope name: [" << telescope << "]" << endl;
+  return NO_TELESCOPE_ID;
 }

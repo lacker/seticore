@@ -78,6 +78,7 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
   dec = header.dec;
   obsid = header.getString("OBSID");
   source_name = header.src_name;
+  telescope = header.telescop;
   start_pktidx = header.pktidx;
   next_pktidx = start_pktidx;
   tbin = header.tbin;
@@ -291,4 +292,8 @@ double RawFileGroup::getFch1(int fft_size) const {
   double fcchan0 = obsfreq - obsbw * (num_coarse_channels - 1) / (2 * num_coarse_channels);
   double fch1 = fcchan0 - floor(fft_size / 2) * obsbw / (num_coarse_channels * fft_size);
   return fch1;
+}
+
+int RawFileGroup::getTelescopeID() const {
+  return telescopeID(telescope);
 }

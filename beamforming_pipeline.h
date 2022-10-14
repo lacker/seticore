@@ -16,7 +16,6 @@ public:
   const int num_bands;
   const int fft_size;
   const int sti;
-  const int telescope_id;
   const float snr;
   const float max_drift;
 
@@ -38,14 +37,16 @@ public:
                       int num_bands,
                       int fft_size,
                       int sti,
-                      int telescope_id,
+                      int _telescope_id,
                       float snr,
                       float max_drift)
     : raw_files(raw_files), output_dir(stripAnyTrailingSlash(output_dir)),
       recipe_filename(recipe_filename), num_bands(num_bands), fft_size(fft_size),
-      sti(sti), telescope_id(telescope_id), snr(snr), max_drift(max_drift),
+      sti(sti), snr(snr), max_drift(max_drift),
       num_bands_to_process(num_bands), record_hits(true),
-      file_group(raw_files) {
+      file_group(raw_files),
+      telescope_id(_telescope_id == NO_TELESCOPE_ID
+                   ? file_group.getTelescopeID() : _telescope_id) {
   }
 
   void findHits();  
@@ -55,5 +56,8 @@ public:
   
 private:
   RawFileGroup file_group;
+
+public:
+  const int telescope_id;
   
 };
