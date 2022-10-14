@@ -28,7 +28,7 @@ struct Signal {
   # Which coarse channel this hit is in
   coarseChannel @5 :Int32;
 
-  # Which beam this hit is in. -1 for incoherent beam
+  # Which beam this hit is in. -1 for incoherent beam, or no beam
   beam @6 :Int32;
 }
 
@@ -60,7 +60,7 @@ struct Filterbank {
   # Column zero in the data corresponds to this column in the whole coarse channel
   startChannel @12 :Int32;
 
-  # Which beam this data is from. -1 for incoherent beam
+  # Which beam this data is from. -1 for incoherent beam, or no beam
   beam @13 :Int32;
 }
 
