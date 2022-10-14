@@ -91,6 +91,7 @@ lib_seticore_dep = declare_dependency(
         srcs,
         include_directories : [include_directories('.'), include_directories('raw')],
         dependencies: deps,
+        cuda_args: cuda_args,
         install: true
     ),
 )
