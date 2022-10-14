@@ -163,6 +163,9 @@ int telescopeID(const string& telescope) {
   if (boost::starts_with(lower, "meerkat")) {
     return MEERKAT;
   }
+  if (boost::starts_with(lower, "ata")) {
+    return ATA;
+  }
   cerr << "warning: unrecognized telescope name: [" << telescope << "]" << endl;
   return NO_TELESCOPE_ID;
 }
