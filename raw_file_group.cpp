@@ -92,9 +92,9 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
     // Sanity check
     double calculated_mjd = unixTimeToMJD(start_time);
     double read_mjd = header.mjd;
-    if (fabs(calculated_mjd - read_mjd) > 0.01) {
-      fatal(fmt::format("MJD mismatch. calculated {} but header has {}",
-                        calculated_mjd, read_mjd));
+    if (fabs(calculated_mjd - read_mjd) > 0.001) {
+      fatal(fmt::format("MJD mismatch. calculated {} but header has {} in {}",
+                        calculated_mjd, read_mjd, filenames[0]));
     }
   }
   
@@ -117,6 +117,7 @@ RawFileGroup::~RawFileGroup() {}
   Each prefix defines one group of raw files.
   The groups are sorted by prefix.
   Within the group, they are sorted by sequence identifier.
+  A valid group must start with the sequence identifier "0000".
   Each of these sorts are *string* sorting, so if you provide raw files
   with numerical ids, be sure that they are the same length.
  */
@@ -136,7 +137,7 @@ vector<vector<string> > scanForRawFileGroups(const string& directory) {
   // Gather filenames that share the group_prefix in group
   vector<string> group;
   string group_prefix("");
-  vector<vector<string> > answer;
+  vector<vector<string> > groups;
 
   for (string filename : filenames) {
     string prefix = getRawFilePrefix(filename);
@@ -158,15 +159,23 @@ vector<vector<string> > scanForRawFileGroups(const string& directory) {
     }
 
     // This file represents a new group
-    answer.push_back(group);
+    groups.push_back(group);
     group.clear();
     group.push_back(filename);
     group_prefix = prefix;
   }
 
   if (!group.empty()) {
-    // We have to add the last group to our answer
-    answer.push_back(group);
+    // We have to add the last group to our groups
+    groups.push_back(group);
+  }
+
+  // Accept only the ones starting with a .0000.raw file
+  vector<vector<string> > answer;
+  for (auto group : groups) {
+    if (boost::algorithm::ends_with(group[0], ".0000.raw")) {
+      answer.push_back(group);
+    }
   }
   
   return answer;
