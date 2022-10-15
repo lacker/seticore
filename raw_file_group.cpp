@@ -92,7 +92,7 @@ RawFileGroup::RawFileGroup(const vector<string>& filenames)
     // Sanity check
     double calculated_mjd = unixTimeToMJD(start_time);
     double read_mjd = header.mjd;
-    if (fabs(calculated_mjd - read_mjd) > 0.0001) {
+    if (fabs(calculated_mjd - read_mjd) > 0.01) {
       fatal(fmt::format("MJD mismatch. calculated {} but header has {}",
                         calculated_mjd, read_mjd));
     }
