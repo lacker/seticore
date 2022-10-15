@@ -15,8 +15,10 @@ if nvcc_release <= '11.0'
 else
     cuda_args = basic_cuda_args + newer_cuda_args
 endif
-    
-fmt_dep = subproject('fmt').get_variable('fmt_dep')
+
+cmake = import('cmake')
+fmt_subproj = cmake.subproject('fmt')		
+fmt_dep = fmt_subproj.dependency('fmt')
 
 boost_dep = dependency('boost', modules: [
     'filesystem',
@@ -81,20 +83,6 @@ tests = [
     'taylor_test.cu',
 ]
 
-# Dependency objects for super-project_version
-
-lib_seticore_dep = declare_dependency(
-    include_directories : [include_directories('.'), include_directories('raw')],
-    dependencies: deps,
-    link_with: library(
-        'seticore',
-        srcs,
-        include_directories : [include_directories('.'), include_directories('raw')],
-        dependencies: deps,
-        cuda_args: cuda_args,
-        install: true
-    ),
-)
 
 # The main binaries
 
