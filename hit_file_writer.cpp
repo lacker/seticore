@@ -33,22 +33,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
 
   Hit::Builder hit = message.initRoot<Hit>();
 
-  // Store incoherent beams as NO_BEAM
-  int output_beam = metadata.isCoherentBeam(dedoppler_hit.beam)
-    ? dedoppler_hit.beam : NO_BEAM;
-  
-  // Most of the signal is just copied from the dedoppler hit
-  Signal::Builder signal = hit.getSignal();
-  int coarse_offset = dedoppler_hit.coarse_channel * metadata.coarse_channel_size;
-  int global_index = coarse_offset + dedoppler_hit.index;
-  double frequency = metadata.fch1 + global_index * metadata.foff;
-  signal.setFrequency(frequency);
-  signal.setIndex(dedoppler_hit.index);
-  signal.setDriftSteps(dedoppler_hit.drift_steps);
-  signal.setDriftRate(dedoppler_hit.drift_rate);
-  signal.setSnr(dedoppler_hit.snr);
-  signal.setCoarseChannel(dedoppler_hit.coarse_channel);
-  signal.setBeam(output_beam);
+  dedoppler_hit.buildSignal(hit.getSignal());
 
   // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
@@ -61,7 +46,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
   filterbank.setTstart(metadata.tstart);
   filterbank.setNumTimesteps(metadata.num_timesteps);
   filterbank.setCoarseChannel(dedoppler_hit.coarse_channel);
-  filterbank.setBeam(output_beam);
+  filterbank.setBeam(dedoppler_hit.beam);
   
   // Extract the subset of columns near the hit
   // final_index is the index of the signal at the last point in time we dedopplered for
@@ -83,6 +68,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
   int begin_index = max(leftmost_index - EXTRA_COLUMNS, 0);
   int end_index = min(rightmost_index + EXTRA_COLUMNS, metadata.coarse_channel_size) - 1;
   int num_channels = end_index - begin_index;
+  int coarse_offset = dedoppler_hit.coarse_channel * metadata.coarse_channel_size;
   filterbank.setNumChannels(num_channels);
   filterbank.setFch1(metadata.fch1 + (coarse_offset + begin_index) * metadata.foff);
   filterbank.setStartChannel(begin_index);

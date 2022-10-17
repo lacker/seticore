@@ -34,7 +34,8 @@ void StampExtractor::openOutputFile() {
   opened = true;
 }
 
-void StampExtractor::extract(int coarse_channel, int start_channel, int num_channels) {
+void StampExtractor::extract(const DedopplerHit* hit, int coarse_channel,
+                             int start_channel, int num_channels) {
   double global_fch1 = file_group.getFch1(fft_size);
 
   // Output metadata
@@ -115,6 +116,10 @@ void StampExtractor::extract(int coarse_channel, int start_channel, int num_chan
   stamp.setCoarseChannel(coarse_channel);
   stamp.setFftSize(fft_size);
   stamp.setStartChannel(start_channel);
+
+  if (hit != nullptr) {
+    hit->buildSignal(stamp.getSignal());
+  }
   
   openOutputFile();
   writeMessageToFd(fd, message);

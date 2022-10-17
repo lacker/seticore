@@ -6,6 +6,7 @@
 
 #include "dedoppler_hit.h"
 #include "filterbank_buffer.h"
+#include "filterbank_metadata.h"
 #include "hit_recorder.h"
 
 using namespace std;
@@ -36,7 +37,8 @@ public:
   Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
   ~Dedopplerer();
 
-  void search(const FilterbankBuffer& input, int beam, int coarse_channel,
+  void search(const FilterbankBuffer& input, const FilterbankMetadata& metadata,
+              int beam, int coarse_channel,
               double max_drift, double min_drift, double snr_threshold,
               vector<DedopplerHit>* output);
 

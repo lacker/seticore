@@ -197,8 +197,8 @@ void BeamformingPipeline::findHits() {
         multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &fb_buffer);
 
         vector<DedopplerHit> local_hits;
-        dedopplerer.search(fb_buffer, beam, coarse_channel, max_drift, 0.0, snr,
-                           &local_hits);
+        dedopplerer.search(fb_buffer, metadata, beam, coarse_channel, max_drift,
+                           0.0, snr, &local_hits);
         for (DedopplerHit hit : local_hits) {
           if (record_hits) {
             hit_recorder->recordHit(hit, fb_buffer.data);
@@ -227,19 +227,21 @@ void BeamformingPipeline::makeStamps() {
     if (stamps_created >= max_stamps) {
       break;
     }
+    const DedopplerHit& top_hit = group.topHit();
     
-    if (group.topHit().drift_steps == 0) {
+    if (top_hit.drift_steps == 0) {
       // This is a vertical line. No drift = terrestrial. Skip it
       continue;
     }
 
     // Extract the stamp
-    int first_channel = max(0, group.topHit().lowIndex() - margin);
-    int last_channel = min(fft_size - 1, group.topHit().highIndex() + margin);
-    cout << "top hit: " << group.topHit().toString() << endl;
+    int first_channel = max(0, top_hit.lowIndex() - margin);
+    int last_channel = min(fft_size - 1, top_hit.highIndex() + margin);
+    cout << "top hit: " << top_hit.toString() << endl;
     cout << fmt::format("extracting fine channels {} to {} from coarse channel {}\n",
-                        first_channel, last_channel, group.topHit().coarse_channel);
-    extractor.extract(group.topHit().coarse_channel,
+                        first_channel, last_channel, top_hit.coarse_channel);
+    extractor.extract(&top_hit,
+                      top_hit.coarse_channel,
                       first_channel,
                       last_channel - first_channel + 1);
     

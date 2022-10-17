@@ -10,6 +10,7 @@
 #error "Version mismatch between generated code and library headers.  You must use the same version of the Cap'n Proto compiler and library."
 #endif
 
+#include "hit.capnp.h"
 
 CAPNP_BEGIN_HEADER
 
@@ -30,7 +31,7 @@ struct Stamp {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 10, 3)
+    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 10, 4)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -92,6 +93,9 @@ public:
   inline  ::int32_t getFftSize() const;
 
   inline  ::int32_t getStartChannel() const;
+
+  inline bool hasSignal() const;
+  inline  ::Signal::Reader getSignal() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -185,6 +189,13 @@ public:
   inline  ::int32_t getStartChannel();
   inline void setStartChannel( ::int32_t value);
 
+  inline bool hasSignal();
+  inline  ::Signal::Builder getSignal();
+  inline void setSignal( ::Signal::Reader value);
+  inline  ::Signal::Builder initSignal();
+  inline void adoptSignal(::capnp::Orphan< ::Signal>&& value);
+  inline ::capnp::Orphan< ::Signal> disownSignal();
+
 private:
   ::capnp::_::StructBuilder _builder;
   template <typename, ::capnp::Kind>
@@ -203,6 +214,7 @@ public:
   inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)
       : _typeless(kj::mv(typeless)) {}
 
+  inline  ::Signal::Pipeline getSignal();
 private:
   ::capnp::AnyPointer::Pipeline _typeless;
   friend class ::capnp::PipelineHook;
@@ -513,6 +525,45 @@ inline  ::int32_t Stamp::Builder::getStartChannel() {
 inline void Stamp::Builder::setStartChannel( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<19>() * ::capnp::ELEMENTS, value);
+}
+
+inline bool Stamp::Reader::hasSignal() const {
+  return !_reader.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS).isNull();
+}
+inline bool Stamp::Builder::hasSignal() {
+  return !_builder.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS).isNull();
+}
+inline  ::Signal::Reader Stamp::Reader::getSignal() const {
+  return ::capnp::_::PointerHelpers< ::Signal>::get(_reader.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS));
+}
+inline  ::Signal::Builder Stamp::Builder::getSignal() {
+  return ::capnp::_::PointerHelpers< ::Signal>::get(_builder.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS));
+}
+#if !CAPNP_LITE
+inline  ::Signal::Pipeline Stamp::Pipeline::getSignal() {
+  return  ::Signal::Pipeline(_typeless.getPointerField(3));
+}
+#endif  // !CAPNP_LITE
+inline void Stamp::Builder::setSignal( ::Signal::Reader value) {
+  ::capnp::_::PointerHelpers< ::Signal>::set(_builder.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS), value);
+}
+inline  ::Signal::Builder Stamp::Builder::initSignal() {
+  return ::capnp::_::PointerHelpers< ::Signal>::init(_builder.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS));
+}
+inline void Stamp::Builder::adoptSignal(
+    ::capnp::Orphan< ::Signal>&& value) {
+  ::capnp::_::PointerHelpers< ::Signal>::adopt(_builder.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS), kj::mv(value));
+}
+inline ::capnp::Orphan< ::Signal> Stamp::Builder::disownSignal() {
+  return ::capnp::_::PointerHelpers< ::Signal>::disown(_builder.getPointerField(
+      ::capnp::bounded<3>() * ::capnp::POINTERS));
 }
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <capnp/message.h>
+#include "dedoppler_hit.h"
 #include "raw_file_group.h"
 
 
@@ -30,5 +31,7 @@ class StampExtractor {
   StampExtractor(const StampExtractor&) = delete;
   StampExtractor& operator=(StampExtractor&) = delete;
 
-  void extract(int coarse_channel, int start_channel, int num_channels);
+  // hit may be nullptr, in which case no hit information is added.
+  void extract(const DedopplerHit* hit, int coarse_channel,
+               int start_channel, int num_channels);
 };

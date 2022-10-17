@@ -139,6 +139,7 @@ size_t Dedopplerer::memoryUsage() const {
   have GPU processing pending.
 */
 void Dedopplerer::search(const FilterbankBuffer& input,
+                         const FilterbankMetadata& metadata,
                          int beam, int coarse_channel,
                          double max_drift, double min_drift, double snr_threshold,
                          vector<DedopplerHit>* output) {
@@ -262,14 +263,8 @@ void Dedopplerer::search(const FilterbankBuffer& input,
       float snr = (candidate_path_sum - median) / std_dev;
 
       if (abs(drift_rate) >= min_drift) {
-        DedopplerHit hit{
-          .index=candidate_freq,
-          .drift_steps=drift_bins,
-          .drift_rate=drift_rate,
-          .snr=snr,
-          .beam=beam,
-          .coarse_channel=coarse_channel,
-        };
+        DedopplerHit hit(metadata, candidate_freq, drift_bins, drift_rate,
+                         snr, beam, coarse_channel);
         if (print_hits) {
           cout << "hit: " << hit.toString() << endl;
         }

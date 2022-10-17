@@ -7,6 +7,18 @@
 
 using namespace std;
 
+DedopplerHit::DedopplerHit(const FilterbankMetadata& metadata, int _index,
+                           int _drift_steps, double _drift_rate,
+                           float _snr, int _beam, int _coarse_channel)
+  : index(_index), drift_steps(_drift_steps), drift_rate(_drift_rate),
+    snr(_snr), coarse_channel(_coarse_channel),
+    beam(metadata.isCoherentBeam(_beam) ? _beam : NO_BEAM) {
+
+  int coarse_offset = coarse_channel * metadata.coarse_channel_size;
+  int global_index = coarse_offset + index;
+  frequency = metadata.fch1 + global_index * metadata.foff;
+}
+
 string DedopplerHit::toString() const {
   return fmt::format("coarse channel = {}, index = {}, snr = {:.5f}, "
                      "drift rate = {:.5f} ({})",
@@ -21,6 +33,18 @@ int DedopplerHit::lowIndex() const {
 int DedopplerHit::highIndex() const {
   return max(index, index + drift_steps);
 }
+
+  // Write this hit to a protocol buffer
+void DedopplerHit::buildSignal(Signal::Builder signal) const {
+  signal.setFrequency(frequency);
+  signal.setIndex(index);
+  signal.setDriftSteps(drift_steps);
+  signal.setDriftRate(drift_rate);
+  signal.setSnr(snr);
+  signal.setCoarseChannel(coarse_channel);
+  signal.setBeam(beam);
+}
+
 
 // Sort first by coarse channel, then by low index, then by high index
 bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs) {

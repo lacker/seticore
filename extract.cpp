@@ -68,5 +68,5 @@ int main(int argc, char* argv[]) {
   RawFileGroup file_group(raw_files);
 
   StampExtractor extractor(file_group, fft_size, telescope_id, output_filename);
-  extractor.extract(coarse_channel, start_channel, num_channels);
+  extractor.extract(nullptr, coarse_channel, start_channel, num_channels);
 }
