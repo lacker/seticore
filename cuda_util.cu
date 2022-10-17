@@ -1,12 +1,14 @@
 #include <iostream>
 
 #include "cuda_util.h"
+#include "util.h"
 
 using namespace std;
 
 void checkCuda(const string& tag) {
   auto err = cudaGetLastError();
   if (err != cudaSuccess) {
+    logErrorTimestamp();
     cerr << tag << ": cuda error " << err << ": " << cudaGetErrorString(err) << endl;
     exit(2);
   }
@@ -15,6 +17,7 @@ void checkCuda(const string& tag) {
 void checkCudaMalloc(const string& tag, size_t bytes) {
   auto err = cudaGetLastError();
   if (err != cudaSuccess) {
+    logErrorTimestamp();
     cerr << tag << ": cuda error " << err << " allocating " <<
       bytes << " bytes: " << cudaGetErrorString(err) << endl;
     exit(2);

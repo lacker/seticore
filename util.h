@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const string VERSION = "0.2.16";
+const string VERSION = "0.2.17";
 
 // This is allegedly a SIGPROC standard but the most authoritative source
 // I can find is:
@@ -36,6 +36,8 @@ double hoursToRadians(double hours);
 double radiansToHours(double radians);
 double degreesToRadians(double degrees);
 double radiansToDegrees(double radians);
+void logErrorTimestamp();
+void logError(const string& message);
 void fatal(const string& message);
 void fatal(const string& message1, const string& message2);
 int telescopeID(const string& telescope);

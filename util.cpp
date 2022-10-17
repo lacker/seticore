@@ -146,10 +146,19 @@ double radiansToDegrees(double radians) {
   return radians * 180.0 / M_PI;
 }
 
-void fatal(const string& message) {
+void logErrorTimestamp() {
   time_t t = time(nullptr);
   tm local = *localtime(&t);
-  cerr << "[" << put_time(&local, "%Y-%m-%d %H:%M:%S %Z") << "] " << message << endl;
+  cerr << "[" << put_time(&local, "%Y-%m-%d %H:%M:%S %Z") << "] ";
+}
+
+void logError(const string& message) {
+  logErrorTimestamp();
+  cerr << message << endl;
+}
+
+void fatal(const string& message) {
+  logError(message);
   exit(1);
 }
 

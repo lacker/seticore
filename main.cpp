@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "beamforming_pipeline.h"
+#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <fmt/core.h>
@@ -16,8 +17,6 @@ using namespace std;
 namespace po = boost::program_options;
 
 int beamformingMode(const po::variables_map& vm) {
-  cout << "running in beamforming mode.\n";
-
   string input_dir = vm["input"].as<string>();
   string output_dir = vm["output"].as<string>();
 
@@ -162,12 +161,19 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  cout << "welcome to seticore, version " << VERSION << endl;
-
   if (vm.count("recipe_dir") || vm.count("recipe")) {
+    vector<string> parts;
+    parts.push_back("running seticore version");
+    parts.push_back(VERSION);
+    parts.push_back("with:");
+    for (int i = 0; i < argc; ++i) {
+      parts.push_back(string(argv[i]));
+    }
+    logError(boost::algorithm::join(parts, " "));
     return beamformingMode(vm);
   }
   
+  cout << "welcome to seticore, version " << VERSION << endl;  
   return dedopplerMode(vm);
 }
 
