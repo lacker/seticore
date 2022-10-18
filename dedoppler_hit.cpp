@@ -34,18 +34,6 @@ int DedopplerHit::highIndex() const {
   return max(index, index + drift_steps);
 }
 
-  // Write this hit to a protocol buffer
-void DedopplerHit::buildSignal(Signal::Builder signal) const {
-  signal.setFrequency(frequency);
-  signal.setIndex(index);
-  signal.setDriftSteps(drift_steps);
-  signal.setDriftRate(drift_rate);
-  signal.setSnr(snr);
-  signal.setCoarseChannel(coarse_channel);
-  signal.setBeam(beam);
-}
-
-
 // Sort first by coarse channel, then by low index, then by high index
 bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs) {
   if (lhs.coarse_channel != rhs.coarse_channel) {

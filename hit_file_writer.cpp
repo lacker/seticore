@@ -33,7 +33,7 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
 
   Hit::Builder hit = message.initRoot<Hit>();
 
-  dedoppler_hit.buildSignal(hit.getSignal());
+  buildSignal(dedoppler_hit, hit.getSignal());
 
   // Most metadata is copied from some input
   Filterbank::Builder filterbank = hit.getFilterbank();
@@ -85,3 +85,16 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
 
   writeMessageToFd(fd, message);
 }
+
+// Write a hit to a protocol buffer
+void buildSignal(const DedopplerHit& hit, Signal::Builder signal) {
+  signal.setFrequency(hit.frequency);
+  signal.setIndex(hit.index);
+  signal.setDriftSteps(hit.drift_steps);
+  signal.setDriftRate(hit.drift_rate);
+  signal.setSnr(hit.snr);
+  signal.setCoarseChannel(hit.coarse_channel);
+  signal.setBeam(hit.beam);
+}
+
+

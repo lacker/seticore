@@ -1,7 +1,5 @@
 #pragma once
 
-#include <capnp/message.h>
-#include "hit.capnp.h"
 #include <string>
 
 #include "filterbank_metadata.h"
@@ -46,9 +44,6 @@ public:
 
   // Highest index that contains a bin with this signal
   int highIndex() const;
-
-  // Write this hit to a protocol buffer
-  void buildSignal(Signal::Builder signal) const;
 };
 
 

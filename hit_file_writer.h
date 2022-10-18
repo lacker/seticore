@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "filterbank_metadata.h"
+#include "hit.capnp.h"
 #include "hit_recorder.h"
 
 using namespace std;
@@ -25,3 +26,6 @@ class HitFileWriter: public HitRecorder {
 
   void recordHit(DedopplerHit hit, const float* input);
 };
+
+// Write a hit to a protocol buffer
+void buildSignal(const DedopplerHit& hit, Signal::Builder signal);

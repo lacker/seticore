@@ -1,6 +1,7 @@
 #include <capnp/serialize-packed.h>
 #include <errno.h>
 #include <fmt/core.h>
+#include "hit_file_writer.h"
 #include <iostream>
 #include "raw_file_group_reader.h"
 #include "stamp.capnp.h"
@@ -118,7 +119,7 @@ void StampExtractor::extract(const DedopplerHit* hit, int coarse_channel,
   stamp.setStartChannel(start_channel);
 
   if (hit != nullptr) {
-    hit->buildSignal(stamp.getSignal());
+    buildSignal(*hit, stamp.getSignal());
   }
   
   openOutputFile();
