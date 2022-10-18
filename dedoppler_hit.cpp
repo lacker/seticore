@@ -9,10 +9,12 @@ using namespace std;
 
 DedopplerHit::DedopplerHit(const FilterbankMetadata& metadata, int _index,
                            int _drift_steps, double _drift_rate,
-                           float _snr, int _beam, int _coarse_channel)
+                           float _snr, int _beam, int _coarse_channel,
+                           int _num_timesteps)
   : index(_index), drift_steps(_drift_steps), drift_rate(_drift_rate),
     snr(_snr), coarse_channel(_coarse_channel),
-    beam(metadata.isCoherentBeam(_beam) ? _beam : NO_BEAM) {
+    beam(metadata.isCoherentBeam(_beam) ? _beam : NO_BEAM),
+    num_timesteps(_num_timesteps) {
 
   int coarse_offset = coarse_channel * metadata.coarse_channel_size;
   int global_index = coarse_offset + index;

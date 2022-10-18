@@ -20,6 +20,7 @@ public:
   // Like (ending index - starting index), this is positive for rightward drift,
   // negative for leftward drift.
   // This is zero for a vertical line.
+  // Includes drift over the full rounded-up power-of-two time range.
   int drift_steps;
 
   // The drift rate in Hz/s
@@ -34,8 +35,12 @@ public:
   // Which beam the hit is in. NO_BEAM if there is none, or for the incoherent beam.
   int beam;
 
+  // This does *not* use rounded-up-to-a-power-of-two timesteps.
+  int num_timesteps;
+  
   DedopplerHit(const FilterbankMetadata& metadata, int _index, int _drift_steps,
-               double _drift_rate, float _snr, int _beam, int _coarse_channel);
+               double _drift_rate, float _snr, int _beam, int _coarse_channel,
+               int _num_timesteps);
 
   string toString() const;
 

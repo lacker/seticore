@@ -102,6 +102,8 @@ public:
 
   inline  ::int32_t getBeam() const;
 
+  inline  ::int32_t getNumTimesteps() const;
+
 private:
   ::capnp::_::StructReader _reader;
   template <typename, ::capnp::Kind>
@@ -150,6 +152,9 @@ public:
 
   inline  ::int32_t getBeam();
   inline void setBeam( ::int32_t value);
+
+  inline  ::int32_t getNumTimesteps();
+  inline void setNumTimesteps( ::int32_t value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -520,6 +525,20 @@ inline  ::int32_t Signal::Builder::getBeam() {
 inline void Signal::Builder::setBeam( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<8>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int32_t Signal::Reader::getNumTimesteps() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<9>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Signal::Builder::getNumTimesteps() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<9>() * ::capnp::ELEMENTS);
+}
+inline void Signal::Builder::setNumTimesteps( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<9>() * ::capnp::ELEMENTS, value);
 }
 
 inline bool Filterbank::Reader::hasSourceName() const {

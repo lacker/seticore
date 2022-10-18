@@ -16,7 +16,8 @@ struct Signal {
   # This is relative to the coarse channel.
   index @1 :Int32;
 
-  # How many bins the hit drifts over
+  # How many bins the hit drifts over.
+  # This counts the drift distance over the full rounded-up power-of-two time range.
   driftSteps @2 :Int32;
 
   # The drift rate in Hz/s
@@ -30,6 +31,10 @@ struct Signal {
 
   # Which beam this hit is in. -1 for incoherent beam, or no beam
   beam @6 :Int32;
+
+  # The number of timesteps in the associated filterbank.
+  # This does *not* use rounded-up-to-a-power-of-two timesteps.
+  numTimesteps @7 :Int32;
 }
 
 # The Filterbank contains a smaller slice of the larger filterbank that we originally

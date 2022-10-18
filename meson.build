@@ -84,48 +84,62 @@ tests = [
 ]
 
 
+libseticore = static_library('seticore', srcs, dependencies: deps, cuda_args: cuda_args)
+
 # The main binaries
 
-executable('seticore', srcs + ['main.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+executable('seticore', ['main.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
-executable('tests', srcs + tests + ['tests.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+executable('tests', tests + ['tests.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 # Other binaries
 
 executable('beamforming_integration_test',
-           srcs + ['beamforming_integration_test.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['beamforming_integration_test.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('blockls',
-           srcs + ['blockls.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['blockls.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('hitls',
-           srcs + ['hitls.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['hitls.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('taylor_benchmark',
-           srcs + ['taylor_benchmark.cu'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['taylor_benchmark.cu'],
+           dependencies: deps,
+           link_with: libseticore,
+           cuda_args: cuda_args)
 
 executable('extract',
-           srcs + ['extract.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['extract.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('file_io_benchmark',
-           srcs + ['file_io_benchmark.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['file_io_benchmark.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('rawls',
-           srcs + ['rawls.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['rawls.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('stampls',
-           srcs + ['stampls.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['stampls.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
 
 executable('mmap_benchmark',
-           srcs + ['mmap_benchmark.cpp'],
-           dependencies: deps, cuda_args: cuda_args)
+           ['mmap_benchmark.cpp'],
+           dependencies: deps,
+           link_with: libseticore)

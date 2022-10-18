@@ -264,7 +264,7 @@ void Dedopplerer::search(const FilterbankBuffer& input,
 
       if (abs(drift_rate) >= min_drift) {
         DedopplerHit hit(metadata, candidate_freq, drift_bins, drift_rate,
-                         snr, beam, coarse_channel);
+                         snr, beam, coarse_channel, num_timesteps);
         if (print_hits) {
           cout << "hit: " << hit.toString() << endl;
         }
