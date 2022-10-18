@@ -94,7 +94,8 @@ executable('seticore', ['main.cpp'],
 
 executable('tests', tests + ['tests.cpp'],
            dependencies: deps,
-           link_with: libseticore)
+           link_with: libseticore,
+           cuda_args: cuda_args)
 
 # Other binaries
 

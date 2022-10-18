@@ -18,7 +18,7 @@ FFT32K=16384
 OUTPUT_DIR="/mydatag/test/lacker/"
 
 # Testing the Sep 28 dataset on blpn130
-if true; then
+if false; then
     VARIANT="macs"
     INPUT_DIR="/buf0ro/lacker/$VARIANT"
     RECIPE_DIR="/home/obs/bfr5/"
@@ -36,11 +36,11 @@ if false; then
     NUM_BANDS=16
 fi
 
-# Testing the August 16 dataset on blpn129
-if false; then
-    INPUT_DIR="/buf0/20220816/"
+# Testing the 20221014/0014 dataset (32k mode crash) on blpn129
+if true; then
+    INPUT_DIR="/buf0/lacker/20221014/"
     RECIPE_DIR="/home/obs/bfr5/"
-    FFT_SIZE=$FFT4K
+    FFT_SIZE=$FFT32K
     NUM_BANDS=16
 fi
     
