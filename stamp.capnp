@@ -55,5 +55,12 @@ struct Stamp {
   startChannel @16 :Int32;
 
   # Metadata for the best hit we found for this stamp.
+  # Not populated for stamps extracted with the CLI tool.
   signal @17 :Hit.Signal;
+
+  # Metadata copied from the input raw file.
+  # We need these so that we can match up this stamp to the beamforming recipe file.
+  # "schan" is where the raw file starts in the beamforming recipe.
+  schan @18 :Int32;
+  obsid @19 :Text;
 }

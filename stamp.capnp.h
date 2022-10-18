@@ -31,7 +31,7 @@ struct Stamp {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 10, 4)
+    CAPNP_DECLARE_STRUCT_HEADER(ce98ac82349b1161, 11, 5)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -96,6 +96,11 @@ public:
 
   inline bool hasSignal() const;
   inline  ::Signal::Reader getSignal() const;
+
+  inline  ::int32_t getSchan() const;
+
+  inline bool hasObsid() const;
+  inline  ::capnp::Text::Reader getObsid() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -195,6 +200,16 @@ public:
   inline  ::Signal::Builder initSignal();
   inline void adoptSignal(::capnp::Orphan< ::Signal>&& value);
   inline ::capnp::Orphan< ::Signal> disownSignal();
+
+  inline  ::int32_t getSchan();
+  inline void setSchan( ::int32_t value);
+
+  inline bool hasObsid();
+  inline  ::capnp::Text::Builder getObsid();
+  inline void setObsid( ::capnp::Text::Reader value);
+  inline  ::capnp::Text::Builder initObsid(unsigned int size);
+  inline void adoptObsid(::capnp::Orphan< ::capnp::Text>&& value);
+  inline ::capnp::Orphan< ::capnp::Text> disownObsid();
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -564,6 +579,54 @@ inline void Stamp::Builder::adoptSignal(
 inline ::capnp::Orphan< ::Signal> Stamp::Builder::disownSignal() {
   return ::capnp::_::PointerHelpers< ::Signal>::disown(_builder.getPointerField(
       ::capnp::bounded<3>() * ::capnp::POINTERS));
+}
+
+inline  ::int32_t Stamp::Reader::getSchan() const {
+  return _reader.getDataField< ::int32_t>(
+      ::capnp::bounded<20>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int32_t Stamp::Builder::getSchan() {
+  return _builder.getDataField< ::int32_t>(
+      ::capnp::bounded<20>() * ::capnp::ELEMENTS);
+}
+inline void Stamp::Builder::setSchan( ::int32_t value) {
+  _builder.setDataField< ::int32_t>(
+      ::capnp::bounded<20>() * ::capnp::ELEMENTS, value);
+}
+
+inline bool Stamp::Reader::hasObsid() const {
+  return !_reader.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS).isNull();
+}
+inline bool Stamp::Builder::hasObsid() {
+  return !_builder.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS).isNull();
+}
+inline  ::capnp::Text::Reader Stamp::Reader::getObsid() const {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::get(_reader.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS));
+}
+inline  ::capnp::Text::Builder Stamp::Builder::getObsid() {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::get(_builder.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS));
+}
+inline void Stamp::Builder::setObsid( ::capnp::Text::Reader value) {
+  ::capnp::_::PointerHelpers< ::capnp::Text>::set(_builder.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS), value);
+}
+inline  ::capnp::Text::Builder Stamp::Builder::initObsid(unsigned int size) {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::init(_builder.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS), size);
+}
+inline void Stamp::Builder::adoptObsid(
+    ::capnp::Orphan< ::capnp::Text>&& value) {
+  ::capnp::_::PointerHelpers< ::capnp::Text>::adopt(_builder.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS), kj::mv(value));
+}
+inline ::capnp::Orphan< ::capnp::Text> Stamp::Builder::disownObsid() {
+  return ::capnp::_::PointerHelpers< ::capnp::Text>::disown(_builder.getPointerField(
+      ::capnp::bounded<4>() * ::capnp::POINTERS));
 }
 
 

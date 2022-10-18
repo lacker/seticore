@@ -121,6 +121,9 @@ void StampExtractor::extract(const DedopplerHit* hit, int coarse_channel,
   if (hit != nullptr) {
     buildSignal(*hit, stamp.getSignal());
   }
+
+  stamp.setSchan(file_group.schan);
+  stamp.setObsid(file_group.obsid);
   
   openOutputFile();
   writeMessageToFd(fd, message);
