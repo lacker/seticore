@@ -91,6 +91,12 @@ void BeamformingPipeline::findHits() {
   // Create a buffer large enough to hold all beamformer batches for one band  
   int num_batches = file_group.num_blocks / beamformer.num_blocks;
   int num_multibeam_timesteps = beamformer.numOutputTimesteps() * num_batches;
+  if (num_multibeam_timesteps < 2) {
+    cout << "this recording is too short to process. the output would only have "
+         << num_multibeam_timesteps << " timestep"
+         << (num_multibeam_timesteps == 1 ? "s" : "") << "." << endl;
+    return;
+  }
   MultibeamBuffer multibeam(beamformer.num_beams + 1,
                             num_multibeam_timesteps,
                             beamformer.numOutputChannels(),
