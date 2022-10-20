@@ -56,7 +56,6 @@ rm -f *qdrep
     --input $INPUT_DIR \
     --output $OUTPUT_DIR \
     --max_drift 10.0 \
-    --min_drift 0.0 \
     --snr 10.0 \
     --recipe_dir $RECIPE_DIR \
     --num_bands $NUM_BANDS \
