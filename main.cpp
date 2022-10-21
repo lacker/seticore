@@ -40,12 +40,13 @@ int beamformingMode(const po::variables_map& vm) {
   }
 
   int num_bands = vm["num_bands"].as<int>();
-  int fft_size = vm["fft_size"].as<int>();
   int sti = vm["sti"].as<int>();
   int telescope_id = vm["telescope_id"].as<int>();
   float snr = vm["snr"].as<double>();
   float max_drift = vm["max_drift"].as<double>();
-
+  int fft_size = vm["fft_size"].as<int>();
+  int num_fine_channels = vm["fine_channels"].as<int>();
+  
   if (vm.count("min_drift")) {
     cout << "the min_drift flag is ignored in beamforming mode.\n";
   }
@@ -54,8 +55,8 @@ int beamformingMode(const po::variables_map& vm) {
   cout << "found " << pluralize(groups.size(), "group") << " of raw files.\n";
   for (auto group : groups) {
     BeamformingPipeline pipeline(group, output_dir, recipe_filename, num_bands,
-                                 fft_size, sti, telescope_id, snr, max_drift);
-
+                                 sti, telescope_id, snr, max_drift, fft_size,
+                                 num_fine_channels);
     if (vm.count("h5_dir")) {
       pipeline.h5_dir = vm["h5_dir"].as<string>();
     }
@@ -137,9 +138,12 @@ int main(int argc, char* argv[]) {
     ("num_bands", po::value<int>()->default_value(1),
      "number of bands to break input into")
 
-    ("fft_size", po::value<int>(),
-     "size of the fft for upchannelization")
+    ("fft_size", po::value<int>()->default_value(-1),
+     "size of the fft for upchannelization. -1 to calculate from fine_channels")
 
+    ("fine_channels", po::value<int>()->default_value(-1),
+     "how many channels to upchannelize to. -1 to calculate from fft_size")
+    
     ("telescope_id", po::value<int>()->default_value(NO_TELESCOPE_ID),
      "SIGPROC standard id for the telescope. If not provided, try to infer from input.")
 

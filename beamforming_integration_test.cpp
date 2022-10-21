@@ -25,7 +25,8 @@ int main(int argc, char* argv[]) {
   string output_dir = "mocked";
   string recipe_dir = "../data/beamtest";
   int num_bands = 32;
-  int fft_size = 131072;
+  // int fft_size = 131072;
+  int fine_channels = 8388608;
   int sti = 8;
   int telescope_id = 64;
   float snr = 7.0;
@@ -36,7 +37,7 @@ int main(int argc, char* argv[]) {
   assert(groups[0].size() == 2);
 
   BeamformingPipeline pipeline(groups[0], output_dir, recipe_dir, num_bands,
-                               fft_size, sti, telescope_id, snr, max_drift);
+                               sti, telescope_id, snr, max_drift, -1, fine_channels);
   pipeline.num_bands_to_process = 1;
   pipeline.record_hits = false;
   
