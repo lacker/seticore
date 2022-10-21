@@ -88,7 +88,7 @@ int dedopplerMode(const po::variables_map& vm) {
 
   double max_drift = vm["max_drift"].as<double>();
   double snr = vm["snr"].as<double>();
-  double min_drift = vm["min_drift"].as<double>();
+  double min_drift = vm.count("min_drift") ? vm["min_drift"].as<double>() : 0.0;
 
   cout << "loading input from " << input << endl;
   cout << fmt::format("dedoppler parameters: max_drift={:.2f} min_drift={:.4f} "
@@ -118,10 +118,10 @@ int main(int argc, char* argv[]) {
      "the output as .dat file, .hits file, or directory. defaults to <input>.dat")
 
     ("max_drift,M", po::value<double>()->default_value(10.0),
-     "maximum drift in Hz/sec")
+     "maximum absolute value of drift, in Hz/sec")
 
-    ("min_drift,m", po::value<double>()->default_value(0.0001),
-     "minimum drift in Hz/sec")
+    ("min_drift,m", po::value<double>(),
+     "minimum absolute value of drift, in Hz/sec. Using this is discouraged.")
 
     ("snr,s", po::value<double>()->default_value(25.0),
      "minimum SNR to report a hit")
