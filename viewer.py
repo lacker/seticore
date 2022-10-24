@@ -5,6 +5,8 @@ matplotlib.rc("figure", max_open_warning=0)
 from matplotlib import pyplot as plt
 
 import capnp
+
+import h5py
 import hit_capnp
 import math
 import numpy as np
@@ -41,6 +43,33 @@ def show_hit(hit):
           f"{hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
     show_array(data)
 
+    
+class Recipe(object):
+    def __init__(self, filename):
+        self.h5 = h5py.File(filename)
+        self.ras = self.h5["/beaminfo/ras"][()]
+        self.decs = self.h5["/beaminfo/decs"][()]
+        self.obsid = self.h5["/obsinfo/obsid"][()]
+        self.src_names = self.h5["/beaminfo/src_names"][()]
+        self.delays = self.h5["/delayinfo/delays"][()]
+        self.time_array = self.h5["/delayinfo/time_array"][()]
+        self.npol = self.h5["/diminfo/npol"][()]
+        self.nbeams = self.h5["/diminfo/nbeams"][()]
+        self.cal_all = self.h5["/calinfo/cal_all"][()]
+        self.nants = self.h5["/diminfo/nants"][()]
+        self.nchan = self.h5["/diminfo/nchan"][()]
+        
+        # Validate shapes of things
+        assert self.delays.shape == (len(self.time_array), self.nbeams, self.nants)
+        assert self.cal_all.shape == (self.nchan, self.npol, self.nants)
+        
+        
+    def time_array_index(self, time):
+        """Return the index in time_array closest to time."""
+        dist_tuples = [(abs(val - time), i) for i, val in enumerate(self.time_array)]
+        i, _ = min(dist_tuples)
+        return i
+    
     
 class Stamp(object):
     def __init__(self, stamp):
@@ -96,6 +125,16 @@ class Stamp(object):
         plt.show()
         plt.close()
 
+    def times(self):
+        """Returns a list of the times for each timestep."""
+        return [self.stamp.tstart + n * self.stamp.tsamp
+                for n in range(self.stamp.numTimesteps)]
+
+    def frequencies(self):
+        """Returns a list of the frequencies for each channel."""
+        return [self.stamp.fch1 + n * self.stamp.foff
+                for n in range(self.stamp.numChannels)]
+    
             
 def read_stamps(filename):
     with open(filename) as f:
