@@ -29,5 +29,6 @@ int main(int argc, char* argv[]) {
   cout << "time_array size: " << recipe.time_array.size() << endl;
   cout << "inferred nants: " << recipe.nants << endl;
   cout << "inferred nchans: " << recipe.nchans << endl;
-  cout << "/diminfo/nchans = " << recipe.getLongScalarData("/diminfo/nchans") << endl;
+  cout << "/diminfo/nants = " << recipe.getLongScalarData("/diminfo/nants") << endl;
+  cout << "/diminfo/nchan = " << recipe.getLongScalarData("/diminfo/nchan") << endl;
 }
