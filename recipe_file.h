@@ -20,7 +20,6 @@ class RecipeFile {
   string getStringData(const string& name) const;
   vector<string> getStringVectorData(const string& name) const;
   template <class T> vector<T> getVectorData(const string& name, hid_t hdf5_type) const;
-  long getLongScalarData(const string& name) const;
   vector<thrust::complex<float> > getComplexVectorData(const string& name) const;
 
   // Note that these are in radians, and in most places they are stored in hours/degrees.
@@ -30,6 +29,8 @@ class RecipeFile {
   const vector<double> decs;
   
  public:
+  long getLongScalarData(const string& name) const;
+
   const string filename;
   const string obsid;
   const vector<string> src_names;
@@ -57,6 +58,10 @@ class RecipeFile {
 
   thrust::complex<float> getCal(int frequency, int polarity, int antenna) const;
 
+  // Logs information and exits if this recipe file does not match the given raw
+  // file parameters.
+  void validateRawRange(int schan, int num_coarse_channels) const;
+  
   void generateCoefficients(int time_array_index,
 			    int raw_start_channel,
 			    int raw_num_channels,

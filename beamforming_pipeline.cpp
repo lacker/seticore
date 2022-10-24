@@ -76,6 +76,7 @@ void BeamformingPipeline::findHits() {
   
   RecipeFile recipe(recipe_filename, file_group.obsid);
   cout << "using beamforming recipe from " << recipe.filename << endl;
+  recipe.validateRawRange(file_group.schan, file_group.num_coarse_channels);
   
   // Do enough blocks per beamformer batch to handle one STI block
   assert((sti * fft_size) % file_group.timesteps_per_block == 0);

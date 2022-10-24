@@ -226,6 +226,15 @@ thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int anten
   return cal_all[((frequency * npol) + polarity) * nants + antenna];
 }
 
+void RecipeFile::validateRawRange(int schan, int num_coarse_channels) const {
+  if (schan + num_coarse_channels > nchans) {
+    fatal(fmt::format("the raw file has {} coarse channels, "
+                      "starting at coarse channel {}, "
+                      "but {} only has {} channels",
+                      num_coarse_channels, schan, filename, nchans));
+  }
+}
+
 /*
   Generate the beamforming coefficients for the given parameters.
 
@@ -254,15 +263,8 @@ void RecipeFile::generateCoefficients(int time_array_index,
 				      int subband_start,
 				      int subband_size,
                                       thrust::complex<float>* coefficients) const {
+  validateRawRange(raw_start_channel, raw_num_channels);
   assert(subband_start + subband_size <= raw_num_channels);
-
-  if (raw_start_channel + raw_num_channels > nchans) {
-    fatal(fmt::format("the raw file has {} coarse channels, "
-                      "starting at coarse channel {}, "
-                      "but the recipe file only has {} channels",
-                      raw_num_channels, raw_start_channel, nchans));
-  }
-
   assert(raw_start_channel + raw_num_channels <= nchans);
   
   float chan_bandwidth_ghz = raw_bandwidth_mhz / raw_num_channels * 0.001;

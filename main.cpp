@@ -105,8 +105,6 @@ int dedopplerMode(const po::variables_map& vm) {
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
 int main(int argc, char* argv[]) {
-  setThreadName("main");
-  
   po::options_description desc("seticore options");
   desc.add_options()
     ("help,h", "produce help message")

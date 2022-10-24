@@ -114,12 +114,6 @@ executable('hitls',
            dependencies: deps,
            link_with: libseticore)
 
-executable('taylor_benchmark',
-           ['taylor_benchmark.cu'],
-           dependencies: deps,
-           link_with: libseticore,
-           cuda_args: cuda_args)
-
 executable('extract',
            ['extract.cpp'],
            dependencies: deps,
@@ -130,8 +124,18 @@ executable('file_io_benchmark',
            dependencies: deps,
            link_with: libseticore)
 
+executable('mmap_benchmark',
+           ['mmap_benchmark.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
+
 executable('rawls',
            ['rawls.cpp'],
+           dependencies: deps,
+           link_with: libseticore)
+
+executable('recipels',
+           ['recipels.cpp'],
            dependencies: deps,
            link_with: libseticore)
 
@@ -140,7 +144,9 @@ executable('stampls',
            dependencies: deps,
            link_with: libseticore)
 
-executable('mmap_benchmark',
-           ['mmap_benchmark.cpp'],
+executable('taylor_benchmark',
+           ['taylor_benchmark.cu'],
            dependencies: deps,
-           link_with: libseticore)
+           link_with: libseticore,
+           cuda_args: cuda_args)
+
