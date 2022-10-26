@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fmt/core.h>
 #include <iostream>
 #include "util.h"
 
@@ -15,7 +16,10 @@ FilterbankMetadata::FilterbankMetadata(): has_dc_spike(false), coarse_channel_si
  */
 FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
                                                          int num_bands) {
-  assert(0 == num_coarse_channels % num_bands);
+  if (0 != num_coarse_channels % num_bands) {
+    fatal(fmt::format("in getSubsetMetadata, num_coarse_channels = {} but "
+                      "num_bands = {}", num_coarse_channels, num_bands));
+  }
 
   FilterbankMetadata answer(*this);
   answer.num_coarse_channels = num_coarse_channels / num_bands;

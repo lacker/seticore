@@ -44,6 +44,11 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   metadata.num_channels = beamformer.numOutputChannels() * file_group.num_bands;
   metadata.telescope_id = telescope_id;
   metadata.coarse_channel_size = beamformer.fft_size;
+  if (0 != metadata.num_channels % metadata.coarse_channel_size) {
+    fatal(fmt::format("error in combineMetadata: num fine channels = {} but "
+                      "coarse channel size = {}", metadata.num_channels,
+                      metadata.coarse_channel_size));
+  }
   metadata.num_coarse_channels = metadata.num_channels / metadata.coarse_channel_size;
   metadata.source_names = recipe.src_names;
   metadata.ras = recipe.getRAsInHours();
