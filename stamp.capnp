@@ -21,8 +21,8 @@ struct Stamp {
   # Other standard metadata found in FBH5 files.
   # This metadata applies specifically to the postage stamp itself, not the larger
   # file we extracted it from.
-  fch1 @3 :Float64;
-  foff @4 :Float64;
+  fch1 @3 :Float64;  # MHz
+  foff @4 :Float64;  # MHz
   tstart @5 :Float64;
   tsamp @6 :Float64;
   telescopeId @7 :Int32;

@@ -66,7 +66,7 @@ class Recipe(object):
         
     def time_array_index(self, time):
         """Return the index in time_array closest to time."""
-        dist_tuples = [(abs(val - time), i) for i, val in enumerate(self.time_array)]
+        dist_tuples = [(i, abs(val - time)) for i, val in enumerate(self.time_array)]
         i, _ = min(dist_tuples)
         return i
     
@@ -131,11 +131,52 @@ class Stamp(object):
                 for n in range(self.stamp.numTimesteps)]
 
     def frequencies(self):
-        """Returns a list of the frequencies for each channel."""
+        """Returns a list of the frequencies in MHz for each channel."""
         return [self.stamp.fch1 + n * self.stamp.foff
                 for n in range(self.stamp.numChannels)]
+
+    def coefficients(self, recipe, beam):
+        """Returns a numpy array of beamforming coefficients.
+
+        This does not conjugate, so it should match up with c++ generateCoefficients.
+        Output dimensions are [time, chan, pol, ant]
+        """
+        recipe_channel_index = self.stamp.schan + self.stamp.coarseChannel
+
+        answer = np.zeros((self.stamp.numTimesteps,
+                           self.stamp.numChannels,
+                           self.stamp.numPolarities,
+                           self.stamp.numAntennas),
+                          dtype=np.cdouble)
+
+        for timestep, time_value in enumerate(self.times()):
+            for chan, freq_value in enumerate(self.frequencies()):
+                time_array_index = recipe.time_array_index(time_value)
+                ghz = freq_value * 0.001
+                tau = recipe.delays[time_array_index, beam, :]
+                angles = tau * (ghz * 2 * np.pi * 1.0j)
+                for pol in range(self.stamp.numPolarities):
+                    cal = recipe.cal_all[recipe_channel_index, pol, :]
+                    answer[timestep, chan, pol, :] = cal * np.exp(angles)
+
+        return answer
+
+    def beamform_voltage(self, recipe, beam):
+        """Beamforms, leaving the result in complex voltage space.
+        
+        Output dimensions are [time, chan]
+        """
+        coeffs = self.coefficients(recipe, beam)
+        inputs = self.complex_array()
+
+        # Sum along polarity and antenna
+        return (np.conjugate(coeffs) * inputs).sum(axis=(2, 3))
+
+    def beamform_power(self, recipe, beam):
+        voltage = self.beamform_voltage(recipe, beam)
+        return np.square(np.real(voltage)) + np.square(np.imag(voltage))
+
     
-            
 def read_stamps(filename):
     with open(filename) as f:
         stamps = stamp_capnp.Stamp.read_multiple(f, traversal_limit_in_words=2**30)

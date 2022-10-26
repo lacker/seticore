@@ -42,12 +42,12 @@ struct Signal {
 struct Filterbank {
   # These fields are like the ones found in FBH5 files.
   sourceName @0 :Text;
-  fch1 @1 :Float64;
-  foff @2 :Float64;
+  fch1 @1 :Float64;   # MHz
+  foff @2 :Float64;   # MHz
   tstart @3 :Float64;
   tsamp @4 :Float64;
-  ra @5 :Float64;  # Hours
-  dec @6 :Float64; # Degrees
+  ra @5 :Float64;     # Hours
+  dec @6 :Float64;    # Degrees
   telescopeId @7 :Int32;
   numTimesteps @8 :Int32;
   numChannels @9 :Int32;
