@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -79,9 +80,13 @@ class RawFileGroupReader {
   
   mutex m;
   condition_variable cv;
-  bool destroy;
+  bool read_error;
+  atomic<bool> stopped;
   thread io_thread;  
 
+  // Stop all successive reads and writes. Any subsequent read is an error.
+  void stop();
+  
   // Makes a buffer of the same size the read() returns, in GPU memory
   shared_ptr<DeviceRawBuffer> makeDeviceBuffer();  
 

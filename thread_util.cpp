@@ -6,7 +6,7 @@
 #include "util.h"
 
 TaskList::TaskList(vector<function<bool()> > tasks)
-  : tasks(tasks), indexes(tasks.size()) {
+  : tasks(tasks), indexes(tasks.size()), error(false) {
   for (int i = 0; i < (int) tasks.size(); ++i) {
     indexes.push(i);
   }
@@ -17,7 +17,9 @@ void TaskList::runTempWorkerThread() {
   int index;
   while (indexes.pop(index)) {
     if (!tasks[index]()) {
-      fatal("worker task failed");
+      // This task failed. Skip subsequent tasks and report an error
+      while (indexes.pop(index)) {}
+      error = true;
     }
   }
 }
@@ -32,9 +34,10 @@ void TaskList::run(int num_threads) {
   }
 }
 
-void runInParallel(vector<function<bool()> > tasks, int num_threads) {
+bool runInParallel(vector<function<bool()> > tasks, int num_threads) {
   TaskList task_list(move(tasks));
   task_list.run(num_threads);
+  return !task_list.error;
 }
 
 void setThreadName(const string& name) {

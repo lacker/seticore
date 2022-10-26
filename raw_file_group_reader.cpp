@@ -19,7 +19,7 @@ RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
   : file_group(file_group), num_bands(num_bands), first_band(first_band),
     last_band(last_band), num_batches(num_batches), blocks_per_batch(blocks_per_batch),
     coarse_channels_per_band(file_group.num_coarse_channels / num_bands),
-    destroy(false)  {
+    stopped(false)  {
 
   // Limit queue size depending on total memory.
   struct sysinfo info;
@@ -46,12 +46,15 @@ RawFileGroupReader::RawFileGroupReader(RawFileGroup& file_group, int num_bands,
   cout << "raw buffer memory: " << prettyBytes(device_raw_buffer->size) << endl;
 }
 
-RawFileGroupReader::~RawFileGroupReader() {
+void RawFileGroupReader::stop() {
   unique_lock<mutex> lock(m);
-  destroy = true;
+  stopped = true;
   lock.unlock();
   cv.notify_all();
+}
 
+RawFileGroupReader::~RawFileGroupReader() {
+  stop();
   if (io_thread.joinable()) {
     io_thread.join();
   }
@@ -83,8 +86,12 @@ shared_ptr<DeviceRawBuffer> RawFileGroupReader::makeDeviceBuffer() {
 
 unique_ptr<RawBuffer> RawFileGroupReader::readToHost() {
   unique_lock<mutex> lock(m);
-  while (buffer_queue.empty()) {
+  while (!stopped && buffer_queue.empty()) {
     cv.wait(lock);
+  }
+
+  if (stopped) {
+    fatal("RawFileGroupReader stopped");
   }
 
   auto buffer = move(buffer_queue.front());
@@ -103,14 +110,14 @@ void RawFileGroupReader::returnBuffer(unique_ptr<RawBuffer> buffer) {
   extra_buffers.push(move(buffer));
 }
 
-// Returns false if the reader gets destroyed before a new item is pushed
+// Returns false if the reader gets stopped before a new item is pushed
 bool RawFileGroupReader::push(unique_ptr<RawBuffer> buffer) {
   unique_lock<mutex> lock(m);
-  while (!destroy && (int) buffer_queue.size() >= buffer_queue_max_size) {
+  while (!stopped && (int) buffer_queue.size() >= buffer_queue_max_size) {
     cv.wait(lock);
   }
 
-  if (destroy) {
+  if (stopped) {
     return false;
   }
   buffer_queue.push(move(buffer));
@@ -125,6 +132,10 @@ void RawFileGroupReader::runInputThread() {
   for (int band = first_band; band <= last_band; ++band) {
     file_group.resetBand(band, num_bands);
     for (int batch = 0; batch < num_batches; ++batch) {
+      if (stopped) {
+        return;
+      }
+
       auto buffer = makeBuffer();
 
       vector<function<bool()> > tasks;
@@ -134,7 +145,10 @@ void RawFileGroupReader::runInputThread() {
 
       // Testing on meerkat, any more than 4 threads doesn't help
       int num_threads = 4;
-      runInParallel(move(tasks), num_threads);
+      if (!runInParallel(move(tasks), num_threads)) {
+        stop();
+        return;
+      }
 
       if (!push(move(buffer))) {
         return;

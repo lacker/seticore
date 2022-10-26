@@ -10,7 +10,8 @@ class TaskList {
  public:
   vector<function<bool()> > tasks;
   boost::lockfree::queue<int> indexes;
-
+  atomic<bool> error;
+  
  TaskList(vector<function<bool()> > tasks);
   ~TaskList() {};
   void run(int num_threads);
@@ -19,6 +20,7 @@ class TaskList {
   void runTempWorkerThread();
 };
 
-void runInParallel(vector<function<bool()> > tasks, int num_threads);
+// Returns whether all worker threads completed successfully.
+bool runInParallel(vector<function<bool()> > tasks, int num_threads);
 
 void setThreadName(const string& name);
