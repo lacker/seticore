@@ -81,7 +81,13 @@ void BeamformingPipeline::findHits() {
   // Do enough blocks per beamformer batch to handle one STI block
   assert((sti * fft_size) % file_group.timesteps_per_block == 0);
   int blocks_per_batch = (sti * fft_size) / file_group.timesteps_per_block;
-  
+
+  if (file_group.num_coarse_channels % num_bands != 0) {
+    fatal(fmt::format("{}.*.raw has {} coarse channels, so we cannot "
+                      "divide it into {} bands", file_group.prefix,
+                      file_group.num_coarse_channels, num_bands));
+  }
+
   int coarse_channels_per_band = file_group.num_coarse_channels / num_bands;
   int nsamp = file_group.timesteps_per_block * blocks_per_batch;
 
