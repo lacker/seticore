@@ -84,7 +84,11 @@ void BeamformingPipeline::findHits() {
   recipe.validateRawRange(file_group.schan, file_group.num_coarse_channels);
   
   // Do enough blocks per beamformer batch to handle one STI block
-  assert((sti * fft_size) % file_group.timesteps_per_block == 0);
+  if (0 != (sti * fft_size) % file_group.timesteps_per_block) {
+    fatal(fmt::format("invalid parameters: sti = {}, fft_size = {}, "
+                      "timesteps per block = {}", sti, fft_size,
+                      file_group.timesteps_per_block));
+  }
   int blocks_per_batch = (sti * fft_size) / file_group.timesteps_per_block;
 
   if (file_group.num_coarse_channels % num_bands != 0) {

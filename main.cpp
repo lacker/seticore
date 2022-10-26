@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
+#include <exception>
 #include <fmt/core.h>
 #include <iostream>
 #include "raw_file_group.h"
@@ -105,77 +106,84 @@ int dedopplerMode(const po::variables_map& vm) {
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
 int main(int argc, char* argv[]) {
-  po::options_description desc("seticore options");
-  desc.add_options()
-    ("help,h", "produce help message")
+  try {
+    po::options_description desc("seticore options");
+    desc.add_options()
+      ("help,h", "produce help message")
 
-    ("input", po::value<string>(),
-     "alternate way of setting the input file or directory")
+      ("input", po::value<string>(),
+       "alternate way of setting the input file or directory")
 
-    ("output", po::value<string>(),
-     "the output as .dat file, .hits file, or directory. defaults to <input>.dat")
+      ("output", po::value<string>(),
+       "the output as .dat file, .hits file, or directory. defaults to <input>.dat")
 
-    ("max_drift,M", po::value<double>()->default_value(10.0),
-     "maximum absolute value of drift, in Hz/sec")
+      ("max_drift,M", po::value<double>()->default_value(10.0),
+       "maximum absolute value of drift, in Hz/sec")
 
-    ("min_drift,m", po::value<double>(),
-     "minimum absolute value of drift, in Hz/sec. Using this is discouraged.")
+      ("min_drift,m", po::value<double>(),
+       "minimum absolute value of drift, in Hz/sec. Using this is discouraged.")
 
-    ("snr,s", po::value<double>()->default_value(25.0),
-     "minimum SNR to report a hit")
+      ("snr,s", po::value<double>()->default_value(25.0),
+       "minimum SNR to report a hit")
 
-    ("recipe_dir", po::value<string>(),
-     "the directory to find beamforming recipes in. set this to beamform.")
+      ("recipe_dir", po::value<string>(),
+       "the directory to find beamforming recipes in. set this to beamform.")
 
-    ("recipe", po::value<string>(),
-     "the beamforming recipe file. set this to beamform.")
+      ("recipe", po::value<string>(),
+       "the beamforming recipe file. set this to beamform.")
     
-    ("h5_dir", po::value<string>(),
-     "optional directory to save .h5 files containing post-beamform data")
+      ("h5_dir", po::value<string>(),
+       "optional directory to save .h5 files containing post-beamform data")
     
-    ("num_bands", po::value<int>()->default_value(1),
-     "number of bands to break input into")
+      ("num_bands", po::value<int>()->default_value(1),
+       "number of bands to break input into")
 
-    ("fft_size", po::value<int>()->default_value(-1),
-     "size of the fft for upchannelization. -1 to calculate from fine_channels")
+      ("fft_size", po::value<int>()->default_value(-1),
+       "size of the fft for upchannelization. -1 to calculate from fine_channels")
 
-    ("fine_channels", po::value<int>()->default_value(-1),
-     "how many channels to upchannelize to. -1 to calculate from fft_size")
+      ("fine_channels", po::value<int>()->default_value(-1),
+       "how many channels to upchannelize to. -1 to calculate from fft_size")
     
-    ("telescope_id", po::value<int>()->default_value(NO_TELESCOPE_ID),
-     "SIGPROC standard id for the telescope. If not provided, try to infer from input.")
+      ("telescope_id", po::value<int>()->default_value(NO_TELESCOPE_ID),
+       "SIGPROC standard id for the telescope. If not provided, try to infer from input.")
 
-    ("sti", po::value<int>()->default_value(8),
-     "duration of the Short Time Integration to compress post-beamforming data")
-    ;
+      ("sti", po::value<int>()->default_value(8),
+       "duration of the Short Time Integration to compress post-beamforming data")
+      ;
 
-  po::positional_options_description p;
-  p.add("input", -1);
+    po::positional_options_description p;
+    p.add("input", -1);
   
-  po::variables_map vm;
-  po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
-  po::notify(vm);
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+    po::notify(vm);
   
-  if (!vm.count("input") || vm.count("help")) {
-    cerr << "usage: seticore [input]\n";
-    cerr << "seticore version: " << VERSION << endl;
-    cerr << desc << "\n";
-    return 1;
-  }
-
-  if (vm.count("recipe_dir") || vm.count("recipe")) {
-    vector<string> parts;
-    parts.push_back("running seticore version");
-    parts.push_back(VERSION);
-    parts.push_back("with:");
-    for (int i = 0; i < argc; ++i) {
-      parts.push_back(string(argv[i]));
+    if (!vm.count("input") || vm.count("help")) {
+      cerr << "usage: seticore [input]\n";
+      cerr << "seticore version: " << VERSION << endl;
+      cerr << desc << "\n";
+      return 1;
     }
-    logError(boost::algorithm::join(parts, " "));
-    return beamformingMode(vm);
-  }
+
+    if (vm.count("recipe_dir") || vm.count("recipe")) {
+      vector<string> parts;
+      parts.push_back("running seticore version");
+      parts.push_back(VERSION);
+      parts.push_back("with:");
+      for (int i = 0; i < argc; ++i) {
+        parts.push_back(string(argv[i]));
+      }
+      logError(boost::algorithm::join(parts, " "));
+      return beamformingMode(vm);
+    }
   
-  cout << "welcome to seticore, version " << VERSION << endl;  
-  return dedopplerMode(vm);
+    cout << "welcome to seticore, version " << VERSION << endl;  
+    return dedopplerMode(vm);
+  } catch (exception& e) {
+    logErrorTimestamp();
+    cerr << "fatal exception: " << e.what() << endl;
+    cout << flush;
+    exit(1);
+  }
 }
 

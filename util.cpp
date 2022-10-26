@@ -4,6 +4,7 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <ctime>
+#include <stdexcept>
 #include <fmt/core.h>
 #include <iomanip>
 #include <iostream>
@@ -158,9 +159,7 @@ void logError(const string& message) {
 }
 
 void fatal(const string& message) {
-  logError(message);
-  cout << flush;
-  exit(1);
+  throw runtime_error(message);
 }
 
 void fatal(const string& message1, const string& message2) {
