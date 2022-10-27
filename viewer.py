@@ -271,6 +271,22 @@ class Stamp(object):
         signal = (data * self.signal_mask()).sum()
 
         return (signal - mean) / std
+
+    def masked_antenna_values(self):
+        """Returns a data[2 * time, antenna] array of complex values.
+        We have two points for each timestep because we have multiple polarities.
+        """
+        # time,chan,pol,ant dimension order
+        raw = self.complex_array()
+        mask = self.signal_mask()
+        answer = np.zeros((2 * self.stamp.numTimesteps,
+                           self.stamp.numAntennas),
+                          dtype=np.cdouble)
+        for ant in range(self.stamp.numAntennas):
+            pol0 = raw[:, :, 0, ant][mask]
+            pol1 = raw[:, :, 1, ant][mask]
+            answer[:, ant] = np.concatenate((pol0, pol1))
+        return answer
     
         
 def read_stamps(filename):
