@@ -59,8 +59,8 @@ class Beamformer {
   // This will be expanded by a multiplicative factor of fft_size.
   const int num_coarse_channels;
 
-  // Number of polarities
-  const int num_polarities;
+  // Number of polarizations
+  const int num_polarizations;
 
   // Number of timesteps in the input.
   // This will be reduced by two multiplicative factors, fft_size and STI.
@@ -73,7 +73,7 @@ class Beamformer {
   const cudaStream_t stream;
   
   Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int num_beams,
-             int num_blocks, int num_coarse_channels, int num_polarities,
+             int num_blocks, int num_coarse_channels, int num_polarizations,
              int num_input_timesteps, int sti);
   ~Beamformer();
 
@@ -91,7 +91,7 @@ class Beamformer {
   float getPower(int beam, int time, int channel) const;
   
   // Beamforming coefficients, formatted by row-major:
-  //   coefficients[coarse-channel][beam][polarity][antenna][real or imag]
+  //   coefficients[coarse-channel][beam][polarization][antenna][real or imag]
   thrust::complex<float> *coefficients;
   size_t coefficients_size;
 
@@ -122,13 +122,13 @@ class Beamformer {
   //   buffer[pol][antenna][coarse-channel][time][fine-channel]
   //
   // After beamforming, the voltage data is also placed here, in row-major:
-  //   voltage[time][polarity][channel][beam]
+  //   voltage[time][polarization][channel][beam]
   unique_ptr<ComplexBuffer> buffer;
   
   // The channelized input data, ready for beamforming.
   //
   // Its format is row-major:
-  //   prebeam[time][channel][polarity][antenna]
+  //   prebeam[time][channel][polarization][antenna]
   unique_ptr<MultiantennaBuffer> prebeam;
 
   cublasHandle_t cublas_handle;

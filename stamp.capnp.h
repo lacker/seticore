@@ -78,7 +78,7 @@ public:
 
   inline  ::int32_t getNumChannels() const;
 
-  inline  ::int32_t getNumPolarities() const;
+  inline  ::int32_t getNumPolarizations() const;
 
   inline  ::int32_t getNumAntennas() const;
 
@@ -164,8 +164,8 @@ public:
   inline  ::int32_t getNumChannels();
   inline void setNumChannels( ::int32_t value);
 
-  inline  ::int32_t getNumPolarities();
-  inline void setNumPolarities( ::int32_t value);
+  inline  ::int32_t getNumPolarizations();
+  inline void setNumPolarizations( ::int32_t value);
 
   inline  ::int32_t getNumAntennas();
   inline void setNumAntennas( ::int32_t value);
@@ -400,16 +400,16 @@ inline void Stamp::Builder::setNumChannels( ::int32_t value) {
       ::capnp::bounded<14>() * ::capnp::ELEMENTS, value);
 }
 
-inline  ::int32_t Stamp::Reader::getNumPolarities() const {
+inline  ::int32_t Stamp::Reader::getNumPolarizations() const {
   return _reader.getDataField< ::int32_t>(
       ::capnp::bounded<15>() * ::capnp::ELEMENTS);
 }
 
-inline  ::int32_t Stamp::Builder::getNumPolarities() {
+inline  ::int32_t Stamp::Builder::getNumPolarizations() {
   return _builder.getDataField< ::int32_t>(
       ::capnp::bounded<15>() * ::capnp::ELEMENTS);
 }
-inline void Stamp::Builder::setNumPolarities( ::int32_t value) {
+inline void Stamp::Builder::setNumPolarizations( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<15>() * ::capnp::ELEMENTS, value);
 }

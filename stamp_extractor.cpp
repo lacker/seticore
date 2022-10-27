@@ -103,7 +103,7 @@ void StampExtractor::extract(const DedopplerHit* hit, int coarse_channel,
   stamp.setTelescopeId(telescope_id);
   stamp.setNumTimesteps(output.num_timesteps);
   stamp.setNumChannels(output.num_channels);
-  stamp.setNumPolarities(output.num_polarities);
+  stamp.setNumPolarizations(output.num_polarizations);
   stamp.setNumAntennas(output.num_antennas);
   stamp.initData(2 * output.size);
   auto data = stamp.getData();

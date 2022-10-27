@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     cout << "telescope: " << stamp.getTelescopeId() << endl;
     cout << "timesteps: " << stamp.getNumTimesteps() << endl;
     cout << "channels: " << stamp.getNumChannels() << endl;
-    cout << "polarities: " << stamp.getNumPolarities() << endl;
+    cout << "polarizations: " << stamp.getNumPolarizations() << endl;
     cout << "antennas: " << stamp.getNumAntennas() << endl;
     cout << "coarse channel: " << stamp.getCoarseChannel() << endl;
     cout << "fft size: " << stamp.getFftSize() << endl;

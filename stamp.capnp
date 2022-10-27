@@ -30,11 +30,11 @@ struct Stamp {
   # Dimensions of the data
   numTimesteps @8 :Int32;
   numChannels @9 :Int32;
-  numPolarities @10 :Int32;
+  numPolarizations @10 :Int32;
   numAntennas @11 :Int32;
 
   # An array of complex voltages. Interpret this as row-major:
-  #   data[timestep][channel][polarity][antenna][real vs imag]
+  #   data[timestep][channel][polarization][antenna][real vs imag]
   data @12 :List(Float32);
 
   # Metadata describing how exactly we extracted this stamp.

@@ -34,12 +34,12 @@ class Upchannelizer {
   const int num_coarse_channels;
 
   // The same in input and output
-  const int num_polarities;
+  const int num_polarizations;
   const int num_antennas;
   
   Upchannelizer(cudaStream_t stream, int fft_size,
                 int num_input_timesteps, int num_coarse_channels,
-                int num_polarities, int num_antennas);
+                int num_polarizations, int num_antennas);
   ~Upchannelizer();
 
   // Calculate how large of an internal buffer is needed, measured in

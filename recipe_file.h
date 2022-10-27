@@ -56,7 +56,7 @@ class RecipeFile {
   
   double getDelay(int time_array_index, int beam, int antenna) const;
 
-  thrust::complex<float> getCal(int frequency, int polarity, int antenna) const;
+  thrust::complex<float> getCal(int frequency, int polarization, int antenna) const;
 
   // Logs information and exits if this recipe file does not match the given raw
   // file parameters.

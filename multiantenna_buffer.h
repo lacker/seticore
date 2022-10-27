@@ -8,11 +8,11 @@ using namespace std;
   A buffer that stores data for multiple antennas.
 
   Its format is row-major:
-    prebeam[time][channel][polarity][antenna]
+    prebeam[time][channel][polarization][antenna]
  */
 class MultiantennaBuffer: public ComplexBuffer {
  public:
-  MultiantennaBuffer(int num_timesteps, int num_channels, int num_polarities,
+  MultiantennaBuffer(int num_timesteps, int num_channels, int num_polarizations,
                      int num_antennas);
 
   // No copying
@@ -21,7 +21,7 @@ class MultiantennaBuffer: public ComplexBuffer {
 
   const int num_timesteps;
   const int num_channels;
-  const int num_polarities;
+  const int num_polarizations;
   const int num_antennas;
 
   // Causes a cuda sync so it's slow. Only useful for debugging or testing

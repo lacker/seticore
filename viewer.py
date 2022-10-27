@@ -153,7 +153,7 @@ class Stamp(object):
         if self._real_array is None:
             dimensions = (self.stamp.numTimesteps,
                           self.stamp.numChannels,
-                          self.stamp.numPolarities,
+                          self.stamp.numPolarizations,
                           self.stamp.numAntennas,
                           2)
             self._real_array = np.array(self.stamp.data).reshape(dimensions)
@@ -198,7 +198,7 @@ class Stamp(object):
 
         answer = np.zeros((self.stamp.numTimesteps,
                            self.stamp.numChannels,
-                           self.stamp.numPolarities,
+                           self.stamp.numPolarizations,
                            self.stamp.numAntennas),
                           dtype=np.cdouble)
 
@@ -208,7 +208,7 @@ class Stamp(object):
                 ghz = freq_value * 0.001
                 tau = self.recipe.delays[time_array_index, beam, :]
                 angles = tau * (ghz * 2 * np.pi * 1.0j)
-                for pol in range(self.stamp.numPolarities):
+                for pol in range(self.stamp.numPolarizations):
                     cal = self.recipe.cal_all[recipe_channel_index, pol, :]
                     answer[timestep, chan, pol, :] = cal * np.exp(angles)
 
@@ -222,7 +222,7 @@ class Stamp(object):
         coeffs = self.coefficients(beam)
         inputs = self.complex_array()
 
-        # Sum along polarity and antenna
+        # Sum along polarization and antenna
         return (np.conjugate(coeffs) * inputs).sum(axis=(2, 3))
 
     def beamform_power(self, beam):
@@ -274,7 +274,7 @@ class Stamp(object):
 
     def masked_antenna_values(self):
         """Returns a data[2 * time, antenna] array of complex values.
-        We have two points for each timestep because we have multiple polarities.
+        We have two points for each timestep because we have multiple polarizations.
         """
         # time,chan,pol,ant dimension order
         raw = self.complex_array()

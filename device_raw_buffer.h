@@ -14,7 +14,7 @@ using namespace std;
   RawBuffers, and a single consumer thread to use the buffer for GPU calculations.
 
   Its format is row-major:
-    input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
+    input[block][antenna][coarse-channel][time-within-block][polarization][real or imag]
 
   The states are:
     unused: no producer or consumer is using the data
@@ -31,13 +31,13 @@ class DeviceRawBuffer {
   const int num_antennas;
   const int num_coarse_channels;
   const int timesteps_per_block;
-  const int num_polarities;
+  const int num_polarizations;
 
   int8_t* data;
   size_t size;
   
   DeviceRawBuffer(int num_blocks, int num_antennas, int num_coarse_channels,
-                  int timesteps_per_block, int num_polarities);
+                  int timesteps_per_block, int num_polarizations);
 
   ~DeviceRawBuffer();
 

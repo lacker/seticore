@@ -6,7 +6,7 @@ using namespace std;
   The RawBuffer stores data from a raw file in pinned memory.
 
   Its format is row-major:
-    input[block][antenna][coarse-channel][time-within-block][polarity][real or imag]
+    input[block][antenna][coarse-channel][time-within-block][polarization][real or imag]
 */
 class RawBuffer {
  public:

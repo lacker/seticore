@@ -247,11 +247,11 @@ double RecipeFile::getDelay(int time_array_index, int beam, int antenna) const {
 /*
   Accessor to cal_all.
   cal_all is row-major organized by:
-    cal_all[frequency][polarity][antenna]
+    cal_all[frequency][polarization][antenna]
   TODO: figure out what this should actually be named.
  */
-thrust::complex<float> RecipeFile::getCal(int frequency, int polarity, int antenna) const {
-  return cal_all[((frequency * npol) + polarity) * nants + antenna];
+thrust::complex<float> RecipeFile::getCal(int frequency, int polarization, int antenna) const {
+  return cal_all[((frequency * npol) + polarization) * nants + antenna];
 }
 
 void RecipeFile::validateRawRange(int schan, int num_coarse_channels) const {
@@ -312,10 +312,10 @@ void RecipeFile::generateCoefficients(int time_array_index,
       (raw_channel_index - raw_center_index) * chan_bandwidth_ghz;
 
     for (int beam = 0; beam < nbeams; ++beam) {
-      for (int polarity = 0; polarity < npol; ++polarity) {
+      for (int polarization = 0; polarization < npol; ++polarization) {
         for (int antenna = 0; antenna < nants; ++antenna) {
           float tau = getDelay(time_array_index, beam, antenna);
-          auto cal = getCal(recipe_channel_index, polarity, antenna);
+          auto cal = getCal(recipe_channel_index, polarization, antenna);
 
           // Figure out how much to rotate
           float angle = 2 * M_PI * chan_center_ghz * tau;
