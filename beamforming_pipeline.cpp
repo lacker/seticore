@@ -77,10 +77,10 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
 */
 void BeamformingPipeline::findHits() {
   cout << fmt::format("processing {:.1f}s of data from {}.*.raw\n",
-                      file_group.totalTime(), file_group.prefix);
-  
+                      file_group.totalTime(), file_group.prefix);  
+  cout << "using beamforming recipe from " << recipe_filename << endl;
+
   RecipeFile recipe(recipe_filename, file_group.obsid);
-  cout << "using beamforming recipe from " << recipe.filename << endl;
   recipe.validateRawRange(file_group.schan, file_group.num_coarse_channels);
   
   // Do enough blocks per beamformer batch to handle one STI block

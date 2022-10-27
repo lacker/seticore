@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
+#include <exception>
 #include <fmt/core.h>
 #include "hdf5.h"
 #include <iostream>
@@ -76,22 +77,27 @@ RecipeFile::~RecipeFile() {
   This is supposed to work for either UTF8 or ASCII.
  */
 string RecipeFile::getStringData(const string& name) const {
-  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
-  auto data_type = H5Dget_type(dataset);
-  auto native_type = H5Tget_native_type(data_type, H5T_DIR_DEFAULT);
-  int size = H5Tget_size(native_type);
+  try {
+    auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+    auto data_type = H5Dget_type(dataset);
+    auto native_type = H5Tget_native_type(data_type, H5T_DIR_DEFAULT);
+    int size = H5Tget_size(native_type);
   
-  vector<char> buffer(size);
-  if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer[0]) < 0) {
-    fatal(name, "dataset could not be read as string");
-  }
+    vector<char> buffer(size);
+    if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer[0]) < 0) {
+      fatal(name, "dataset could not be read as string");
+    }
 
-  H5Tclose(native_type);
-  H5Tclose(data_type);
-  H5Dclose(dataset);
+    H5Tclose(native_type);
+    H5Tclose(data_type);
+    H5Dclose(dataset);
   
-  string answer(buffer.begin(), buffer.end());
-  return answer;
+    string answer(buffer.begin(), buffer.end());
+    return answer;
+  } catch (exception& e) {
+    logError(fmt::format("hdf5 error in getStringData(\"{}\")", name));
+    throw;
+  }
 }
 
 /*
@@ -100,29 +106,34 @@ string RecipeFile::getStringData(const string& name) const {
   The data is converted to the native character type when we read it.
 */
 vector<string> RecipeFile::getStringVectorData(const string& name) const {
-  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
-  auto dataspace = H5Dget_space(dataset);
-  int npoints = H5Sget_simple_extent_npoints(dataspace);
-  auto native_type = H5Tvlen_create(H5T_NATIVE_CHAR);
+  try {
+    auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+    auto dataspace = H5Dget_space(dataset);
+    int npoints = H5Sget_simple_extent_npoints(dataspace);
+    auto native_type = H5Tvlen_create(H5T_NATIVE_CHAR);
 
-  // Intermediately store data as the HDF5-provided "variable length sequence" object
-  vector<hvl_t> sequences(npoints);
+    // Intermediately store data as the HDF5-provided "variable length sequence" object
+    vector<hvl_t> sequences(npoints);
 
-  if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &sequences[0]) < 0) {
-    fatal(name, "dataset could not be read as string vector");
+    if (H5Dread(dataset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &sequences[0]) < 0) {
+      fatal(name, "dataset could not be read as string vector");
+    }
+
+    vector<string> output;
+    for (hvl_t sequence : sequences) {
+      char* p = (char*)sequence.p;
+      output.push_back(string(p, p + sequence.len));
+    }
+
+    H5Tclose(native_type);
+    H5Sclose(dataspace);
+    H5Dclose(dataset);
+
+    return output;
+  } catch (exception& e) {
+    logError(fmt::format("hdf5 error in getStringVectorData(\"{}\")", name));
+    throw;
   }
-
-  vector<string> output;
-  for (hvl_t sequence : sequences) {
-    char* p = (char*)sequence.p;
-    output.push_back(string(p, p + sequence.len));
-  }
-
-  H5Tclose(native_type);
-  H5Sclose(dataspace);
-  H5Dclose(dataset);
-
-  return output;
 }
 
 /*
@@ -133,51 +144,68 @@ vector<string> RecipeFile::getStringVectorData(const string& name) const {
 */
 template <class T>
 vector<T> RecipeFile::getVectorData(const string& name, hid_t hdf5_type) const {
-  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
-  auto dataspace = H5Dget_space(dataset);
-  int npoints = H5Sget_simple_extent_npoints(dataspace);
-  vector<T> output(npoints);
-  if (H5Dread(dataset, hdf5_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output[0]) < 0) {
-    fatal(name, "dataset could not be read with getVectorData");
-  }
+  try {
+    auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+    auto dataspace = H5Dget_space(dataset);
+    int npoints = H5Sget_simple_extent_npoints(dataspace);
+    vector<T> output(npoints);
+    if (H5Dread(dataset, hdf5_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output[0]) < 0) {
+      fatal(name, "dataset could not be read with getVectorData");
+    }
   
-  H5Sclose(dataspace);
-  H5Dclose(dataset);
+    H5Sclose(dataspace);
+    H5Dclose(dataset);
 
-  return output;
+    return output;
+  } catch (exception& e) {
+    logError(fmt::format("hdf5 error in getVectorData(\"{}\", {})",
+                         name, hdf5_type));
+    throw;
+  }
 }
 
 vector<thrust::complex<float> > RecipeFile::getComplexVectorData(const string& name) const {
-  hid_t complex_type = H5Tcreate(H5T_COMPOUND, 8);
-  H5Tinsert(complex_type, "r", 0, H5T_IEEE_F32LE);
-  H5Tinsert(complex_type, "i", 4, H5T_IEEE_F32LE);
+  try {
+    hid_t complex_type = H5Tcreate(H5T_COMPOUND, 8);
+    H5Tinsert(complex_type, "r", 0, H5T_IEEE_F32LE);
+    H5Tinsert(complex_type, "i", 4, H5T_IEEE_F32LE);
 
-  vector<thrust::complex<float> > output =
-    getVectorData<thrust::complex<float> >(name, complex_type);
+    vector<thrust::complex<float> > output =
+      getVectorData<thrust::complex<float> >(name, complex_type);
  
-  H5Tclose(complex_type);
+    H5Tclose(complex_type);
 
-  return output;
+    return output;
+  } catch (exception& e) {
+    logError(fmt::format("hdf5 error in getComplexVectorData(\"{}\")",
+                         name));
+    throw;
+  }
 }
 
 // Reads a single long integer.
 long RecipeFile::getLongScalarData(const string& name) const {
-  auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
-  auto dataspace = H5Dget_space(dataset);
-  int npoints = H5Sget_simple_extent_npoints(dataspace);
-  if (npoints != 1) {
-    fatal(fmt::format("expected scalar at {} but got {} data values", name, npoints));;
-  }
+  try {
+    auto dataset = H5Dopen(file, name.c_str(), H5P_DEFAULT);
+    auto dataspace = H5Dget_space(dataset);
+    int npoints = H5Sget_simple_extent_npoints(dataspace);
+    if (npoints != 1) {
+      fatal(fmt::format("expected scalar at {} but got {} data values", name, npoints));;
+    }
 
-  long output;
-  if (H5Dread(dataset, H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output) < 0) {
-    fatal(name, "dataset could not be read with getLongScalarData");
-  }
+    long output;
+    if (H5Dread(dataset, H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &output) < 0) {
+      fatal(name, "dataset could not be read with getLongScalarData");
+    }
   
-  H5Sclose(dataspace);
-  H5Dclose(dataset);
+    H5Sclose(dataspace);
+    H5Dclose(dataset);
 
-  return output;  
+    return output;
+  } catch (exception& e) {
+    logError(fmt::format("hdf5 error in getLongScalarData(\"{}\")", name));
+    throw;
+  }
 }
 
 /*
