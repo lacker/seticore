@@ -43,6 +43,33 @@ def show_hit(hit):
           f"{hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
     show_array(data)
 
+def show_multiple(waterfalls, name):
+    """
+    Show multiple waterfalls, a list of arrays indexed like [time, chan]
+    """
+    if not waterfalls:
+        return
+    if waterfalls[0].shape[1] > waterfalls[0].shape[0]:
+        cols = 4
+    else:
+        cols = 12
+    rows = math.ceil(len(waterfalls) / cols)
+    fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
+    for i in range(rows * cols):
+        row = i // cols
+        col = i % cols
+        ax = axs[row, col]
+        if i < len(waterfalls):
+            ax.set_title(f"{name} {i}", fontsize=10)
+            ax.imshow(waterfalls[i], rasterized=True, interpolation="nearest",
+                      cmap="viridis")
+        else:
+            ax.axis("off")
+
+    fig.tight_layout()
+    plt.show()
+    plt.close()
+
     
 class Recipe(object):
     def __init__(self, filename):
@@ -72,11 +99,12 @@ class Recipe(object):
     
     
 class Stamp(object):
-    def __init__(self, stamp):
+    def __init__(self, stamp, recipe=None):
         """
         self.stamp stores the proto data.
         """
         self.stamp = stamp
+        self.recipe = recipe
         self._real_array = None
         
     def real_array(self):
@@ -101,29 +129,11 @@ class Stamp(object):
         voltages = self.real_array()[:, :, :, index, :]
         powers = np.square(voltages).sum(axis=(2, 3))
         show_array(powers)
-        
+
     def show_antennas(self):
-        antennas = np.square(self.real_array()).sum(axis=(2, 4))
-        if antennas.shape[1] > antennas.shape[0]:
-            cols = 4
-        else:
-            cols = 12
-        rows = math.ceil(antennas.shape[2] / cols)
-        fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
-        for i in range(rows * cols):
-            row = i // cols
-            col = i % cols
-            ax = axs[row, col]
-            if i < antennas.shape[2]:
-                ax.set_title(f"antenna {i}", fontsize=10)
-                ax.imshow(antennas[:, :, i], rasterized=True, interpolation="nearest",
-                          cmap="viridis")
-            else:
-                ax.axis("off")
-            
-        fig.tight_layout()
-        plt.show()
-        plt.close()
+        antenna_array = np.square(self.real_array()).sum(axis=(2, 4))
+        antennas = [antenna_array[:, :, i] for i in range(self.stamp.numAntennas)]
+        show_multiple(antennas, "antenna")
 
     def times(self):
         """Returns a list of the times for each timestep."""
@@ -135,7 +145,7 @@ class Stamp(object):
         return [self.stamp.fch1 + n * self.stamp.foff
                 for n in range(self.stamp.numChannels)]
 
-    def coefficients(self, recipe, beam):
+    def coefficients(self, beam):
         """Returns a numpy array of beamforming coefficients.
 
         This does not conjugate, so it should match up with c++ generateCoefficients.
@@ -151,31 +161,35 @@ class Stamp(object):
 
         for timestep, time_value in enumerate(self.times()):
             for chan, freq_value in enumerate(self.frequencies()):
-                time_array_index = recipe.time_array_index(time_value)
+                time_array_index = self.recipe.time_array_index(time_value)
                 ghz = freq_value * 0.001
-                tau = recipe.delays[time_array_index, beam, :]
+                tau = self.recipe.delays[time_array_index, beam, :]
                 angles = tau * (ghz * 2 * np.pi * 1.0j)
                 for pol in range(self.stamp.numPolarities):
-                    cal = recipe.cal_all[recipe_channel_index, pol, :]
+                    cal = self.recipe.cal_all[recipe_channel_index, pol, :]
                     answer[timestep, chan, pol, :] = cal * np.exp(angles)
 
         return answer
 
-    def beamform_voltage(self, recipe, beam):
+    def beamform_voltage(self, beam):
         """Beamforms, leaving the result in complex voltage space.
         
         Output dimensions are [time, chan]
         """
-        coeffs = self.coefficients(recipe, beam)
+        coeffs = self.coefficients(beam)
         inputs = self.complex_array()
 
         # Sum along polarity and antenna
         return (np.conjugate(coeffs) * inputs).sum(axis=(2, 3))
 
-    def beamform_power(self, recipe, beam):
-        voltage = self.beamform_voltage(recipe, beam)
+    def beamform_power(self, beam):
+        voltage = self.beamform_voltage(beam)
         return np.square(np.real(voltage)) + np.square(np.imag(voltage))
 
+    def show_beam(self, beam):
+        power = self.beamform_power(beam)
+        show_array(power)
+        
     
 def read_stamps(filename):
     with open(filename) as f:
