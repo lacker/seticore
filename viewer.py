@@ -43,25 +43,30 @@ def show_hit(hit):
           f"{hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
     show_array(data)
 
-def show_multiple(waterfalls, name):
+def show_multiple(named_waterfalls):
     """
-    Show multiple waterfalls, a list of arrays indexed like [time, chan]
+    Show multiple waterfalls.
+
+    named_waterfalls is a list of (name, waterfall).
+    waterfall is an array indexed like [time, chan]
     """
-    if not waterfalls:
+    if not named_waterfalls:
         return
-    if waterfalls[0].shape[1] > waterfalls[0].shape[0]:
+    first_waterfall = named_waterfalls[0][1]
+    if first_waterfall.shape[1] > first_waterfall.shape[0]:
         cols = 4
     else:
         cols = 12
-    rows = math.ceil(len(waterfalls) / cols)
+    rows = math.ceil(len(named_waterfalls) / cols)
     fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
     for i in range(rows * cols):
         row = i // cols
         col = i % cols
         ax = axs[row, col]
-        if i < len(waterfalls):
-            ax.set_title(f"{name} {i}", fontsize=10)
-            ax.imshow(waterfalls[i], rasterized=True, interpolation="nearest",
+        if i < len(named_waterfalls):
+            name, waterfall = named_waterfalls[i]
+            ax.set_title(name, fontsize=10)
+            ax.imshow(waterfall, rasterized=True, interpolation="nearest",
                       cmap="viridis")
         else:
             ax.axis("off")
@@ -70,6 +75,43 @@ def show_multiple(waterfalls, name):
     plt.show()
     plt.close()
 
+def round_up_power_of_two(n):
+    assert n >= 1
+    answer = 1
+    while answer < n:
+        answer *= 2
+    return answer
+    
+def interpolate_drift(total_drift, timesteps):
+    """Returns a list of drifts, one for each timestep, to get to a total of total_drift.
+    Must start with 0 and end with total_drift.
+    """
+    rounded_up = round_up_power_of_two(timesteps)
+    if rounded_up > timesteps:
+        return interpolate_drift(total_drift, rounded_up)[:timesteps]
+        
+    assert("{0:b}".format(timesteps).count("1") == 1)
+    if timesteps == 2:
+        return [0, total_drift]
+    assert timesteps > 2
+    assert timesteps % 2 == 0
+
+    if total_drift < 0:
+        return [-x for x in interpolate_drift(-total_drift, timesteps)]
+    
+    shift = total_drift // (timesteps - 1)
+    if shift > 0:
+        post_shift_drift = total_drift % (timesteps - 1)
+        post_shift_interpolate = interpolate_drift(post_shift_drift, timesteps)
+        return [i * shift + x for (i, x) in enumerate(post_shift_interpolate)]
+    
+    parity = total_drift % 2
+    half_drift = total_drift // 2
+    assert half_drift * 2 + parity == total_drift
+    half_interpolate = interpolate_drift(half_drift, timesteps // 2)
+    second_half_start = half_interpolate[-1] + parity
+    return half_interpolate + [x + second_half_start for x in half_interpolate]
+    
     
 class Recipe(object):
     def __init__(self, filename):
@@ -123,6 +165,7 @@ class Stamp(object):
 
     def show_incoherent(self):
         incoherent = np.square(self.real_array()).sum(axis=(2, 3, 4))
+        print("SNR:", self.snr(incoherent))
         show_array(incoherent)
 
     def show_antenna(self, index):
@@ -131,9 +174,9 @@ class Stamp(object):
         show_array(powers)
 
     def show_antennas(self):
-        antenna_array = np.square(self.real_array()).sum(axis=(2, 4))
-        antennas = [antenna_array[:, :, i] for i in range(self.stamp.numAntennas)]
-        show_multiple(antennas, "antenna")
+        antennas = np.square(self.real_array()).sum(axis=(2, 4))
+        show_multiple([(f"antenna {i}", antennas[:, :, i])
+                       for i in range(self.stamp.numAntennas)])
 
     def times(self):
         """Returns a list of the times for each timestep."""
@@ -188,9 +231,48 @@ class Stamp(object):
 
     def show_beam(self, beam):
         power = self.beamform_power(beam)
+        print("SNR:", self.snr(power))
         show_array(power)
-        
+
+    def show_beams(self):
+        charts = []
+        for beam in range(self.recipe.nbeams):
+            power = self.beamform_power(beam)
+            snr = self.snr(power)
+            charts.append((f"beam {beam}, snr {snr:.1f}", power))
+        show_multiple(charts)
+
+    def signal_mask(self):
+        """A bool array flagging which spots are the signal we detected"""
+        # We currently don't handle STI
+        assert self.stamp.signal.numTimesteps * 2 > self.stamp.numTimesteps
+
+        mask = np.zeros((self.stamp.numTimesteps, self.stamp.numChannels),
+                        dtype=np.bool)
+        drifts = interpolate_drift(self.stamp.signal.driftSteps,
+                                   self.stamp.signal.numTimesteps)
+        hit_offset = self.stamp.signal.index - self.stamp.startChannel
+        for timestep, drift in enumerate(drifts):
+            mask[timestep, hit_offset + drift] = True
+        return mask
+
+    def show_mask(self):
+        show_array(self.signal_mask())
+
+    def snr(self, data):
+        # Calculate the noise based on the first and last 20 column sums
+        left_column_sums = data[:, :20].sum(axis=1)
+        right_column_sums = data[:, -20:].sum(axis=1)
+        column_sums = np.concatenate((left_column_sums, right_column_sums))
+        mean = column_sums.mean()
+        std = column_sums.std()
+
+        # Calculate the signal based on the mask
+        signal = (data * self.signal_mask()).sum()
+
+        return (signal - mean) / std
     
+        
 def read_stamps(filename):
     with open(filename) as f:
         stamps = stamp_capnp.Stamp.read_multiple(f, traversal_limit_in_words=2**30)
