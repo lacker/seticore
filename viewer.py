@@ -26,16 +26,13 @@ def beam_name(hit):
         return "incoherent beam"
     return f"beam {n}"
 
-def show_array(arr, cmap="viridis", tick_spacing=None, vmin=None):
+def show_array(arr, cmap="viridis"):
     if arr.shape[1] > 1000:
         size = 30
     else:
         size = 15
     fig, ax = plt.subplots(figsize=(size, size))
-    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap, vmin=vmin)
-    if tick_spacing is not None:
-        ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(tick_spacing))
-        ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(tick_spacing))
+    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap)
     display(fig)
     plt.close()
     
@@ -131,6 +128,8 @@ class Recipe(object):
         self.cal_all = self.h5["/calinfo/cal_all"][()]
         self.nants = self.h5["/diminfo/nants"][()]
         self.nchan = self.h5["/diminfo/nchan"][()]
+        self.antenna_names = [s.decode("utf-8")
+                              for s in self.h5["/telinfo/antenna_names"][()]]
         
         # Validate shapes of things
         assert self.delays.shape == (len(self.time_array), self.nbeams, self.nants)
@@ -142,7 +141,7 @@ class Recipe(object):
         dist_tuples = [(i, abs(val - time)) for i, val in enumerate(self.time_array)]
         i, _ = min(dist_tuples)
         return i
-    
+
     
 class Stamp(object):
     def __init__(self, stamp, recipe=None):
@@ -307,17 +306,39 @@ class Stamp(object):
                 answer[j, i] = cc
         return answer
 
+    def best_correlations(self):
+        corr = self.correlations()
+        nants = self.stamp.numAntennas
+        possible = []
+        for i in range(nants):
+            for j in range(i + 1, nants):
+                possible.append((corr[i, j], (i, j)))
+        possible.sort()
+        possible.reverse()
+        for score, (i, j) in possible[:5]:
+            name_i = self.recipe.antenna_names[i]
+            name_j = self.recipe.antenna_names[j]
+            print(f"{name_i} and {name_j} have correlation {corr[i, j]:.3f}")
+    
     def show_correlations(self):
         corr = self.correlations()
+        nants = self.stamp.numAntennas
         print("median correlation:", np.median(corr))
-        show_array(corr, cmap="plasma", tick_spacing=2, vmin=0)
+        size = 15
+        fig, ax = plt.subplots(figsize=(size, size))
+        ax.imshow(corr, rasterized=True, interpolation="nearest", cmap="plasma", vmin=0)
+        ax.set_yticks(list(range(nants)))
+        ax.set_yticklabels(self.recipe.antenna_names)
+        ax.set_xticks([])
+        display(fig)
+        plt.close()
 
     def show_correlations_text(self):
         corr = self.correlations()
-        nant = self.stamp.numAntennas
-        print("   " + " ".join(f"{n:4d}" for n in range(nant)))
-        for i in range(self.stamp.numAntennas):
-            print(f"{i:2d} " + " ".join(f"{corr[i, j]:.2f}" for j in range(nant)))
+        nants = self.stamp.numAntennas
+        print("   " + " ".join(f"{n:4d}" for n in range(nants)))
+        for i in range(nants):
+            print(f"{i:2d} " + " ".join(f"{corr[i, j]:.2f}" for j in range(nants)))
         
         
 def read_stamps(filename):
