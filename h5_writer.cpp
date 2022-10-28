@@ -1,3 +1,4 @@
+#include <fmt/core.h>
 #include "hdf5.h"
 #include <iostream>
 #include "util.h"
@@ -20,14 +21,16 @@ H5Writer::H5Writer(const string& filename, const FilterbankMetadata& metadata)
   dims[2] = metadata.num_channels;
   dataspace = H5Screate_simple(3, dims, NULL);
   if (dataspace == H5I_INVALID_HID) {
-    fatal("could not create dataspace");
+    fatal(fmt::format("could not create dataspace with dims {}, 1, {}",
+                      dims[0], dims[2]));
   }
 
   // For now, don't set chunking or use bitshuffle.
   dataset = H5Dcreate2(file, "data", H5T_NATIVE_FLOAT, dataspace,
                        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (dataset == H5I_INVALID_HID) {
-    fatal("could not create dataset");
+    fatal(fmt::format("could not create dataset with dims {}, 1, {}",
+                      dims[0], dims[2]));
   }
 
   setDoubleAttr("fch1", metadata.fch1);

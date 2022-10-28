@@ -34,7 +34,8 @@ class FilterbankMetadata {
   // src_dej should be in degrees (i.e. radians * 180/pi)
   double src_dej;
 
-  int num_timesteps, num_channels, coarse_channel_size, num_coarse_channels, telescope_id;
+  long num_timesteps, num_channels, coarse_channel_size, num_coarse_channels;
+  int telescope_id;
   
   virtual ~FilterbankMetadata() {}
 

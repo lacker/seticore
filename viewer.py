@@ -287,7 +287,12 @@ class Stamp(object):
             pol1 = raw[:, :, 1, ant][mask]
             answer[:, ant] = np.concatenate((pol0, pol1))
         return answer
-    
+
+    def correlation_coefficients(self):
+        """Return a matrix where [i, j] is the correlation coefficient between
+        antennas i and j.
+        """
+        XXX
         
 def read_stamps(filename):
     with open(filename) as f:

@@ -51,8 +51,8 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
   // Extract the subset of columns near the hit
   // final_index is the index of the signal at the last point in time we dedopplered for
   // This could be extra if we padded the signal; if that looks weird then fix it
-  int final_index = dedoppler_hit.index + dedoppler_hit.drift_steps;
-  int leftmost_index, rightmost_index;
+  long final_index = dedoppler_hit.index + dedoppler_hit.drift_steps;
+  long leftmost_index, rightmost_index;
   if (final_index < dedoppler_hit.index) {
     // The hit is drifting left
     leftmost_index = final_index;
@@ -65,10 +65,10 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
 
   // Find the interval [begin_index, end_index) that we actually want to copy over
   // Pad with extra columns but don't run off the edge
-  int begin_index = max(leftmost_index - EXTRA_COLUMNS, 0);
-  int end_index = min(rightmost_index + EXTRA_COLUMNS, metadata.coarse_channel_size) - 1;
-  int num_channels = end_index - begin_index;
-  int coarse_offset = dedoppler_hit.coarse_channel * metadata.coarse_channel_size;
+  long begin_index = max(leftmost_index - EXTRA_COLUMNS, 0L);
+  long end_index = min(rightmost_index + EXTRA_COLUMNS, metadata.coarse_channel_size) - 1;
+  long num_channels = end_index - begin_index;
+  long coarse_offset = dedoppler_hit.coarse_channel * metadata.coarse_channel_size;
   filterbank.setNumChannels(num_channels);
   filterbank.setFch1(metadata.fch1 + (coarse_offset + begin_index) * metadata.foff);
   filterbank.setStartChannel(begin_index);
@@ -76,8 +76,8 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
   auto data = filterbank.getData();
   
   // Copy out the subset which would be data[:][begin_index:end_index] in numpy
-  for (int tstep = 0; tstep < metadata.num_timesteps; ++tstep) {
-    for (int chan = 0; chan < num_channels; ++chan) {
+  for (long tstep = 0; tstep < metadata.num_timesteps; ++tstep) {
+    for (long chan = 0; chan < num_channels; ++chan) {
       data.set(tstep * num_channels + chan,
                input[tstep * metadata.coarse_channel_size + begin_index + chan]);
     }
