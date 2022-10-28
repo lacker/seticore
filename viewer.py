@@ -11,6 +11,7 @@ import hit_capnp
 import math
 import numpy as np
 import os
+import pandas as pd
 import stamp_capnp
 
 def read_hits(filename):
@@ -25,13 +26,16 @@ def beam_name(hit):
         return "incoherent beam"
     return f"beam {n}"
 
-def show_array(arr):
+def show_array(arr, cmap="viridis", tick_spacing=None):
     if arr.shape[1] > 1000:
         size = 30
     else:
         size = 15
     fig, ax = plt.subplots(figsize=(size, size))
-    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap="viridis")
+    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap)
+    if tick_spacing is not None:
+        ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(tick_spacing))
+        ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(tick_spacing))
     display(fig)
     plt.close()
     
@@ -288,11 +292,33 @@ class Stamp(object):
             answer[:, ant] = np.concatenate((pol0, pol1))
         return answer
 
-    def correlation_coefficients(self):
+    def correlations(self):
         """Return a matrix where [i, j] is the correlation coefficient between
         antennas i and j.
         """
-        XXX
+        vectors = self.masked_antenna_values()
+        answer = np.zeros((self.stamp.numAntennas, self.stamp.numAntennas))
+        for i in range(self.stamp.numAntennas):
+            for j in range(i, self.stamp.numAntennas):
+                vi = vectors[:, i]
+                vj = vectors[:, j]
+                cc = abs(np.vdot(vi, vj)) / (np.linalg.norm(vi) * np.linalg.norm(vj))
+                answer[i, j] = cc
+                answer[j, i] = cc
+        return answer
+
+    def show_correlations(self):
+        corr = self.correlations()
+        print("median correlation:", np.median(corr))
+        show_array(corr, cmap="plasma", tick_spacing=2)
+
+    def show_correlations_text(self):
+        corr = self.correlations()
+        nant = self.stamp.numAntennas
+        print("   " + " ".join(f"{n:4d}" for n in range(nant)))
+        for i in range(self.stamp.numAntennas):
+            print(f"{i:2d} " + " ".join(f"{corr[i, j]:.2f}" for j in range(nant)))
+        
         
 def read_stamps(filename):
     with open(filename) as f:
