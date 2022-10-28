@@ -26,13 +26,13 @@ def beam_name(hit):
         return "incoherent beam"
     return f"beam {n}"
 
-def show_array(arr, cmap="viridis", tick_spacing=None):
+def show_array(arr, cmap="viridis", tick_spacing=None, vmin=None):
     if arr.shape[1] > 1000:
         size = 30
     else:
         size = 15
     fig, ax = plt.subplots(figsize=(size, size))
-    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap)
+    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap, vmin=vmin)
     if tick_spacing is not None:
         ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(tick_spacing))
         ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(tick_spacing))
@@ -310,7 +310,7 @@ class Stamp(object):
     def show_correlations(self):
         corr = self.correlations()
         print("median correlation:", np.median(corr))
-        show_array(corr, cmap="plasma", tick_spacing=2)
+        show_array(corr, cmap="plasma", tick_spacing=2, vmin=0)
 
     def show_correlations_text(self):
         corr = self.correlations()
