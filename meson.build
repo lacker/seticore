@@ -15,10 +15,13 @@ if nvcc_release <= '11.0'
 else
     cuda_args = basic_cuda_args + newer_cuda_args
 endif
-
-cmake = import('cmake')
-fmt_subproj = cmake.subproject('fmt')		
-fmt_dep = fmt_subproj.dependency('fmt')
+    
+fmt_dep = dependency(
+    'fmt',
+    default_options: [
+        'default_library=static'
+    ]
+)
 
 boost_dep = dependency('boost', modules: [
     'filesystem',
