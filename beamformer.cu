@@ -237,10 +237,10 @@ __global__ void calculatePower(const thrust::complex<float>* voltage, float* pow
   int time = integrated_timestep * sti + subintegration_timestep;
 
   assert(2 == num_polarizations);
-  int pol0_index = index4d(time, 0, num_polarizations, chan, num_channels, beam, num_beams);
-  int pol1_index = index4d(time, 1, num_polarizations, chan, num_channels, beam, num_beams);
-  int power_index = index3d(beam, output_timestep, num_power_timesteps,
-                            chan, num_channels);
+  long pol0_index = index4d(time, 0, num_polarizations, chan, num_channels, beam, num_beams);
+  long pol1_index = index4d(time, 1, num_polarizations, chan, num_channels, beam, num_beams);
+  long power_index = index3d(beam, output_timestep, num_power_timesteps,
+			     chan, num_channels);
 
   __shared__ float reduced[MAX_STI];
   float real0 = voltage[pol0_index].real();
@@ -259,6 +259,7 @@ __global__ void calculatePower(const thrust::complex<float>* voltage, float* pow
     __syncthreads();
   }
 
+  assert(power_index >= 0);
   if (subintegration_timestep == 0) {
     power[power_index] = reduced[0];
   }
@@ -367,6 +368,7 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   assert(input.num_polarizations == num_polarizations);
   assert(output.num_beams == num_beams || output.num_beams == num_beams + 1);
   assert(output.num_channels == numOutputChannels());
+
   assert(sti <= MAX_STI);
   
   // If the output has an extra beam, fill it with incoherent beamforming

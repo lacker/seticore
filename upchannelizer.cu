@@ -56,10 +56,12 @@ __global__ void convertRaw(const int8_t* input, int input_size,
   int time = block * time_per_block + time_within_block;
   
   for (int pol = 0; pol < num_polarizations; ++pol) {
-    int input_index = 2 * index5d(block, antenna, num_antennas, chan, num_coarse_channels,
+    long input_index = 2 * index5d(block, antenna, num_antennas, chan, num_coarse_channels,
                                   time_within_block, time_per_block, pol, num_polarizations);
-    int converted_index = index4d(pol, antenna, num_antennas, chan, num_coarse_channels, time, nsamp);
+    long converted_index = index4d(pol, antenna, num_antennas, chan, num_coarse_channels, time, nsamp);
 
+    assert(input_index >= 0);
+    assert(converted_index >= 0);
     assert(input_index + 1 < input_size);
     assert(converted_index < buffer_size);
     
@@ -91,12 +93,14 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* ou
 
   int output_fine_chan = fine_chan ^ (fft_size >> 1);
 
-  int input_index = index5d(pol, antenna, num_antennas, coarse_chan, num_coarse_channels,
-                            time, num_timesteps, fine_chan, fft_size);
-  int output_index = index5d(time, coarse_chan, num_coarse_channels,
-                             output_fine_chan, fft_size,
-                             pol, num_polarizations, antenna, num_antennas);
+  long input_index = index5d(pol, antenna, num_antennas, coarse_chan, num_coarse_channels,
+			     time, num_timesteps, fine_chan, fft_size);
+  long output_index = index5d(time, coarse_chan, num_coarse_channels,
+			      output_fine_chan, fft_size,
+			      pol, num_polarizations, antenna, num_antennas);
 
+  assert(input_index >= 0);
+  assert(output_index >= 0);
   output[output_index] = buffer[input_index];
 }
 

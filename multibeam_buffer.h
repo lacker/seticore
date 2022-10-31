@@ -12,13 +12,13 @@ using namespace std;
 */
 class MultibeamBuffer {
  public:
-  const int num_beams;
-  const int num_timesteps;
-  const int num_channels;
+  const long num_beams;
+  const long num_timesteps;
+  const long num_channels;
 
   // The number of timesteps that will be written in a batch.
   // Used only to optimize managed memory prefetching, so it can be a guess.
-  const int num_write_timesteps;
+  const long num_write_timesteps;
   
   /*
     Row-major indexed by:

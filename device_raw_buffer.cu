@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include "cuda_util.h"
+#include "util.h"
 
 using namespace std;
 
@@ -73,7 +74,11 @@ void CUDART_CB DeviceRawBuffer::staticCopyCallback(cudaStream_t stream,
 void CUDART_CB DeviceRawBuffer::staticRelease(cudaStream_t stream,
                                               cudaError_t status,
                                               void *device_raw_buffer) {
-  assert(status == cudaSuccess);
+  if (status != cudaSuccess) {
+    logErrorTimestamp();
+    cerr << "DeviceRawBuffer::staticRelease: " << cudaGetErrorString(status) << endl;
+    exit(2);
+  }
   DeviceRawBuffer* object = (DeviceRawBuffer*) device_raw_buffer;
   object->release();
 }
