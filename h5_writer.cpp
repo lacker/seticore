@@ -29,7 +29,10 @@ H5Writer::H5Writer(const string& filename, const FilterbankMetadata& metadata)
   dataset = H5Dcreate2(file, "data", H5T_NATIVE_FLOAT, dataspace,
                        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (dataset == H5I_INVALID_HID) {
-    fatal(fmt::format("could not create dataset with dims {}, 1, {}",
+    fatal(fmt::format("could not create dataset with num_timesteps {}, "
+                      "num_channels {}, dims ({}, 1, {})",
+                      metadata.num_timesteps,
+                      metadata.num_channels,
                       dims[0], dims[2]));
   }
 

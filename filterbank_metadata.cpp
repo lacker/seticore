@@ -24,6 +24,7 @@ FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
   FilterbankMetadata answer(*this);
   answer.num_coarse_channels = num_coarse_channels / num_bands;
   answer.num_channels = num_channels / num_bands;
+  assert(answer.num_channels > 0);
   answer.fch1 = fch1 + (foff * answer.num_channels * band);
   answer.source_names.clear();
   answer.source_name = getBeamSourceName(beam);
