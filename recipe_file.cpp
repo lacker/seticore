@@ -23,11 +23,6 @@ hid_t openFile(const string& filename) {
   return file;
 }
 
-long evenlyDivide(long a, long b) {
-  assert(0 == a % b);
-  return a / b;
-}
-
 RecipeFile::RecipeFile(const string& _filename) :
   file(openFile(_filename)),
   ras(getVectorData<double>("/beaminfo/ras", H5T_IEEE_F64LE)),
@@ -37,16 +32,28 @@ RecipeFile::RecipeFile(const string& _filename) :
   src_names(getStringVectorData("/beaminfo/src_names")),
   delays(getVectorData<double>("/delayinfo/delays", H5T_IEEE_F64LE)),
   time_array(getVectorData<double>("/delayinfo/time_array", H5T_IEEE_F64LE)),
-  npol(getLongScalarData("/diminfo/npol")),
+  nants(getLongScalarData("/diminfo/nants")),
   nbeams(getLongScalarData("/diminfo/nbeams")),
-  cal_all(getComplexVectorData("/calinfo/cal_all")),
-  nants(evenlyDivide(delays.size(), nbeams * time_array.size())),
-  nchans(evenlyDivide(cal_all.size(), nants * npol)) {
+  nchans(getLongScalarData("/diminfo/nchan")),
+  npol(getLongScalarData("/diminfo/npol")),
+  cal_all(getComplexVectorData("/calinfo/cal_all")) {
   if ((int) ras.size() < nbeams) {
-    fatal(fmt::format("could only load {} ras but nbeams = {}", ras.size(), nbeams));
+    fatal(fmt::format("recipe file error: could only load {} ras but nbeams = {}",
+                      ras.size(), nbeams));
   }
   if ((int) decs.size() < nbeams) {
-    fatal(fmt::format("could only load {} decs but nbeams = {}", decs.size(), nbeams));
+    fatal(fmt::format("recipe file error: could only load {} decs but nbeams = {}",
+                      decs.size(), nbeams));
+  }
+  if ((long) cal_all.size() != nchans * npol * nants) {
+    fatal(fmt::format("recipe file error: cal_all size {} does not match "
+                      "nchans = {}, npol = {}, nants = {}",
+                      cal_all.size(), nchans, npol, nants));
+  }
+  if ((long) delays.size() != (long) time_array.size() * nbeams * nants) {
+    fatal(fmt::format("recipe file error: delays size {} does not match "
+                      "time array size {}, nbeams = {}, nants = {}",
+                      delays.size(), time_array.size(), nbeams, nants));
   }
 }
 
@@ -59,11 +66,10 @@ string makeRecipeFilename(const string& filename, const string& obsid) {
     fatal("recipe directory does not exist:", filename);
   }
 
-  string fixed_obsid = obsid;
-  // Someone changed their mind and all the colons should actually
-  // be hyphens in obsid's
-  replace(fixed_obsid.begin(), fixed_obsid.end(), ':', '-');
-  return fmt::format("{}/{}.bfr5", filename, fixed_obsid);
+  // In filenames, the colons in obsids are replaced with hyphens
+  string hyphenated_obsid = obsid;
+  replace(hyphenated_obsid.begin(), hyphenated_obsid.end(), ':', '-');
+  return fmt::format("{}/{}.bfr5", filename, hyphenated_obsid);
 }
 
 RecipeFile::RecipeFile(const string& _filename, const string& obsid)

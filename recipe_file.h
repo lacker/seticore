@@ -37,13 +37,12 @@ class RecipeFile {
   const vector<double> delays;
   const vector<double> time_array;
 
-  const long npol;
+  const long nants;
   const long nbeams;
+  const long nchans;
+  const long npol;
   const vector<thrust::complex<float> > cal_all;
 
-  // This data isn't provided in the recipe file, but we can infer it
-  const int nants;
-  const int nchans;
   
   RecipeFile(const string& filename);
 

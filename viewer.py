@@ -133,7 +133,10 @@ class Recipe(object):
         
         # Validate shapes of things
         assert self.delays.shape == (len(self.time_array), self.nbeams, self.nants)
-        assert self.cal_all.shape == (self.nchan, self.npol, self.nants)
+        if self.cal_all.shape != (self.nchan, self.npol, self.nants):
+            print("cal_all shape:", self.cal_all.shape)
+            print("nchan, npol, nants:", (self.nchan, self.npol, self.nants))
+            raise ValueError("unexpected cal_all size")
         
         
     def time_array_index(self, time):
