@@ -4,6 +4,3 @@
 [submodule "raw"]
 	path = raw
 	url = https://github.com/lacker/raw.git
-[submodule "subprojects/fmt"]
-	path = subprojects/fmt
-	url = https://github.com/fmtlib/fmt.git
