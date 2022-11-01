@@ -51,6 +51,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
                       metadata.coarse_channel_size));
   }
   metadata.num_coarse_channels = metadata.num_channels / metadata.coarse_channel_size;
+  assert(metadata.num_coarse_channels > 0);
   metadata.source_names = recipe.src_names;
   metadata.ras = recipe.getRAsInHours();
   metadata.decs = recipe.getDecsInDegrees();
