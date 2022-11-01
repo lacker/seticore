@@ -15,22 +15,38 @@ FilterbankMetadata::FilterbankMetadata(): has_dc_spike(false), coarse_channel_si
   The coarse channels have to divide evenly into bands.
  */
 FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
-                                                         int num_bands) {
+                                                         int num_bands) const {
+  assert(num_bands > 0);
+  assert(0 <= band && band < num_bands);
   if (0 != num_coarse_channels % num_bands) {
     fatal(fmt::format("in getSubsetMetadata, num_coarse_channels = {} but "
                       "num_bands = {}", num_coarse_channels, num_bands));
   }
 
-  FilterbankMetadata answer(*this);
-  answer.num_coarse_channels = num_coarse_channels / num_bands;
-  answer.num_channels = num_channels / num_bands;
-  assert(answer.num_channels > 0);
-  answer.fch1 = fch1 + (foff * answer.num_channels * band);
-  answer.source_names.clear();
-  answer.source_name = getBeamSourceName(beam);
-  answer.src_raj = getBeamRA(beam);
-  answer.src_dej = getBeamDec(beam);
-  return answer;
+  FilterbankMetadata subset;
+  subset.has_dc_spike = has_dc_spike;
+  subset.source_name = getBeamSourceName(beam);
+  subset.source_names = source_names;
+  subset.ras = ras;
+  subset.decs = decs;
+
+  subset.num_timesteps = num_timesteps;
+  subset.num_channels = num_channels / num_bands;
+  subset.coarse_channel_size = coarse_channel_size;
+  subset.num_coarse_channels = num_coarse_channels / num_bands;
+
+  assert(subset.num_channels > 0);
+
+  subset.fch1 = fch1 + (foff * subset.num_channels * band);
+  subset.foff = foff;
+  subset.tstart = tstart;
+  subset.tsamp = tsamp;
+
+  subset.src_raj = getBeamRA(beam);
+  subset.src_dej = getBeamDec(beam);
+  subset.telescope_id = telescope_id;
+  
+  return subset;
 }
 
 /*

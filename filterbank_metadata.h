@@ -8,6 +8,9 @@ using namespace std;
 /*
   The FilterbankMetadata stores the metadata that is typically stored in conjunction
   with filterbank data.
+
+  If you add new fields here, be sure to update combineMetadata and getSubsetMetadata,
+  which also act like constructors.
 */
 class FilterbankMetadata {
  public:
@@ -26,6 +29,8 @@ class FilterbankMetadata {
   vector<double> ras;  // hours
   vector<double> decs; // degrees
 
+  long num_timesteps, num_channels, coarse_channel_size, num_coarse_channels;
+  
   double fch1, foff, tstart, tsamp;
 
   // src_raj should be in hours (i.e. radians * 12/pi)
@@ -34,12 +39,11 @@ class FilterbankMetadata {
   // src_dej should be in degrees (i.e. radians * 180/pi)
   double src_dej;
 
-  long num_timesteps, num_channels, coarse_channel_size, num_coarse_channels;
   int telescope_id;
   
   virtual ~FilterbankMetadata() {}
 
-  FilterbankMetadata getSubsetMetadata(int beam, int band, int num_bands);
+  FilterbankMetadata getSubsetMetadata(int beam, int band, int num_bands) const;
 
   // Providing information about beams when metadata is split among beams
   bool isCoherentBeam(int beam) const;

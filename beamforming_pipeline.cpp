@@ -42,6 +42,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   metadata.src_dej = file_group.dec;
   metadata.num_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
   metadata.num_channels = beamformer.numOutputChannels() * file_group.num_bands;
+  assert(metadata.num_channels > 0);
   metadata.telescope_id = telescope_id;
   metadata.coarse_channel_size = beamformer.fft_size;
   if (0 != metadata.num_channels % metadata.coarse_channel_size) {
