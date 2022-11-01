@@ -2,7 +2,7 @@
 
 FFT_SIZE=524288
 INPUT_DIR="/home/lacker/mars"
-RECIPE="/home/lacker/mars/guppi_59856_57567_103605834_mars_0001.bfr5"
+RECIPE="/home/lacker/mars/guppi_59856_57567_103605834_mars_0001.fixed.bfr5"
 NUM_BANDS=16
 OUTPUT_DIR="/home/lacker/marsoutput"
 EXTRA_FLAGS=
