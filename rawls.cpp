@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 			group.getStartTime(0));
     cout << pluralize(group.num_coarse_channels, "coarse channel") << endl;
     cout << pluralize(group.timesteps_per_block, "timestep") << " per block\n";
-    cout << (group.read_size / 1024 / 1024) << " MB block size\n";
+    cout << (group.oneBlockDataSize() / 1024 / 1024) << " MB block size\n";
     cout << "schan: " << group.schan << endl;
     cout << "obsid: " << group.obsid << endl;
     cout << pluralize(group.num_blocks, "total block") << endl;

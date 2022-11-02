@@ -58,6 +58,12 @@ class RawFileGroup {
   const raw::Header& getHeader();
   
   map<string, unique_ptr<RawFile> > files;
+
+  // We read one band at a time, defining these parameters.
+  // They start as -1 and are set when resetBand is called.
+  int band;
+  int num_bands;
+  int read_size;
   
  public:
   const vector<string> filenames;
@@ -96,12 +102,6 @@ class RawFileGroup {
   // This includes missing blocks. 
   int num_blocks;
 
-  // We read one band at a time, defining these parameters.
-  // They start as -1 and are set when resetBand is called.
-  int band;
-  int num_bands;
-  int read_size;
-
   RawFileGroup(const vector<string>& filenames);
   ~RawFileGroup();
 
@@ -134,6 +134,9 @@ class RawFileGroup {
 
   // Calculate fch1 for the entire file
   double getFch1(int fft_size) const;
+
+  // The size of the data for one block, in bytes
+  int oneBlockDataSize() const;
 
   int getTelescopeID() const;
 };

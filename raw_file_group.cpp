@@ -60,8 +60,7 @@ vector<string> getRawFilesMatchingPrefix(const string& prefix) {
 }
 
 RawFileGroup::RawFileGroup(const vector<string>& filenames)
-  : current_file(-1), filenames(filenames), band(-1),
-    num_bands(-1), read_size(-1) {
+  : current_file(-1), band(-1), num_bands(-1), read_size(-1), filenames(filenames) {
   assert(!filenames.empty());
   prefix = getBasename(getRawFilePrefix(filenames[0]));
 
@@ -188,8 +187,9 @@ void RawFileGroup::resetBand(int new_band, int new_num_bands) {
   num_bands = new_num_bands;
 
   // Calculate the size of each read
-  int channels_per_band = num_coarse_channels / num_bands;
-  read_size = nants * channels_per_band * timesteps_per_block * npol * 2;
+  int data_size = oneBlockDataSize();
+  assert(data_size % num_bands == 0);
+  read_size = data_size / num_bands;
   
   // Prepare for iteration
   current_file = -1;
@@ -282,7 +282,7 @@ float RawFileGroup::totalTime() const {
 
 float RawFileGroup::totalDataGB() const {
   float giga = 1024.0 * 1024.0 * 1024.0;
-  float data_per_block = num_bands * read_size / giga;
+  float data_per_block = oneBlockDataSize() / giga;
   return num_blocks * data_per_block;
 }
 
@@ -301,6 +301,10 @@ double RawFileGroup::getFch1(int fft_size) const {
   double fcchan0 = obsfreq - obsbw * (num_coarse_channels - 1) / (2 * num_coarse_channels);
   double fch1 = fcchan0 - floor(fft_size / 2) * obsbw / (num_coarse_channels * fft_size);
   return fch1;
+}
+
+int RawFileGroup::oneBlockDataSize() const {
+  return nants * num_coarse_channels * timesteps_per_block * npol * 2;
 }
 
 int RawFileGroup::getTelescopeID() const {
