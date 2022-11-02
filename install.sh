@@ -32,5 +32,5 @@ echo installing seticore $VERSION
 cp $BIN $VERSIONED_BIN
 rm -f $INSTALLED_BIN
 ln -s $VERSIONED_BIN $INSTALLED_BIN
-VALIDATE=$($INSTALLED_BIN 2>&1 | grep version) || echo FAILURE && exit 1
+VALIDATE=$($INSTALLED_BIN 2>&1 | grep version)
 echo $VALIDATE now available at $INSTALLED_BIN
