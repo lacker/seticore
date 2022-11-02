@@ -37,10 +37,13 @@ public:
 
   // This does *not* use rounded-up-to-a-power-of-two timesteps.
   int num_timesteps;
+
+  // The total power used in the numerator to calculate snr.
+  float power;
   
   DedopplerHit(const FilterbankMetadata& metadata, int _index, int _drift_steps,
                double _drift_rate, float _snr, int _beam, int _coarse_channel,
-               int _num_timesteps);
+               int _num_timesteps, float _power);
 
   string toString() const;
 

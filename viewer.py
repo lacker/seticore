@@ -128,6 +128,7 @@ class Recipe(object):
         self.cal_all = self.h5["/calinfo/cal_all"][()]
         self.nants = self.h5["/diminfo/nants"][()]
         self.nchan = self.h5["/diminfo/nchan"][()]
+
         self.antenna_names = [s.decode("utf-8")
                               for s in self.h5["/telinfo/antenna_names"][()]]
         
@@ -169,11 +170,32 @@ class Stamp(object):
         real = self.real_array()
         return real[:, :, :, :, 0] + 1.0j * real[:, :, :, :, 1]
 
-    def show_incoherent(self):
+    def show_classic_incoherent(self):
         incoherent = np.square(self.real_array()).sum(axis=(2, 3, 4))
-        print("SNR:", self.snr(incoherent))
+        snr, sig = self.snr_and_signal(incoherent)
+        print(f"recalculated power: {sig:e}")
+        print("local SNR:", snr)
         show_array(incoherent)
 
+    def weighted_incoherent(self):
+        # Start off like we're beamforming beam 0
+        coeffs = self.coefficients(0)
+        inputs = self.complex_array()
+        presum = np.conjugate(coeffs) * inputs
+
+        # But do the power calculation before summing
+        power = np.square(np.real(presum)) + np.square(np.imag(presum))
+
+        # Then sum along polarization and antenna
+        return power.sum(axis=(2, 3))
+
+    def show_weighted_incoherent(self):
+        incoherent = self.weighted_incoherent()
+        snr, sig = self.snr_and_signal(incoherent)
+        print(f"recalculated power: {sig:e}")
+        print("local SNR:", snr)
+        show_array(incoherent)
+    
     def show_antenna(self, index):
         voltages = self.real_array()[:, :, :, index, :]
         powers = np.square(voltages).sum(axis=(2, 3))
@@ -237,8 +259,23 @@ class Stamp(object):
 
     def show_beam(self, beam):
         power = self.beamform_power(beam)
-        print("SNR:", self.snr(power))
+        snr, sig = self.snr_and_signal(power)
+        print(f"recalculated power: {sig:e}")
+        print("local SNR:", snr)
         show_array(power)
+
+    def show_best_beam(self):
+        beam = self.stamp.signal.beam
+        if beam < 0:
+            print("best beam is incoherent")
+            print(f"original power: {self.stamp.signal.power:e}")
+            print(f"original SNR: {self.stamp.signal.snr}")
+            self.show_incoherent()
+            return
+        print("best beam is", beam)
+        print(f"original power: {self.stamp.signal.power:e}")
+        print("original SNR:", self.stamp.signal.snr)
+        self.show_beam(beam)
 
     def show_beams(self):
         charts = []
@@ -265,7 +302,8 @@ class Stamp(object):
     def show_mask(self):
         show_array(self.signal_mask())
 
-    def snr(self, data):
+    def snr_and_signal(self, data):
+        """Returns a (snr, signal) tuple."""
         # Calculate the noise based on the first and last 20 column sums
         left_column_sums = data[:, :20].sum(axis=1)
         right_column_sums = data[:, -20:].sum(axis=1)
@@ -273,10 +311,13 @@ class Stamp(object):
         mean = column_sums.mean()
         std = column_sums.std()
 
-        # Calculate the signal based on the mask
         signal = (data * self.signal_mask()).sum()
 
-        return (signal - mean) / std
+        return ((signal - mean) / std, signal)
+
+    def snr(self, data):
+        snr, _ = self.snr_and_signal()
+        return snr
 
     def masked_antenna_values(self):
         """Returns a data[2 * time, antenna] array of complex values.
@@ -342,7 +383,8 @@ class Stamp(object):
         print("   " + " ".join(f"{n:4d}" for n in range(nants)))
         for i in range(nants):
             print(f"{i:2d} " + " ".join(f"{corr[i, j]:.2f}" for j in range(nants)))
-        
+
+            
         
 def read_stamps(filename):
     with open(filename) as f:

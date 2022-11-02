@@ -35,6 +35,10 @@ struct Signal {
   # The number of timesteps in the associated filterbank.
   # This does *not* use rounded-up-to-a-power-of-two timesteps.
   numTimesteps @7 :Int32;
+
+  # The total power that is normalized to calculate snr.
+  # snr = (power - median) / stdev
+  power @8 :Float32;
 }
 
 # The Filterbank contains a smaller slice of the larger filterbank that we originally

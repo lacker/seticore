@@ -96,6 +96,7 @@ void buildSignal(const DedopplerHit& hit, Signal::Builder signal) {
   signal.setCoarseChannel(hit.coarse_channel);
   signal.setBeam(hit.beam);
   signal.setNumTimesteps(hit.num_timesteps);
+  signal.setPower(hit.power);
 }
 
 

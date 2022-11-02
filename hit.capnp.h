@@ -32,7 +32,7 @@ struct Signal {
   class Pipeline;
 
   struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(9082a6567e4a8bf5, 5, 0)
+    CAPNP_DECLARE_STRUCT_HEADER(9082a6567e4a8bf5, 6, 0)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -104,6 +104,8 @@ public:
 
   inline  ::int32_t getNumTimesteps() const;
 
+  inline float getPower() const;
+
 private:
   ::capnp::_::StructReader _reader;
   template <typename, ::capnp::Kind>
@@ -155,6 +157,9 @@ public:
 
   inline  ::int32_t getNumTimesteps();
   inline void setNumTimesteps( ::int32_t value);
+
+  inline float getPower();
+  inline void setPower(float value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -539,6 +544,20 @@ inline  ::int32_t Signal::Builder::getNumTimesteps() {
 inline void Signal::Builder::setNumTimesteps( ::int32_t value) {
   _builder.setDataField< ::int32_t>(
       ::capnp::bounded<9>() * ::capnp::ELEMENTS, value);
+}
+
+inline float Signal::Reader::getPower() const {
+  return _reader.getDataField<float>(
+      ::capnp::bounded<10>() * ::capnp::ELEMENTS);
+}
+
+inline float Signal::Builder::getPower() {
+  return _builder.getDataField<float>(
+      ::capnp::bounded<10>() * ::capnp::ELEMENTS);
+}
+inline void Signal::Builder::setPower(float value) {
+  _builder.setDataField<float>(
+      ::capnp::bounded<10>() * ::capnp::ELEMENTS, value);
 }
 
 inline bool Filterbank::Reader::hasSourceName() const {
