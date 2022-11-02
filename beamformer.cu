@@ -281,7 +281,9 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int 
   assert(0 == num_input_timesteps % (sti * fft_size));
   assert(0 == num_input_timesteps % num_blocks);
   assert(roundUpToPowerOfTwo(fft_size) == fft_size);
-
+  assert(num_coarse_channels > 0);
+  assert(fft_size > 0);
+  
   upchannelizer = make_unique<Upchannelizer>(stream, fft_size,
                                              num_input_timesteps, num_coarse_channels,
                                              num_polarizations, num_antennas);

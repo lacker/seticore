@@ -25,13 +25,15 @@
 // Construct metadata for the data created by a RawFileGroup and Beamformer.
 // This metadata should apply to the entire span of channels, not just one band.
 FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
+				   int num_bands,
                                    const Beamformer& beamformer,
                                    const RecipeFile& recipe,
                                    int telescope_id) {
+  assert(num_bands > 0);
   FilterbankMetadata metadata;
   metadata.source_name = file_group.source_name;
   metadata.fch1 = file_group.getFch1(beamformer.fft_size);
-  double output_bandwidth = file_group.obsbw / file_group.num_bands;
+  double output_bandwidth = file_group.obsbw / num_bands;
   metadata.foff = output_bandwidth / beamformer.numOutputChannels();
   int beamformer_batches = file_group.num_blocks / beamformer.num_blocks;
   double time_per_block = file_group.tbin * file_group.timesteps_per_block;
@@ -41,7 +43,7 @@ FilterbankMetadata combineMetadata(const RawFileGroup& file_group,
   metadata.src_raj = file_group.ra;
   metadata.src_dej = file_group.dec;
   metadata.num_timesteps = beamformer.numOutputTimesteps() * beamformer_batches;
-  metadata.num_channels = beamformer.numOutputChannels() * file_group.num_bands;
+  metadata.num_channels = beamformer.numOutputChannels() * num_bands;
   assert(metadata.num_channels > 0);
   metadata.telescope_id = telescope_id;
   metadata.coarse_channel_size = beamformer.fft_size;
@@ -129,7 +131,8 @@ void BeamformingPipeline::findHits() {
   fb_buffer.zero();
   cout << "filterbank buffer memory: " << prettyBytes(fb_buffer.bytes) << endl;
   
-  FilterbankMetadata metadata = combineMetadata(file_group, beamformer, recipe,
+  FilterbankMetadata metadata = combineMetadata(file_group, num_bands,
+						beamformer, recipe,
                                                 telescope_id);
 
   Dedopplerer dedopplerer(multibeam.num_timesteps,
