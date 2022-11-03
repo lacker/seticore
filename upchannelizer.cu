@@ -17,6 +17,11 @@ Upchannelizer::Upchannelizer(cudaStream_t stream, int fft_size,
     num_polarizations(num_polarizations),
     num_antennas(num_antennas),
     release_input(true) {
+  assert(fft_size > 0);
+  assert(num_input_timesteps > 0);
+  assert(num_coarse_channels > 0);
+  assert(num_polarizations > 0);
+  assert(num_antennas > 0);
   assert(num_input_timesteps % fft_size == 0);
 
   int batch_size = num_antennas * num_polarizations;
@@ -82,7 +87,8 @@ __global__ void convertRaw(const int8_t* input, int input_size,
   It would be great for this comment to explain why this shift is necessary, but, I don't
   understand it myself, so I can't explain it.
  */
-__global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* output,
+__global__ void shift(thrust::complex<float>* buffer, int buffer_size,
+                      thrust::complex<float>* output, int output_size,
                       int fft_size, int num_antennas, int num_polarizations,
                       int num_coarse_channels, int num_timesteps) {
   int antenna = threadIdx.y;
@@ -101,6 +107,8 @@ __global__ void shift(thrust::complex<float>* buffer, thrust::complex<float>* ou
 
   assert(input_index >= 0);
   assert(output_index >= 0);
+  assert(input_index < buffer_size);
+  assert(output_index < output_size);
   output[output_index] = buffer[input_index];
 }
 
@@ -154,8 +162,8 @@ void Upchannelizer::run(DeviceRawBuffer& input, ComplexBuffer& buffer,
   dim3 shift_block(1, num_antennas, num_polarizations);
   dim3 shift_grid(fft_size, num_coarse_channels, num_input_timesteps / fft_size);
   shift<<<shift_grid, shift_block, 0, stream>>>
-    (buffer.data, output.data, fft_size, num_antennas, num_polarizations, num_coarse_channels,
-     num_input_timesteps / fft_size);
+    (buffer.data, buffer.size, output.data, output.size, fft_size, num_antennas,
+     num_polarizations, num_coarse_channels, num_input_timesteps / fft_size);
   checkCuda("Beamformer shift");  
 }
 

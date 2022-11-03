@@ -13,7 +13,7 @@ MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_chann
   : num_beams(num_beams), num_timesteps(num_timesteps), num_channels(num_channels),
     num_write_timesteps(num_write_timesteps) {
   assert(num_write_timesteps <= num_timesteps);
-  size_t bytes = sizeof(float) * num_beams * num_timesteps * num_channels;
+  size_t bytes = sizeof(float) * size();
   cudaMallocManaged(&data, bytes);
   if (bytes > 2000000) {
     cout << "multibeam buffer memory: " << prettyBytes(bytes) << endl;
@@ -29,6 +29,10 @@ MultibeamBuffer::MultibeamBuffer(int num_beams, int num_timesteps, int num_chann
 
 MultibeamBuffer::~MultibeamBuffer() {
   cudaFree(data);
+}
+
+long MultibeamBuffer::size() const {
+  return num_beams * num_timesteps * num_channels;
 }
 
 FilterbankBuffer MultibeamBuffer::getBeam(int beam) {

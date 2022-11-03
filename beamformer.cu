@@ -50,12 +50,15 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
   for (int pol = 0; pol < num_polarizations; ++pol) {
     int coeff_index = index4d(coarse_chan, beam, num_beams, pol, num_polarizations,
                               antenna, num_antennas);
+    assert(0 <= coeff_index);
     assert(coeff_index < coefficients_size);
     thrust::complex<float> conjugated = thrust::conj(coefficients[coeff_index]);
     for (int time = 0; time < num_timesteps; ++time) {
       int prebeam_index = index5d(time, coarse_chan, num_coarse_channels, fine_chan,
                                   fft_size, pol, num_polarizations, antenna, num_antennas);
+      assert(0 <= prebeam_index);
       assert(prebeam_index < prebeam_size);
+      assert(0 <= antenna);
       assert(antenna < MAX_ANTS);
       reduced[antenna] = prebeam[prebeam_index] * conjugated;
 
@@ -70,9 +73,10 @@ __global__ void beamform(const thrust::complex<float>* prebeam,
       }
 
       if (antenna == 0) {
-        int voltage_index = index5d(time, pol, num_polarizations,
-                                    coarse_chan, num_coarse_channels,
-                                    fine_chan, fft_size, beam, num_beams);
+        long voltage_index = index5d(time, pol, num_polarizations,
+                                     coarse_chan, num_coarse_channels,
+                                     fine_chan, fft_size, beam, num_beams);
+        assert(0 <= voltage_index);
         assert(voltage_index < voltage_size);
         voltage[voltage_index] = reduced[0];
       }
@@ -224,7 +228,8 @@ void Beamformer::formIncoherentBeam(float* output) {
   TODO: this also seems equivalent to a batch matrix multiplication. could we do this
   with a cublas routine?
  */
-__global__ void calculatePower(const thrust::complex<float>* voltage, float* power,
+__global__ void calculatePower(const thrust::complex<float>* voltage, long voltage_size,
+                               float* power, long power_size,
                                int num_beams, int num_channels, int num_polarizations, int sti,
 			       int num_power_timesteps, int power_time_offset) {
   int chan = blockIdx.x;
@@ -233,14 +238,19 @@ __global__ void calculatePower(const thrust::complex<float>* voltage, float* pow
   int output_timestep = integrated_timestep + power_time_offset;
   
   int subintegration_timestep = threadIdx.x;
-  assert(subintegration_timestep < sti);
+  assert(0 <= subintegration_timestep && subintegration_timestep < sti);
   int time = integrated_timestep * sti + subintegration_timestep;
 
   assert(2 == num_polarizations);
-  long pol0_index = index4d(time, 0, num_polarizations, chan, num_channels, beam, num_beams);
-  long pol1_index = index4d(time, 1, num_polarizations, chan, num_channels, beam, num_beams);
+  long pol0_index = index4d(time, 0, num_polarizations, chan, num_channels,
+                            beam, num_beams);
+  assert(0 <= pol0_index && pol0_index < voltage_size);
+  long pol1_index = index4d(time, 1, num_polarizations, chan, num_channels,
+                            beam, num_beams);
+  assert(0 <= pol1_index && pol1_index < voltage_size);
   long power_index = index3d(beam, output_timestep, num_power_timesteps,
 			     chan, num_channels);
+  assert(0 <= power_index && power_index < power_size);
 
   __shared__ float reduced[MAX_STI];
   float real0 = voltage[pol0_index].real();
@@ -404,8 +414,9 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   dim3 power_block(sti, 1, 1);
   dim3 power_grid(numOutputChannels(), num_beams, numOutputTimesteps());
   calculatePower<<<power_grid, power_block, 0, stream>>>
-    (buffer->data, output.data, num_beams, numOutputChannels(), num_polarizations, sti,
-     output.num_timesteps, power_time_offset);
+    (buffer->data, buffer->size, output.data, output.size(), num_beams,
+     numOutputChannels(), num_polarizations, sti, output.num_timesteps,
+     power_time_offset);
   checkCuda("Beamformer calculatePower");
 }
 

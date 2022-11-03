@@ -33,6 +33,8 @@ class MultibeamBuffer {
 
   ~MultibeamBuffer();
 
+  long size() const;
+  
   FilterbankBuffer getBeam(int beam);
 
   void set(int beam, int time, int channel, float value);
