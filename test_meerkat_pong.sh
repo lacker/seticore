@@ -23,7 +23,7 @@ if false; then
 fi
 
 # Testing on blpn131
-# 20221020/0026 dataset, cuda prefetch error, oct 29
+# 20221103/0012 dataset, cuda illegal memory access, Nov 3
 if true; then
     INPUT_DIR="/buf0ro/lacker/GUPPI/"
     RECIPE_DIR="/home/obs/bfr5/"

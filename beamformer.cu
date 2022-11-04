@@ -395,10 +395,11 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
 
   if (incoherent) {
     // The incoherent beam goes into the beam numbered num_beams in the output
-    int data_offset = index3d(num_beams,
-                              power_time_offset, output.num_timesteps,
-                              0, output.num_channels);
+    long data_offset = index3d(num_beams,
+			       power_time_offset, output.num_timesteps,
+			       0, output.num_channels);
     int num_output_floats = numOutputChannels() * numOutputTimesteps();
+    assert(data_offset >= 0);
     assert(data_offset + num_output_floats <= output.size());
     formIncoherentBeam(output.data + data_offset);
   }
