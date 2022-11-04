@@ -168,11 +168,16 @@ void Beamformer::runCublasBeamform(int time, int pol) {
   The output should just have format:
     output[big_timestep][channel]
 
+  This method should write numOutputChannels() * numOutputTimesteps() floats,
+  starting at output.
+
   We want to compute x^T x, ie the norm of x. To do this we treat x as a
   1 x num_combined matrix and use matrix-matrix multiplication.
 
   Note: once we upgrade to cuda 11.6.2 or later everywhere, we can implement this
   with a gemv routine, ie a matrix-vector multiplication, which might be faster.
+  That might not be necessary, because it seems like some cuda versions, like
+  11.5 at least, are smart enough to do this already.
  */
 void Beamformer::formIncoherentBeam(float* output) {
   float* input = (float*) prebeam->data;
@@ -391,8 +396,10 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   if (incoherent) {
     // The incoherent beam goes into the beam numbered num_beams in the output
     int data_offset = index3d(num_beams,
-                         power_time_offset, output.num_timesteps,
-                         0, output.num_channels);
+                              power_time_offset, output.num_timesteps,
+                              0, output.num_channels);
+    int num_output_floats = numOutputChannels() * numOutputTimesteps();
+    assert(data_offset + num_output_floats <= output.size());
     formIncoherentBeam(output.data + data_offset);
   }
   
