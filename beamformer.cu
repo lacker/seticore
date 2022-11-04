@@ -428,6 +428,14 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
   checkCuda("Beamformer calculatePower");
 }
 
+void Beamformer::setCoefficient(int chan, int beam, int pol, int antenna,
+                                float real, float imag) {
+  long coeff_index = index4d(chan, beam, num_beams,
+                             pol, num_polarizations, antenna, num_antennas);
+  assert(0 <= coeff_index && coeff_index < coefficients_size);
+  coefficients[coeff_index] = thrust::complex<float>(real, imag);
+}
+
 thrust::complex<float> Beamformer::getCoefficient(int antenna, int pol, int beam,
                                                   int coarse_channel) const {
   cudaDeviceSynchronize();

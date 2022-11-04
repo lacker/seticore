@@ -1,8 +1,9 @@
 #pragma once
 
-#include <thrust/complex.h>
+#include "beamformer.h"
 #include "hdf5.h"
 #include <string>
+#include <thrust/complex.h>
 #include <vector>
 
 using namespace std;
@@ -68,7 +69,7 @@ class RecipeFile {
 			    float raw_bandwidth_mhz,
 			    int subband_start,
 			    int subband_size,
-			    thrust::complex<float>* coefficients) const;
+                            Beamformer* beamformer) const;
 
   vector<double> getRAsInHours() const;
   vector<double> getDecsInDegrees() const;

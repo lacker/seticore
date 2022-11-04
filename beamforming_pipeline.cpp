@@ -180,7 +180,7 @@ void BeamformingPipeline::findHits() {
 				  file_group.obsbw,
 				  coarse_channels_per_band * band,
                                   coarse_channels_per_band,
-                                  beamformer.coefficients);
+                                  &beamformer);
 
       int time_offset = beamformer.numOutputTimesteps() * batch;
 

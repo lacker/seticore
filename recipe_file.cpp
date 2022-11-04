@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <assert.h>
+#include "beamformer.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 #include <exception>
@@ -288,6 +289,10 @@ void RecipeFile::validateRawRange(int schan, int num_coarse_channels) const {
 
   We only want coefficients for one subband of the raw file, specified by
   subband_start and subband_size. These are indices relative to the raw file.
+
+  The output is indexed by
+    coefficients[channel][beam][polarization][antenna]
+  where channel is in [0, subband_size).
  */
 void RecipeFile::generateCoefficients(int time_array_index,
 				      int raw_start_channel,
@@ -296,7 +301,7 @@ void RecipeFile::generateCoefficients(int time_array_index,
 				      float raw_bandwidth_mhz,
 				      int subband_start,
 				      int subband_size,
-                                      thrust::complex<float>* coefficients) const {
+                                      Beamformer* beamformer) const {
   validateRawRange(raw_start_channel, raw_num_channels);
   assert(subband_start + subband_size <= raw_num_channels);
   assert(raw_start_channel + raw_num_channels <= nchans);
@@ -304,12 +309,12 @@ void RecipeFile::generateCoefficients(int time_array_index,
   float chan_bandwidth_ghz = raw_bandwidth_mhz / raw_num_channels * 0.001;
   float raw_center_index = (raw_num_channels - 1.0) / 2.0;
 
-  int output_index = 0;
-  for (int i = 0; i < subband_size; ++i) {
-    // Index within the raw file
-    int raw_channel_index = subband_start + i;
-
-    // Index within the recipe file
+  for (int coeff_channel_index = 0; coeff_channel_index < subband_size;
+       ++coeff_channel_index) {
+    // coeff_channel_index is the channel index within the coefficients.
+    // raw_channel_index is the channel index within the raw file.
+    // recipe_channel index is the channel index within the recipe file.
+    int raw_channel_index = subband_start + coeff_channel_index;
     int recipe_channel_index = raw_start_channel + raw_channel_index;
     assert(recipe_channel_index < nchans);
     
@@ -331,7 +336,9 @@ void RecipeFile::generateCoefficients(int time_array_index,
           // Rotate to get the coefficients
           float real = cal.real() * cos_val - cal.imag() * sin_val;
           float imag = cal.real() * sin_val + cal.imag() * cos_val;
-          coefficients[output_index++] = thrust::complex<float>(real, imag);
+
+          beamformer->setCoefficient(coeff_channel_index, beam, polarization, antenna,
+                                     real, imag);
         }
       }
     }

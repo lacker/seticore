@@ -79,6 +79,8 @@ class Beamformer {
 
   int numOutputChannels() const;
   int numOutputTimesteps() const;
+
+  void setCoefficient(int chan, int beam, int pol, int antenna, float real, float imag);
   
   void run(DeviceRawBuffer& input, MultibeamBuffer& output, int time_offset);
 
