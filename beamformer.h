@@ -97,6 +97,11 @@ class Beamformer {
   thrust::complex<float> *coefficients;
   size_t coefficients_size;
 
+  // The square magnitude of the beamforming coefficients, formatted by row-major:
+  //   square_magnitudes[coarse-channel][polarization][antenna]
+  float *square_magnitudes;
+  size_t square_magnitudes_size;
+  
   // The beamformed data, as power. Not owned by the beamformer.
   // Its format is row-major:
   //   power[beam][time][frequency]
@@ -106,6 +111,9 @@ class Beamformer {
   // Selects which of two alternatives for the beamform kernel to use
   bool use_cublas_beamform;
 
+  // Selects whether we weight the incoherent beam
+  bool weight_incoherent_beam;
+  
   // Hack for unit testing
   void setReleaseInput(bool flag);
   
@@ -135,6 +143,6 @@ class Beamformer {
 
   cublasHandle_t cublas_handle;
 
-  void formIncoherentBeam(float* output);
+  void unweightedIncoherentBeam(float* output);
   void runCublasBeamform(int time, int pol);
 };
