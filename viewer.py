@@ -270,7 +270,7 @@ class Stamp(object):
             print("best beam is incoherent")
             print(f"original power: {self.stamp.signal.power:e}")
             print(f"original SNR: {self.stamp.signal.snr}")
-            self.show_incoherent()
+            self.show_weighted_incoherent()
             return
         print("best beam is", beam)
         print(f"original power: {self.stamp.signal.power:e}")

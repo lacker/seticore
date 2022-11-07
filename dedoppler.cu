@@ -79,7 +79,7 @@ __global__ void sumColumns(const float* input, float* sums, int num_timesteps, i
 Dedopplerer::Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp,
                          bool has_dc_spike)
     : num_timesteps(num_timesteps), num_channels(num_channels), foff(foff), tsamp(tsamp),
-      has_dc_spike(has_dc_spike), print_hits(false), print_hit_summary(false) {
+      has_dc_spike(has_dc_spike), print_hits(false) {
   assert(num_timesteps > 1);
   rounded_num_timesteps = roundUpToPowerOfTwo(num_timesteps);
   drift_timesteps = rounded_num_timesteps - 1;
@@ -270,26 +270,6 @@ void Dedopplerer::search(const FilterbankBuffer& input,
         }
         output->push_back(hit);
       }
-    }
-  }
-
-  if (print_hit_summary && !output->empty()) {
-    cout << "found " << pluralize(output->size(), "hit") << " in ";
-    if (beam != NO_BEAM) {
-      cout << "beam " << beam << ", ";
-    }
-    cout << "coarse channel " << coarse_channel << endl;
-    int display_limit = 5;
-    for (int i = 0; i < (int) output->size(); ++i) {
-      const DedopplerHit& hit = (*output)[i];
-      if (i < display_limit) {
-        cout << "  index = " << hit.index << ", drift steps = "
-             << hit.drift_steps << ", snr = " << hit.snr << ", drift rate = "
-             << hit.drift_rate << endl;
-      }
-    }
-    if ((int) output->size() > display_limit) {
-      cout << "  (and " << ((int) output->size() - display_limit) << " more)\n";
     }
   }
 }

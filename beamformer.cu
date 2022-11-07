@@ -481,6 +481,7 @@ void Beamformer::run(DeviceRawBuffer& input, MultibeamBuffer& output,
         (prebeam->data, prebeam->size, square_magnitudes, square_magnitudes_size,
          sti, num_coarse_channels, fft_size, num_polarizations, num_antennas,
          output.data + data_offset, numOutputChannels() * numOutputTimesteps());
+      checkCuda("Beamformer incoherentPower");
     } else {
       unweightedIncoherentBeam(output.data + data_offset);
     }

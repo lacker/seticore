@@ -31,7 +31,6 @@ public:
   const bool has_dc_spike;
 
   bool print_hits;
-  bool print_hit_summary;
   
   // Do not round num_timesteps before creating the Dedopplerer
   Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);

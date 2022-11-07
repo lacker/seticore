@@ -138,7 +138,6 @@ void BeamformingPipeline::findHits() {
   Dedopplerer dedopplerer(multibeam.num_timesteps,
                           fb_buffer.num_channels,
                           metadata.foff, metadata.tsamp, false);
-  dedopplerer.print_hit_summary = true;
   cout << "dedoppler memory: " << prettyBytes(dedopplerer.memoryUsage()) << endl;
 
   unique_ptr<HitFileWriter> hit_recorder;
