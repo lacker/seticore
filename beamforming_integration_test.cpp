@@ -43,10 +43,12 @@ int main(int argc, char* argv[]) {
   
   pipeline.findHits();
 
-  assert(114049 == pipeline.hits[0].index);
+  cout << pipeline.hits[0].toString() << endl;
+  
+  assert(98134 == pipeline.hits[0].index);
   assert(-1 == pipeline.hits[0].drift_steps);
-  assertFloatEq(7.03593, pipeline.hits[0].snr);
-  assertFloatEq(-0.317774, pipeline.hits[0].drift_rate);
+  assertFloatEq(11.93973, pipeline.hits[0].snr);
+  assertFloatEq(-0.31777, pipeline.hits[0].drift_rate);
 
   vector<DedopplerHit> nonzero;
   for (const DedopplerHit& hit : pipeline.hits) {
@@ -61,9 +63,9 @@ int main(int argc, char* argv[]) {
   }
   
   assertStringEq(nonzero[10].toString(),
-                 "coarse channel = 1, index = 18176, snr = 7.75743, drift rate = 0.31777 (1 bin)");
+                 "coarse channel = 0, index = 63010, snr = 8.19147, drift rate = -0.31777 (-1 bin)");
   assertStringEq(nonzero[20].toString(),
-                 "coarse channel = 1, index = 87231, snr = 7.01010, drift rate = 0.31777 (1 bin)");
+                 "coarse channel = 0, index = 50467, snr = 7.30951, drift rate = -0.31777 (-1 bin)");
   
   return 0;
 }

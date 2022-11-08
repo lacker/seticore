@@ -131,6 +131,52 @@ size_t Dedopplerer::memoryUsage() const {
 }
 
 /*
+  Takes a bunch of hits that we found for coherent beams, and adds information
+  about their incoherent beam
+
+  Input should be the incoherent sum.
+  This function re-sorts hits by drift, so be aware that it will change order.
+ */
+void Dedopplerer::addIncoherentPower(const FilterbankBuffer& input,
+                                     vector<DedopplerHit>& hits) {
+  assert(input.num_timesteps == rounded_num_timesteps);
+  assert(input.num_channels == num_channels);
+
+  sort(hits.begin(), hits.end(), &driftStepsLessThan);
+  
+  int drift_shift = rounded_num_timesteps - 1;
+  
+  // The drift block we are currently analyzing
+  int current_drift_block = INT_MIN;
+
+  // A pointer for the currently-analyzed drift block
+  const float* taylor_sums = nullptr;
+
+  for (DedopplerHit& hit : hits) {
+    // Figure out what drift block this hit belongs to
+    int drift_block = (int) floor((float) hit.drift_steps / drift_shift);
+    int path_offset = hit.drift_steps - drift_block * drift_shift;
+    assert(0 <= path_offset && path_offset < drift_shift);
+
+    // We should not go backwards
+    assert(drift_block >= current_drift_block);
+
+    if (drift_block > current_drift_block) {
+      // We need to analyze a new drift block
+      taylor_sums = optimizedTaylorTree(input.data, buffer1, buffer2,
+                                        rounded_num_timesteps, num_channels,
+                                        drift_block);
+      current_drift_block = drift_block;
+    }
+
+    long power_index = index2d(path_offset, hit.index, num_channels);
+    assert(taylor_sums != nullptr);
+    cudaMemcpy(&hit.incoherent_power, taylor_sums + power_index,
+               sizeof(float), cudaMemcpyDeviceToHost);
+  }
+}
+
+/*
   Runs dedoppler search on the input buffer.
   Output is appended to the output vector.
   

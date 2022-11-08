@@ -39,6 +39,9 @@ struct Signal {
   # The total power that is normalized to calculate snr.
   # snr = (power - median) / stdev
   power @8 :Float32;
+
+  # The total power for the same signal, calculated incoherently.
+  incoherentPower @9 :Float32;
 }
 
 # The Filterbank contains a smaller slice of the larger filterbank that we originally

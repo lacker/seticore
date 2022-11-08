@@ -33,9 +33,12 @@ public:
   bool print_hits;
   
   // Do not round num_timesteps before creating the Dedopplerer
-  Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp, bool has_dc_spike);
+  Dedopplerer(int num_timesteps, int num_channels, double foff, double tsamp,
+              bool has_dc_spike);
   ~Dedopplerer();
 
+  void addIncoherentPower(const FilterbankBuffer& input, vector<DedopplerHit>& hits);
+  
   void search(const FilterbankBuffer& input, const FilterbankMetadata& metadata,
               int beam, int coarse_channel,
               double max_drift, double min_drift, double snr_threshold,

@@ -40,6 +40,9 @@ public:
 
   // The total power used in the numerator to calculate snr.
   float power;
+
+  // The total power in the incoherent beam, calculated along the same line.
+  float incoherent_power;
   
   DedopplerHit(const FilterbankMetadata& metadata, int _index, int _drift_steps,
                double _drift_rate, float _snr, int _beam, int _coarse_channel,
@@ -56,3 +59,5 @@ public:
 
 
 bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs);
+
+bool driftStepsLessThan(const DedopplerHit& lhs, const DedopplerHit& rhs);

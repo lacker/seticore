@@ -191,15 +191,20 @@ void BeamformingPipeline::findHits() {
       beamformer.run(*device_raw_buffer, multibeam, time_offset);
     }
 
+    // Organize the coherent hits by coarse channel
+    map<int, vector<DedopplerHit> > hits_per_coarse_channel;
+    
     for (int beam = 0; beam < multibeam.num_beams; ++beam) {
       multibeam.hintReadingBeam(beam);
+      bool coherent = metadata.isCoherentBeam(beam);
       
       if (!h5_dir.empty()) {
         // Write out data for this band and beam to a file
         cudaDeviceSynchronize();
-        string beam_name = metadata.isCoherentBeam(beam) ?
-          fmt::format("beam{}", zeroPad(beam, numDigits(beamformer.num_beams))) :
-          "incoherent";
+        string beam_name = coherent 
+          ? fmt::format("beam{}", zeroPad(beam, numDigits(beamformer.num_beams)))
+          : "incoherent";
+
         string h5_filename =
           fmt::format("{}/{}.band{}.{}.h5",
                       h5_dir,
@@ -222,15 +227,28 @@ void BeamformingPipeline::findHits() {
 
         multibeam.copyRegionAsync(beam, local_coarse_channel * fft_size, &fb_buffer);
 
-        vector<DedopplerHit> local_hits;
-        dedopplerer.search(fb_buffer, metadata, beam, coarse_channel, max_drift,
-                           0.0, snr, &local_hits);
-        for (DedopplerHit hit : local_hits) {
+        if (coherent) {
+          // Go find hits
+          dedopplerer.search(fb_buffer, metadata, beam, coarse_channel, max_drift,
+                             0.0, snr, &hits_per_coarse_channel[coarse_channel]);
           if (record_hits) {
-            hit_recorder->recordHit(hit, fb_buffer.data);
+            for (DedopplerHit hit : hits_per_coarse_channel[coarse_channel]) {
+              hit_recorder->recordHit(hit, fb_buffer.data);
+            }
           }
-          hits.push_back(hit);
+        } else {
+          // Our goal is not to find hits, but to augment information for existing
+          // hits with the incoherent beam information.
+          dedopplerer.addIncoherentPower(fb_buffer,
+                                         hits_per_coarse_channel[coarse_channel]);
         }
+      }
+    }
+
+    // Write out all the hits for this band
+    for (auto const& it : hits_per_coarse_channel) {
+      for (DedopplerHit hit : it.second) {
+        hits.push_back(hit);
       }
     }
   }

@@ -106,6 +106,8 @@ public:
 
   inline float getPower() const;
 
+  inline float getIncoherentPower() const;
+
 private:
   ::capnp::_::StructReader _reader;
   template <typename, ::capnp::Kind>
@@ -160,6 +162,9 @@ public:
 
   inline float getPower();
   inline void setPower(float value);
+
+  inline float getIncoherentPower();
+  inline void setIncoherentPower(float value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -558,6 +563,20 @@ inline float Signal::Builder::getPower() {
 inline void Signal::Builder::setPower(float value) {
   _builder.setDataField<float>(
       ::capnp::bounded<10>() * ::capnp::ELEMENTS, value);
+}
+
+inline float Signal::Reader::getIncoherentPower() const {
+  return _reader.getDataField<float>(
+      ::capnp::bounded<11>() * ::capnp::ELEMENTS);
+}
+
+inline float Signal::Builder::getIncoherentPower() {
+  return _builder.getDataField<float>(
+      ::capnp::bounded<11>() * ::capnp::ELEMENTS);
+}
+inline void Signal::Builder::setIncoherentPower(float value) {
+  _builder.setDataField<float>(
+      ::capnp::bounded<11>() * ::capnp::ELEMENTS, value);
 }
 
 inline bool Filterbank::Reader::hasSourceName() const {

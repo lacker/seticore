@@ -358,7 +358,7 @@ Beamformer::Beamformer(cudaStream_t stream, int fft_size, int num_antennas, int 
   : fft_size(fft_size), num_antennas(num_antennas), num_beams(num_beams),
     num_blocks(num_blocks), num_coarse_channels(num_coarse_channels),
     num_polarizations(num_polarizations), num_input_timesteps(num_input_timesteps), sti(sti),
-    stream(stream), use_cublas_beamform(true), weight_incoherent_beam(false) {
+    stream(stream), use_cublas_beamform(true), weight_incoherent_beam(true) {
   
   assert(0 == num_input_timesteps % (sti * fft_size));
   assert(0 == num_input_timesteps % num_blocks);

@@ -14,7 +14,7 @@ DedopplerHit::DedopplerHit(const FilterbankMetadata& metadata, int _index,
   : index(_index), drift_steps(_drift_steps), drift_rate(_drift_rate),
     snr(_snr), coarse_channel(_coarse_channel),
     beam(metadata.isCoherentBeam(_beam) ? _beam : NO_BEAM),
-    num_timesteps(_num_timesteps), power(_power) {
+    num_timesteps(_num_timesteps), power(_power), incoherent_power(0.0) {
 
   int coarse_offset = coarse_channel * metadata.coarse_channel_size;
   int global_index = coarse_offset + index;
@@ -45,4 +45,10 @@ bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs) {
     return lhs.lowIndex() < rhs.lowIndex();
   }
   return lhs.highIndex() < rhs.highIndex();
+}
+
+
+// Alternate sort comparator that just compares drift steps
+bool driftStepsLessThan(const DedopplerHit& lhs, const DedopplerHit& rhs) {
+  return lhs.drift_steps < rhs.drift_steps;
 }
