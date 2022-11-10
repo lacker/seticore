@@ -16,7 +16,7 @@ void DedopplerHitGroup::add(DedopplerHit hit) {
   assert(hit.coarse_channel == coarse_channel);
   low_index = min(low_index, hit.lowIndex());
   high_index = max(high_index, hit.highIndex());
-  if (hit.snr > topHit().snr) {
+  if (hit.score() > topHit().score()) {
     top_hit_index = hits.size();
   }
   hits.push_back(hit);
@@ -27,10 +27,10 @@ const DedopplerHit& DedopplerHitGroup::topHit() const {
 }
 
 /*
-  Sorts so that the highest top hit snrs come first
+  Sorts so that the highest top hit scores come first
 */
 bool operator<(const DedopplerHitGroup& lhs, const DedopplerHitGroup& rhs) {
-  return rhs.topHit().snr < lhs.topHit().snr;
+  return rhs.topHit().score() < lhs.topHit().score();
 }
 
 /*

@@ -1,5 +1,6 @@
 #include "dedoppler_hit.h"
 
+#include <assert.h>
 #include <fmt/core.h>
 #include <string>
 
@@ -36,6 +37,11 @@ int DedopplerHit::highIndex() const {
   return max(index, index + drift_steps);
 }
 
+float DedopplerHit::score() const {
+  assert(incoherent_power > 0);
+  return power / incoherent_power;
+}
+
 // Sort first by coarse channel, then by low index, then by high index
 bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs) {
   if (lhs.coarse_channel != rhs.coarse_channel) {
@@ -52,3 +58,4 @@ bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs) {
 bool driftStepsLessThan(const DedopplerHit& lhs, const DedopplerHit& rhs) {
   return lhs.drift_steps < rhs.drift_steps;
 }
+

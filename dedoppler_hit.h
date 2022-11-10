@@ -55,9 +55,14 @@ public:
 
   // Highest index that contains a bin with this signal
   int highIndex() const;
+
+  // The highest-scoring hits are the ones that get turned into stamps
+  float score() const;
 };
 
 
 bool operator<(const DedopplerHit& lhs, const DedopplerHit& rhs);
 
 bool driftStepsLessThan(const DedopplerHit& lhs, const DedopplerHit& rhs);
+
+
