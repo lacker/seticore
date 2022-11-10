@@ -18,6 +18,9 @@ class HitFileWriter: public HitRecorder {
   const FilterbankMetadata& metadata;
   int fd;
 
+  const string tmp_filename;
+  const string final_filename;
+  
  public:
   bool verbose;
   

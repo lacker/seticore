@@ -12,7 +12,8 @@ class StampExtractor {
   RawFileGroup& file_group;
   const int fft_size;
   const int telescope_id;
-  const string output_filename;
+  const string tmp_filename;
+  const string final_filename;
   int fd;
   bool opened;
 

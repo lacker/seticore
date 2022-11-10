@@ -1,3 +1,4 @@
+#include <boost/filesystem.hpp>
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
 #include <errno.h>
@@ -16,16 +17,18 @@ const int EXTRA_COLUMNS = 40;
 
 HitFileWriter::HitFileWriter(const string& filename,
                              const FilterbankMetadata& metadata)
-  : metadata(metadata), verbose(true) {
-  fd = open(filename.c_str(), O_WRONLY | O_CREAT, 0664);
+  : metadata(metadata), tmp_filename(filename + ".tmp"), final_filename(filename),
+    verbose(true) {
+  fd = open(tmp_filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
     int err = errno;
-    fatal(fmt::format("could not open {} for writing. errno = {}", filename, err));
+    fatal(fmt::format("could not open {} for writing. errno = {}", tmp_filename, err));
   }
 }
 
 HitFileWriter::~HitFileWriter() {
   close(fd);
+  boost::filesystem::rename(tmp_filename, final_filename);
 }
 
 void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {

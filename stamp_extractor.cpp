@@ -1,3 +1,4 @@
+#include <boost/filesystem.hpp>
 #include <capnp/serialize-packed.h>
 #include <errno.h>
 #include <fmt/core.h>
@@ -14,12 +15,14 @@ using namespace std;
 StampExtractor::StampExtractor(RawFileGroup& file_group, int fft_size, int telescope_id,
                                const string& output_filename)
   : file_group(file_group), fft_size(fft_size), telescope_id(telescope_id),
-    output_filename(output_filename), opened(false) {
+    tmp_filename(output_filename + ".tmp"), final_filename(output_filename),
+    opened(false) {
 }
 
 StampExtractor::~StampExtractor() {
   if (opened) {
     close(fd);
+    boost::filesystem::rename(tmp_filename, final_filename);
   }
 }
 
@@ -27,10 +30,10 @@ void StampExtractor::openOutputFile() {
   if (opened) {
     return;
   }
-  fd = open(output_filename.c_str(), O_WRONLY | O_CREAT, 0664);
+  fd = open(tmp_filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
     int err = errno;
-    fatal(fmt::format("could not open {} for writing. errno = {}", output_filename, err));
+    fatal(fmt::format("could not open {} for writing. errno = {}", tmp_filename, err));
   }
   opened = true;
 }
