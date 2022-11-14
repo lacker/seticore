@@ -86,6 +86,13 @@ void BeamformingPipeline::findHits() {
 
   RecipeFile recipe(recipe_filename, file_group.obsid);
   recipe.validateRawRange(file_group.schan, file_group.num_coarse_channels);
+
+  if (file_group.nants != recipe.nants) {
+    fatal(fmt::format("raw files at {}.*.raw have {} antennas, but "
+		      "recipe file at {} has {} antennas",
+		      file_group.prefix, file_group.nants,
+		      recipe.filename, recipe.nants));
+  }
   
   // Do enough blocks per beamformer batch to handle one STI block
   if (0 != (sti * fft_size) % file_group.timesteps_per_block) {
