@@ -11,30 +11,23 @@
 #   sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
 
 OUTPUT_DIR="/mydatag/test/lacker/"
+RECIPE_DIR="/home/obs/bfr5/"
+NUM_BANDS=16
 
-# Testing the Sep 28 dataset on blpn130
-if false; then
-    VARIANT="macs"
-    INPUT_DIR="/buf0ro/lacker/$VARIANT"
-    RECIPE_DIR="/home/obs/bfr5/"
-    NUM_BANDS=16
-    OUTPUT_DIR="/scratch/data/$VARIANT/seticore_search/"
-    EXTRA_FLAGS="--h5_dir /scratch/data/$VARIANT/seticore_beamformer/"
+# Testing the setCoefficient failure on blpn130, Nov 14
+if true; then
+    INPUT_DIR="/scratch/data/danielc/20221020/0031/Unknown/GUPPI"
 fi
 
 # Testing on blpn131
 # 20221103/0012 dataset, cuda illegal memory access, Nov 3
-if true; then
+if false; then
     INPUT_DIR="/buf0ro/lacker/GUPPI/"
-    RECIPE_DIR="/home/obs/bfr5/"
-    NUM_BANDS=16
 fi
 
 # Testing the 20221014/0014 dataset (32k mode crash) on blpn129
 if false; then
     INPUT_DIR="/buf0/lacker/20221014/"
-    RECIPE_DIR="/home/obs/bfr5/"
-    NUM_BANDS=16
 fi
     
 
