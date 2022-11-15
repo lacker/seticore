@@ -5,14 +5,17 @@ matplotlib.rc("figure", max_open_warning=0)
 from matplotlib import pyplot as plt
 
 import capnp
+capnp.remove_import_hook()
 
 import h5py
-import hit_capnp
 import math
 import numpy as np
 import os
 import pandas as pd
-import stamp_capnp
+
+SETICORE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+hit_capnp = capnp.load(SETICORE_DIR + "/hit.capnp")
+stamp_capnp = capnp.load(SETICORE_DIR + "/stamp.capnp")
 
 def read_hits(filename):
     with open(filename) as f:
