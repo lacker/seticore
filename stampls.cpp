@@ -42,6 +42,7 @@ int main(int argc, char* argv[]) {
     cout << "stamp " << count << ":\n";
     cout << "version: " << stamp.getSeticoreVersion().cStr() << endl;
     cout << "source: " << stamp.getSourceName().cStr() << endl;
+    cout << "obsid: " << stamp.getObsid().cStr() << endl;
     cout << "ra: " << stamp.getRa() << endl;
     cout << "dec: " << stamp.getDec() << endl;
     cout << "fch1: " << stamp.getFch1() << endl;
