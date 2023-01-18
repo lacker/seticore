@@ -37,9 +37,15 @@ int DedopplerHit::highIndex() const {
   return max(index, index + drift_steps);
 }
 
+// If we have incoherent power, we want to use the ratio of power to incoherent power.
+// Otherwise, we just want to sort by SNR.
 float DedopplerHit::score() const {
-  assert(incoherent_power > 0);
-  return power / incoherent_power;
+  if (incoherent_power > 0) {
+    return power / incoherent_power;
+  } else {
+    assert(snr >= 0.0);
+    return -1.0 / (1.0 + snr);
+  }
 }
 
 // Sort first by coarse channel, then by low index, then by high index

@@ -1,11 +1,12 @@
 #pragma once
 
+#include <cuda_runtime.h>
 #include <thrust/complex.h>
 #include <string>
 
 using namespace std;
 
-const string VERSION = "0.2.37";
+const string VERSION = "0.2.38";
 
 // This is allegedly a SIGPROC standard but the most authoritative source
 // I can find is:
