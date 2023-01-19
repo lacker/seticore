@@ -248,17 +248,22 @@ class Stamp(object):
     def beamform_voltage(self, beam):
         """Beamforms, leaving the result in complex voltage space.
         
-        Output dimensions are [time, chan]
+        Output dimensions are [time, chan, pol]
         """
         coeffs = self.coefficients(beam)
         inputs = self.complex_array()
 
         # Sum along polarization and antenna
-        return (np.conjugate(coeffs) * inputs).sum(axis=(2, 3))
+        return (np.conjugate(coeffs) * inputs).sum(axis=3)
 
     def beamform_power(self, beam):
+        """ Converts voltage to power and combines across polarities.
+
+        Output dimensions are [time, chan]
+        """
         voltage = self.beamform_voltage(beam)
-        return np.square(np.real(voltage)) + np.square(np.imag(voltage))
+        squared = np.square(np.real(voltage)) + np.square(np.imag(voltage))
+        return squared.sum(axis=2)
 
     def show_beam(self, beam):
         power = self.beamform_power(beam)
