@@ -412,6 +412,8 @@ def find_stamp_files(directory):
             full = os.path.join(root, f)
             if full.endswith(".stamps"):
                 yield full
+            elif full.endswith(".stamp"):
+                yield full
                 
 def scan_dir(directory):
     """
