@@ -246,7 +246,6 @@ class Stamp(object):
                     
                 yticks = ax.get_yticks()
                 if ax_c == 0:
-                    print(yticks)
                     ax.set_yticklabels([
                         f"{tick*self.stamp.tsamp*1e3:0.3f}"
                         for tick in yticks
