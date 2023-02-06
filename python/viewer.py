@@ -34,8 +34,8 @@ def plot_array(arr, cmap="viridis"):
         size = 30
     else:
         size = 15
-    fig, ax = plt.subplots(figsize=(size, size))
-    ax.imshow(arr, rasterized=True, interpolation="ndearest", cmap=cmap)
+    fig, ax = plt.subplots(figsize=(size, size), dpi=300)
+    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap, aspect="auto")
     return fig, ax
 
 def show_array(arr, cmap="viridis"):
@@ -66,7 +66,7 @@ def plot_multiple(named_waterfalls):
     else:
         cols = 12
     rows = math.ceil(len(named_waterfalls) / cols)
-    fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
+    fig, axs = plt.subplots(rows, cols, figsize=(cols*4, rows*3), dpi=300)
     for i in range(rows * cols):
         row = i // cols
         col = i % cols
@@ -75,11 +75,12 @@ def plot_multiple(named_waterfalls):
             name, waterfall = named_waterfalls[i]
             ax.set_title(name, fontsize=10)
             ax.imshow(waterfall, rasterized=True, interpolation="nearest",
-                      cmap="viridis")
+                      cmap="viridis", aspect="auto")
         else:
             ax.axis("off")
 
     fig.tight_layout()
+    fig.subplots_adjust(hspace=0.8)
     return fig, axs
 
 def show_multiple(named_waterfalls):
@@ -259,7 +260,7 @@ class Stamp(object):
                     f"{(tick*self.stamp.foff*1000):0.1f}"
                     for tick in xticks
                 ])
-                ax.set_xlabel(f"Frequency (kHz + {self.stamp.fch1:0.3f} MHz)")
+                ax.set_xlabel(f"Frequency (kHz + {self.stamp.fch1:0.6f} MHz)")
         
         plt.show()
         plt.close()
