@@ -29,13 +29,17 @@ def beam_name(hit):
         return "incoherent beam"
     return f"beam {n}"
 
-def show_array(arr, cmap="viridis"):
+def plot_array(arr, cmap="viridis"):
     if arr.shape[1] > 1000:
         size = 30
     else:
         size = 15
-    fig, ax = plt.subplots(figsize=(size, size))
-    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap)
+    fig, ax = plt.subplots(figsize=(size, size), dpi=300)
+    ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap, aspect="auto")
+    return fig, ax
+
+def show_array(arr, cmap="viridis"):
+    fig, ax = plot_array(arr, cmap=cmap)
     display(fig)
     plt.close()
     
@@ -47,9 +51,9 @@ def show_hit(hit):
           f"{hit.signal.snr:.1f} SNR, {hit.signal.driftRate:.3f} Hz/s drift:")
     show_array(data)
 
-def show_multiple(named_waterfalls):
+def plot_multiple(named_waterfalls):
     """
-    Show multiple waterfalls.
+    Plot multiple waterfalls.
 
     named_waterfalls is a list of (name, waterfall).
     waterfall is an array indexed like [time, chan]
@@ -62,7 +66,7 @@ def show_multiple(named_waterfalls):
     else:
         cols = 12
     rows = math.ceil(len(named_waterfalls) / cols)
-    fig, axs = plt.subplots(rows, cols, figsize=(20, 20))
+    fig, axs = plt.subplots(rows, cols, figsize=(cols*4, rows*3), dpi=300)
     for i in range(rows * cols):
         row = i // cols
         col = i % cols
@@ -71,11 +75,22 @@ def show_multiple(named_waterfalls):
             name, waterfall = named_waterfalls[i]
             ax.set_title(name, fontsize=10)
             ax.imshow(waterfall, rasterized=True, interpolation="nearest",
-                      cmap="viridis")
+                      cmap="viridis", aspect="auto")
         else:
             ax.axis("off")
 
     fig.tight_layout()
+    fig.subplots_adjust(hspace=0.8)
+    return fig, axs
+
+def show_multiple(named_waterfalls):
+    """
+    Show multiple waterfalls.
+
+    named_waterfalls is a list of (name, waterfall).
+    waterfall is an array indexed like [time, chan]
+    """
+    fig, axs = plot_multiple(named_waterfalls)
     plt.show()
     plt.close()
 
@@ -202,12 +217,53 @@ class Stamp(object):
     def show_antenna(self, index):
         voltages = self.real_array()[:, :, :, index, :]
         powers = np.square(voltages).sum(axis=(2, 3))
-        show_array(powers)
+        fig, ax = plot_array(powers)
+        
+        yticks = ax.get_yticks()
+        ax.set_yticklabels([
+            f"{tick*self.stamp.tsamp*1e6}"
+            for tick in yticks
+        ])
+        ax.set_ylabel("us")
+        
+        xticks = ax.get_xticks()
+        ax.set_xticklabels([
+            f"{self.stamp.fch1 + tick*self.stamp.foff}"
+            for tick in xticks
+        ])
+        ax.set_xlabel("Frequency (MHz)")
+        
+        display(fig)
+        plt.close()
 
     def show_antennas(self):
         antennas = np.square(self.real_array()).sum(axis=(2, 4))
-        show_multiple([(f"antenna {i}", antennas[:, :, i])
+        fig, axs = plot_multiple([(f"antenna {i}", antennas[:, :, i])
                        for i in range(self.stamp.numAntennas)])
+
+        for ax_r in range(axs.shape[0]):
+            for ax_c in range(axs.shape[1]):
+                ax = axs[ax_r, ax_c]
+                    
+                yticks = ax.get_yticks()
+                if ax_c == 0:
+                    ax.set_yticklabels([
+                        f"{tick*self.stamp.tsamp*1e3:0.3f}"
+                        for tick in yticks
+                    ])
+                    ax.set_ylabel("ms")
+                else:
+                    ax.set_yticklabels([])
+                
+                xticks = ax.get_xticks()
+                ax.set_xticklabels([
+                    f"{(tick*self.stamp.foff*1000):0.1f}"
+                    for tick in xticks
+                ])
+                ax.set_xlabel(f"Frequency (kHz + {self.stamp.fch1:0.6f} MHz)")
+        
+        plt.show()
+        plt.close()
 
     def times(self):
         """Returns a list of the times for each timestep."""
