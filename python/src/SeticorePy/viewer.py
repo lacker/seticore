@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import matplotlib
 matplotlib.rc("figure", max_open_warning=0)
 from matplotlib import pyplot as plt
@@ -13,9 +11,10 @@ import numpy as np
 import os
 import pandas as pd
 
-SETICORE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-hit_capnp = capnp.load(SETICORE_DIR + "/hit.capnp")
-stamp_capnp = capnp.load(SETICORE_DIR + "/stamp.capnp")
+from importlib_resources import files as package_files
+
+hit_capnp = capnp.load(str(package_files('SeticorePy.schema').joinpath("hit.capnp")))
+stamp_capnp = capnp.load(str(package_files('SeticorePy.schema').joinpath("stamp.capnp")))
 
 def read_hits(filename):
     with open(filename) as f:
@@ -238,7 +237,11 @@ class Stamp(object):
 
     def show_antennas(self):
         antennas = np.square(self.real_array()).sum(axis=(2, 4))
-        fig, axs = plot_multiple([(f"antenna {i}", antennas[:, :, i])
+        antenna_titles = [f"antenna {i}" for i in range(self.stamp.numAntennas)]
+        if self.recipe is not None:
+            antenna_titles = [self.recipe.antenna_names[i] for i in range(self.stamp.numAntennas)]
+
+        fig, axs = plot_multiple([(antenna_titles[i], antennas[:, :, i])
                        for i in range(self.stamp.numAntennas)])
 
         for ax_r in range(axs.shape[0]):
@@ -448,18 +451,12 @@ class Stamp(object):
         for i in range(nants):
             print(f"{i:2d} " + " ".join(f"{corr[i, j]:.2f}" for j in range(nants)))
 
-            
-        
+
 def read_stamps(filename):
     with open(filename) as f:
         stamps = stamp_capnp.Stamp.read_multiple(f, traversal_limit_in_words=2**30)
         for s in stamps:
             yield Stamp(s)
-    
-def main():
-    for hit in read_hits("data/voyager.hits"):
-        print(hit.filterbank.numChannels, "x", hit.filterbank.numTimesteps,
-              "=", len(hit.filterbank.data))
 
 def find_stamp_files(directory):
     "Find all stamp files under this directory."
@@ -486,5 +483,8 @@ def scan_dir(directory):
             print(f"error opening {stamp_filename}: {e}")
     print(count, "stamps shown total")
         
-if __name__ == "__main__":
-    main()
+
+def main():
+    for hit in read_hits("data/voyager.hits"):
+        print(hit.filterbank.numChannels, "x", hit.filterbank.numTimesteps,
+              "=", len(hit.filterbank.data))
