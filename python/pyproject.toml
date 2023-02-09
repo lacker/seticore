@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SeticorePy"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Kevin Lacker", email="lacker@gmail.com" },
 ]
@@ -23,6 +23,7 @@ dependencies = [
   "numpy",
   "pandas",
   "importlib_resources",
+  "PyQt5",
 ]
 
 [project.scripts]
