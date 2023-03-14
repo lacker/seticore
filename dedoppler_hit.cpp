@@ -37,6 +37,12 @@ int DedopplerHit::highIndex() const {
   return max(index, index + drift_steps);
 }
 
+int DedopplerHit::expectedIndex(int timesteps) const {
+  double drift_steps_per_timestep = ((double) (drift_steps)) /
+    ((double) (num_timesteps - 1));
+  return (int) round(timesteps * drift_steps_per_timestep);
+}
+
 // If we have incoherent power, we want to use the ratio of power to incoherent power.
 // Otherwise, we just want to sort by SNR.
 float DedopplerHit::score() const {

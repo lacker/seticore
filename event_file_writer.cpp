@@ -15,7 +15,7 @@ using namespace std;
 
 
 EventFileWriter::EventFileWriter(const string& filename,
-                                 const vector<FilterbankMetadata>& metadatas)
+                 const vector<shared_ptr<FilterbankFileReader> >& metadatas)
   : metadatas(metadatas), tmp_filename(filename + ".tmp"), final_filename(filename)
 {
   fd = open(tmp_filename.c_str(), O_WRONLY | O_CREAT, 0664);
@@ -33,9 +33,9 @@ EventFileWriter::~EventFileWriter() {
 // hits are null when there is no hit for a region.
 // Both of the input vectors should be parallel to the input files.
 void EventFileWriter::write(const vector<DedopplerHit*>& hits,
-                            const vector<float*> inputs) {
+                            const vector<FilterbankBuffer>& buffers) {
   assert(hits.size() == metadatas.size());
-  assert(inputs.size() == metadatas.size());
+  assert(buffers.size() == metadatas.size());
 
   ::capnp::MallocMessageBuilder message;
   Event::Builder event = message.initRoot<Event>();
@@ -58,8 +58,8 @@ void EventFileWriter::write(const vector<DedopplerHit*>& hits,
 
   for (int i = 0; i < (int) hits.size(); ++i) {
     Filterbank::Builder filterbank = hits_builder[i].getFilterbank();
-    buildFilterbank(metadatas[i], beam, coarse_channel, low_index, high_index,
-                    inputs[i], filterbank);
+    buildFilterbank(*metadatas[i], beam, coarse_channel, low_index, high_index,
+                    buffers[i].data, filterbank);
     
     if (hits[i] != NULL) {
       buildSignal(*hits[i], hits_builder[i].getSignal());

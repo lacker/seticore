@@ -56,6 +56,11 @@ public:
   // Highest index that contains a bin with this signal
   int highIndex() const;
 
+  // The index within the coarse channel that you should expect if you extrapolate
+  // this hit in time.
+  // Time is measured in "number of timesteps since the start of this hit".
+  int expectedIndex(int timesteps) const;
+  
   // The highest-scoring hits are the ones that get turned into stamps
   float score() const;
 };
