@@ -83,3 +83,10 @@ struct Hit {
   signal @0 :Signal;
   filterbank @1 :Filterbank;
 }
+
+# An event is a group of hits across a "cadence".
+# It includes hits with a signal where we saw something, and hits with
+# no signal where we did not see something.
+struct Event {
+  hits @0 :List(Hit);
+}

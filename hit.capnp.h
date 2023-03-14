@@ -19,6 +19,7 @@ namespace schemas {
 CAPNP_DECLARE_SCHEMA(9082a6567e4a8bf5);
 CAPNP_DECLARE_SCHEMA(a37f657dc27bfaaa);
 CAPNP_DECLARE_SCHEMA(ae354d4f3839ae79);
+CAPNP_DECLARE_SCHEMA(95a19f97f048f9b4);
 
 }  // namespace schemas
 }  // namespace capnp
@@ -63,6 +64,21 @@ struct Hit {
 
   struct _capnpPrivate {
     CAPNP_DECLARE_STRUCT_HEADER(ae354d4f3839ae79, 0, 2)
+    #if !CAPNP_LITE
+    static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
+    #endif  // !CAPNP_LITE
+  };
+};
+
+struct Event {
+  Event() = delete;
+
+  class Reader;
+  class Builder;
+  class Pipeline;
+
+  struct _capnpPrivate {
+    CAPNP_DECLARE_STRUCT_HEADER(95a19f97f048f9b4, 0, 1)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -429,6 +445,87 @@ public:
 
   inline  ::Signal::Pipeline getSignal();
   inline  ::Filterbank::Pipeline getFilterbank();
+private:
+  ::capnp::AnyPointer::Pipeline _typeless;
+  friend class ::capnp::PipelineHook;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+};
+#endif  // !CAPNP_LITE
+
+class Event::Reader {
+public:
+  typedef Event Reads;
+
+  Reader() = default;
+  inline explicit Reader(::capnp::_::StructReader base): _reader(base) {}
+
+  inline ::capnp::MessageSize totalSize() const {
+    return _reader.totalSize().asPublic();
+  }
+
+#if !CAPNP_LITE
+  inline ::kj::StringTree toString() const {
+    return ::capnp::_::structString(_reader, *_capnpPrivate::brand());
+  }
+#endif  // !CAPNP_LITE
+
+  inline bool hasHits() const;
+  inline  ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Reader getHits() const;
+
+private:
+  ::capnp::_::StructReader _reader;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::_::PointerHelpers;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::List;
+  friend class ::capnp::MessageBuilder;
+  friend class ::capnp::Orphanage;
+};
+
+class Event::Builder {
+public:
+  typedef Event Builds;
+
+  Builder() = delete;  // Deleted to discourage incorrect usage.
+                       // You can explicitly initialize to nullptr instead.
+  inline Builder(decltype(nullptr)) {}
+  inline explicit Builder(::capnp::_::StructBuilder base): _builder(base) {}
+  inline operator Reader() const { return Reader(_builder.asReader()); }
+  inline Reader asReader() const { return *this; }
+
+  inline ::capnp::MessageSize totalSize() const { return asReader().totalSize(); }
+#if !CAPNP_LITE
+  inline ::kj::StringTree toString() const { return asReader().toString(); }
+#endif  // !CAPNP_LITE
+
+  inline bool hasHits();
+  inline  ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Builder getHits();
+  inline void setHits( ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Reader value);
+  inline  ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Builder initHits(unsigned int size);
+  inline void adoptHits(::capnp::Orphan< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>&& value);
+  inline ::capnp::Orphan< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>> disownHits();
+
+private:
+  ::capnp::_::StructBuilder _builder;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+  friend class ::capnp::Orphanage;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::_::PointerHelpers;
+};
+
+#if !CAPNP_LITE
+class Event::Pipeline {
+public:
+  typedef Event Pipelines;
+
+  inline Pipeline(decltype(nullptr)): _typeless(nullptr) {}
+  inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)
+      : _typeless(kj::mv(typeless)) {}
+
 private:
   ::capnp::AnyPointer::Pipeline _typeless;
   friend class ::capnp::PipelineHook;
@@ -895,6 +992,40 @@ inline void Hit::Builder::adoptFilterbank(
 inline ::capnp::Orphan< ::Filterbank> Hit::Builder::disownFilterbank() {
   return ::capnp::_::PointerHelpers< ::Filterbank>::disown(_builder.getPointerField(
       ::capnp::bounded<1>() * ::capnp::POINTERS));
+}
+
+inline bool Event::Reader::hasHits() const {
+  return !_reader.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+}
+inline bool Event::Builder::hasHits() {
+  return !_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+}
+inline  ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Reader Event::Reader::getHits() const {
+  return ::capnp::_::PointerHelpers< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>::get(_reader.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+inline  ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Builder Event::Builder::getHits() {
+  return ::capnp::_::PointerHelpers< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>::get(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+inline void Event::Builder::setHits( ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Reader value) {
+  ::capnp::_::PointerHelpers< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>::set(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), value);
+}
+inline  ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>::Builder Event::Builder::initHits(unsigned int size) {
+  return ::capnp::_::PointerHelpers< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>::init(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), size);
+}
+inline void Event::Builder::adoptHits(
+    ::capnp::Orphan< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>&& value) {
+  ::capnp::_::PointerHelpers< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>::adopt(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), kj::mv(value));
+}
+inline ::capnp::Orphan< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>> Event::Builder::disownHits() {
+  return ::capnp::_::PointerHelpers< ::capnp::List< ::Hit,  ::capnp::Kind::STRUCT>>::disown(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
 }
 
 

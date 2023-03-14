@@ -32,3 +32,8 @@ class HitFileWriter: public HitRecorder {
 
 // Write a hit to a protocol buffer
 void buildSignal(const DedopplerHit& hit, Signal::Builder signal);
+
+// Write Filterbank data to a protocol buffer.
+void buildFilterbank(const FilterbankMetadata& metadata, int beam, int coarse_channel,
+                     long low_index, long high_index, const float* input,
+                     Filterbank::Builder filterbank);
