@@ -39,16 +39,30 @@ void EventFileWriter::write(const vector<DedopplerHit*>& hits,
 
   ::capnp::MallocMessageBuilder message;
   Event::Builder event = message.initRoot<Event>();
-  event.initHits(hits.size());
+  auto hits_builder = event.initHits(hits.size());
 
   assert(hits[0] != NULL);
 
-  /*
+  int low_index = hits[0]->lowIndex();
+  int high_index = hits[0]->highIndex();
+  for (int i = 1; i < (int) hits.size(); ++i) {
+    if (hits[i] == NULL) {
+      continue;
+    }
+    low_index = min(low_index, hits[i]->lowIndex());
+    high_index = max(high_index, hits[i]->highIndex());
+  }
+  
   int beam = hits[0]->beam;
   int coarse_channel = hits[0]->coarse_channel;
-  */
 
   for (int i = 0; i < (int) hits.size(); ++i) {
-    // TODO
+    Filterbank::Builder filterbank = hits_builder[i].getFilterbank();
+    buildFilterbank(metadatas[i], beam, coarse_channel, low_index, high_index,
+                    inputs[i], filterbank);
+    
+    if (hits[i] != NULL) {
+      buildSignal(*hits[i], hits_builder[i].getSignal());
+    }
   }
 }
