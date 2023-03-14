@@ -45,6 +45,10 @@ public:
               vector<DedopplerHit>* output);
 
   size_t memoryUsage() const;
+
+  // No copying
+  Dedopplerer(const Dedopplerer&) = delete;
+  Dedopplerer& operator=(Dedopplerer&) = delete;
   
 private:
   // For computing Taylor sums, we use three on-gpu arrays,
