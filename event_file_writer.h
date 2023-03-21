@@ -22,5 +22,6 @@ class EventFileWriter {
                   const vector<shared_ptr<FilterbankFileReader> >& metadatas);
   ~EventFileWriter();
 
-  void write(const vector<DedopplerHit*>& hits, const vector<FilterbankBuffer>& buffers);
+  void write(const vector<DedopplerHit*>& hits,
+             const vector<shared_ptr<FilterbankBuffer> >& buffers);
 };

@@ -4,8 +4,11 @@
 #include "filterbank_buffer.h"
 #include "filterbank_file_reader.h"
 #include "find_events.h"
+#include <fmt/core.h>
 #include <map>
 #include "util.h"
+
+#include "cuda_util.h"
 
 using namespace std;
 
@@ -52,18 +55,22 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
                 double max_drift, double snr_on, double snr_off) {
   vector<shared_ptr<FilterbankFileReader> > files;
   vector<shared_ptr<Dedopplerer> > dedopplerers;
-  vector<FilterbankBuffer> buffers;
-  
+  vector<shared_ptr<FilterbankBuffer> > buffers;
+
   for (auto& filename : input_filenames) {
     files.push_back(move(loadFilterbankFile(filename)));
     const auto& file = files.back();
+
     shared_ptr<Dedopplerer> dedopplerer(new Dedopplerer(file->num_timesteps,
                                                         file->coarse_channel_size,
                                                         file->foff, file->tsamp,
                                                         file->has_dc_spike));
     dedopplerers.push_back(dedopplerer);
-    buffers.emplace_back(roundUpToPowerOfTwo(file->num_timesteps),
-                         file->coarse_channel_size);
+
+    shared_ptr<FilterbankBuffer>
+      buffer(new FilterbankBuffer(roundUpToPowerOfTwo(file->num_timesteps),
+                                  file->coarse_channel_size));
+    buffers.push_back(buffer);
   }
 
   EventFileWriter writer(output_filename, files);
@@ -87,9 +94,16 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
 
     // The targets should work like ABACAD
     if (i % 2 == 0) {
-      assert(files[i]->source_name == source_name);
+      if (files[i]->source_name != source_name) {
+        fatal(fmt::format("file {} has source {} when we expected source {}",
+                          files[i]->filename, files[i]->source_name, source_name));
+      }
     } else {
-      assert(files[i]->source_name != source_name);
+      if (files[i]->source_name == source_name && source_name != "VOYAGER-1") {
+        // The voyager cadence is bad like this
+        fatal(fmt::format("file {} has source {} but it is supposed to be an 'off'",
+                          files[i]->filename, files[i]->source_name));
+      }
     }
   }
 
@@ -99,8 +113,8 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     vector<vector<DedopplerHit>> hit_lists(files.size());
 
     // Always scan the first file
-    dedopplerers[0]->search(buffers[0], *files[0], NO_BEAM, coarse_channel, max_drift, 0.0,
-                            snr_on, &hit_lists[0]);
+    dedopplerers[0]->search(*buffers[0], *files[0], NO_BEAM, coarse_channel, max_drift,
+                            0.0, snr_on, &hit_lists[0]);
 
     if (hit_lists[0].empty()) {
       // No hits in this coarse channel
@@ -109,7 +123,7 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     
     // Scan the rest of the files
     for (int i = 1; i < (int) dedopplerers.size(); ++i) {
-      dedopplerers[i]->search(buffers[i], *files[i], NO_BEAM, coarse_channel, max_drift,
+      dedopplerers[i]->search(*buffers[i], *files[i], NO_BEAM, coarse_channel, max_drift,
                               0.0, i % 2 == 0 ? snr_on : snr_off, &hit_lists[i]);
     }
 

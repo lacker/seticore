@@ -33,7 +33,7 @@ EventFileWriter::~EventFileWriter() {
 // hits are null when there is no hit for a region.
 // Both of the input vectors should be parallel to the input files.
 void EventFileWriter::write(const vector<DedopplerHit*>& hits,
-                            const vector<FilterbankBuffer>& buffers) {
+                            const vector<shared_ptr<FilterbankBuffer> >& buffers) {
   assert(hits.size() == metadatas.size());
   assert(buffers.size() == metadatas.size());
 
@@ -59,7 +59,7 @@ void EventFileWriter::write(const vector<DedopplerHit*>& hits,
   for (int i = 0; i < (int) hits.size(); ++i) {
     Filterbank::Builder filterbank = hits_builder[i].getFilterbank();
     buildFilterbank(*metadatas[i], beam, coarse_channel, low_index, high_index,
-                    buffers[i].data, filterbank);
+                    buffers[i]->data, filterbank);
     
     if (hits[i] != NULL) {
       buildSignal(*hits[i], hits_builder[i].getSignal());
