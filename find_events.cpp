@@ -25,20 +25,23 @@ struct FindHitResult {
 // than counting them all.
 FindHitResult findHit(const map<int, DedopplerHit*>& hitmap,
                       int low_index, int high_index) {
-  auto low = hitmap.lower_bound(low_index);
-  auto high = hitmap.upper_bound(high_index);
+  auto iter = hitmap.lower_bound(low_index);
 
-  if (low == hitmap.end() || high == hitmap.end()) {
+  if (iter == hitmap.end()) {
     // There's nothing in this range
     return FindHitResult{ 0, NULL };
   }
 
-  if (low != high) {
-    // There are at least the two different endpoints.
-    return FindHitResult{ 2, NULL };
+  FindHitResult answer{ 1, iter->second };
+
+  ++iter;
+
+  if (iter == hitmap.end() || iter->first > high_index) {
+    return answer;
   }
 
-  return FindHitResult{ 1, low->second };
+  // We found at least two hits in the range.
+  return FindHitResult{ 2, NULL };
 }
 
 /*
@@ -113,6 +116,7 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     vector<vector<DedopplerHit>> hit_lists(files.size());
 
     // Always scan the first file
+    files[0]->loadCoarseChannel(coarse_channel, buffers[0].get());
     dedopplerers[0]->search(*buffers[0], *files[0], NO_BEAM, coarse_channel, max_drift,
                             0.0, snr_on, &hit_lists[0]);
 
@@ -123,8 +127,9 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     
     // Scan the rest of the files
     for (int i = 1; i < (int) dedopplerers.size(); ++i) {
+      files[i]->loadCoarseChannel(coarse_channel, buffers[i].get());
       dedopplerers[i]->search(*buffers[i], *files[i], NO_BEAM, coarse_channel, max_drift,
-                              0.0, i % 2 == 0 ? snr_on : snr_off, &hit_lists[i]);
+                              0.0, (i % 2 == 0) ? snr_on : snr_off, &hit_lists[i]);
     }
 
     // For each input file, make a map keying each hit by their
@@ -144,6 +149,7 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     // For each hit in the first file, we build a potential event
     // candidate
     double initial_tstart = files[0]->tstart;
+    int num_events = 0;
     for (const auto& pair : hitmaps[0]) {
       auto initial_hit = pair.second;
       
@@ -197,7 +203,10 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
       }
 
       // We actually have a good candidate. Write it out
+      cout << "found event starting at " << initial_hit->toString() << endl;
+      ++num_events;
       writer.write(candidate, buffers);
     }
+    cout << pluralize(num_events, "event") << " found" << endl;
   }
 }

@@ -65,4 +65,6 @@ void EventFileWriter::write(const vector<DedopplerHit*>& hits,
       buildSignal(*hits[i], hits_builder[i].getSignal());
     }
   }
+
+  writeMessageToFd(fd, message);
 }

@@ -40,7 +40,7 @@ int DedopplerHit::highIndex() const {
 int DedopplerHit::expectedIndex(int timesteps) const {
   double drift_steps_per_timestep = ((double) (drift_steps)) /
     ((double) (num_timesteps - 1));
-  return (int) round(timesteps * drift_steps_per_timestep);
+  return index + (int) round(timesteps * drift_steps_per_timestep);
 }
 
 // If we have incoherent power, we want to use the ratio of power to incoherent power.
