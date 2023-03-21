@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <exception>
+#include "find_events.h"
 #include <fmt/core.h>
 #include <iostream>
 #include "raw_file_group.h"
@@ -102,7 +103,43 @@ int dedopplerMode(const po::variables_map& vm) {
   cerr << fmt::format("dedoppler elapsed time: {:d}s\n", tstop - tstart);
   return 0;
 }
+
+int cadenceMode(const po::variables_map& vm) {
+  cout << "running in cadence mode.\n";
+  string input = vm["input"].as<string>();
+  vector<string> inputs;
+  boost::split(inputs, input, boost::is_any_of(","));
+  if (inputs.size() != 6) {
+    fatal("seticore expects ABACAD cadences, specifically of size 6.");
+  }
+  if (!vm.count("output")) {
+    fatal("please specify --output in cadence mode.");
+  }
+  string output = vm["output"].as<string>();
+
+  double max_drift = vm["max_drift"].as<double>();
+  double snr_on = vm["snr"].as<double>();
+  double snr_off = 5.0;
   
+  cout << "writing output to " << output << endl;
+  int tstart = time(NULL);
+  findEvents(inputs, output, max_drift, snr_on, snr_off);
+  int tstop = time(NULL);
+  cerr << fmt::format("cadence elapsed time: {:d}s\n", tstop - tstart);
+  return 0;
+}
+
+void logVersion(int argc, char* argv[]) {
+  vector<string> parts;
+  parts.push_back("running seticore version");
+  parts.push_back(VERSION);
+  parts.push_back("with:");
+  for (int i = 0; i < argc; ++i) {
+    parts.push_back(string(argv[i]));
+  }
+  logError(boost::algorithm::join(parts, " "));
+}
+
 // This method just handles command line parsing, and the real work is done
 // via the dedoppler function.
 int main(int argc, char* argv[]) {
@@ -112,7 +149,7 @@ int main(int argc, char* argv[]) {
       ("help,h", "produce help message")
 
       ("input", po::value<string>(),
-       "alternate way of setting the input file or directory")
+       "alternate way of setting the input file(s) or directory")
 
       ("output", po::value<string>(),
        "the output as .dat file, .hits file, or directory. defaults to <input>.dat")
@@ -165,15 +202,14 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
+    string input = vm["input"].as<string>();
+    if (input.find(',') != string::npos) {
+      logVersion(argc, argv);
+      return cadenceMode(vm);
+    }
+    
     if (vm.count("recipe_dir") || vm.count("recipe")) {
-      vector<string> parts;
-      parts.push_back("running seticore version");
-      parts.push_back(VERSION);
-      parts.push_back("with:");
-      for (int i = 0; i < argc; ++i) {
-        parts.push_back(string(argv[i]));
-      }
-      logError(boost::algorithm::join(parts, " "));
+      logVersion(argc, argv);
       return beamformingMode(vm);
     }
   
