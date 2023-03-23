@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SeticorePy"
+version = "0.0.2"
+authors = [
+  { name="Kevin Lacker", email="lacker@gmail.com" },
+]
+description = "Python library related to seticore."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "pycapnp",
+  "matplotlib",
+  "h5py",
+  "numpy",
+  "pandas",
+  "importlib_resources",
+  "PyQt5",
+]
+
+[project.scripts]
+seticoreviewer = "SeticorePy:viewer.main"
+seticorecrosscheck = "SeticorePy:crosscheck.main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"SeticorePy.schema" = ["*.capnp"]

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import matplotlib
 matplotlib.rc("figure", max_open_warning=0)
 from matplotlib import pyplot as plt
@@ -13,12 +11,13 @@ import numpy as np
 import os
 import pandas as pd
 
-SETICORE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-hit_capnp = capnp.load(SETICORE_DIR + "/hit.capnp")
-stamp_capnp = capnp.load(SETICORE_DIR + "/stamp.capnp")
+from importlib_resources import files as package_files
 
-def read_hits(filename):
-    with open(filename) as f:
+hit_capnp = capnp.load(str(package_files('SeticorePy.schema').joinpath("hit.capnp")))
+stamp_capnp = capnp.load(str(package_files('SeticorePy.schema').joinpath("stamp.capnp")))
+
+def read_hits(filepath):
+    with open(filepath) as f:
         hits = hit_capnp.Hit.read_multiple(f)
         for hit in hits:
             yield hit
@@ -133,8 +132,8 @@ def interpolate_drift(total_drift, timesteps):
     
     
 class Recipe(object):
-    def __init__(self, filename):
-        self.h5 = h5py.File(filename)
+    def __init__(self, filepath):
+        self.h5 = h5py.File(filepath)
         self.ras = self.h5["/beaminfo/ras"][()]
         self.decs = self.h5["/beaminfo/decs"][()]
         self.obsid = self.h5["/obsinfo/obsid"][()]
@@ -238,7 +237,11 @@ class Stamp(object):
 
     def show_antennas(self):
         antennas = np.square(self.real_array()).sum(axis=(2, 4))
-        fig, axs = plot_multiple([(f"antenna {i}", antennas[:, :, i])
+        antenna_titles = [f"antenna {i}" for i in range(self.stamp.numAntennas)]
+        if self.recipe is not None:
+            antenna_titles = [self.recipe.antenna_names[i] for i in range(self.stamp.numAntennas)]
+
+        fig, axs = plot_multiple([(antenna_titles[i], antennas[:, :, i])
                        for i in range(self.stamp.numAntennas)])
 
         for ax_r in range(axs.shape[0]):
@@ -448,43 +451,67 @@ class Stamp(object):
         for i in range(nants):
             print(f"{i:2d} " + " ".join(f"{corr[i, j]:.2f}" for j in range(nants)))
 
-            
-        
-def read_stamps(filename):
-    with open(filename) as f:
+
+def find_stamp_recipe(stamp_filepath, directory_path=None):
+    """
+    Get the Recipe for the BFR5 that matches the given stamp
+    (just the filepath that is most similar and ends with .bfr5).
+    """
+    if directory_path is None:
+        directory_path = os.path.dirname(stamp_filepath)
+
+    closest_bfr5 = None
+    closest_commonlen = 0
+    for root, dirs, files in os.walk(directory_path, topdown=True):
+        for f in filter(lambda x: x.endswith("bfr5"), files):
+            filepath = os.path.join(root, f)
+            commonpath = os.path.commonpath([filepath, stamp_filepath])
+            commonlen = len(commonpath)
+            if commonlen > closest_commonlen:
+                closest_bfr5 = filepath
+                closest_commonlen = commonlen
+        break
+
+    if closest_bfr5 is None:
+        return None
+    try:
+        return Recipe(closest_bfr5)
+    except:
+        return False
+
+def read_stamps(filepath, find_recipe=False):
+    with open(filepath) as f:
         stamps = stamp_capnp.Stamp.read_multiple(f, traversal_limit_in_words=2**30)
+        recipe = None
+        if find_recipe:
+            recipe = find_stamp_recipe(filepath)
+
         for s in stamps:
-            yield Stamp(s)
-    
-def main():
-    for hit in read_hits("data/voyager.hits"):
-        print(hit.filterbank.numChannels, "x", hit.filterbank.numTimesteps,
-              "=", len(hit.filterbank.data))
+            yield Stamp(s, recipe)
 
 def find_stamp_files(directory):
     "Find all stamp files under this directory."
     for root, dirs, files in os.walk(directory, topdown=False):
-        for f in files:
-            full = os.path.join(root, f)
-            if full.endswith(".stamps"):
-                yield full
-            elif full.endswith(".stamp"):
-                yield full
-                
+        for f in filter(lambda f: os.path.splitext()[-1] in [".stamps", ".stamp"], files):
+            yield os.path.join(root, f)
+
 def scan_dir(directory):
     """
     Display antenna data for each stamp file under this directory.
     """
     count = 0
-    for stamp_filename in find_stamp_files(directory):
+    for stamp_filepath in find_stamp_files(directory):
         try:
-            for (i, stamp) in enumerate(read_stamps(stamp_filename)):
-                print(f"stamp {i} from {stamp_filename}")
+            for (i, stamp) in enumerate(read_stamps(stamp_filepath)):
+                print(f"stamp {i} from {stamp_filepath}")
                 stamp.show_antennas()
                 count += 1
         except Exception as e:
-            print(f"error opening {stamp_filename}: {e}")
+            print(f"error opening {stamp_filepath}: {e}")
     print(count, "stamps shown total")
         
-if __name__ == "__main__":
-    main()
+
+def main():
+    for hit in read_hits("data/voyager.hits"):
+        print(hit.filterbank.numChannels, "x", hit.filterbank.numTimesteps,
+              "=", len(hit.filterbank.data))

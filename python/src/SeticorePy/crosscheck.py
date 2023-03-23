@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A tool to check that the .h5 output of seticore and the .fil output of hpguppi_proc match.
 
@@ -127,7 +126,3 @@ def main():
         check_files(sys.argv[1], sys.argv[2])
     else:
         print("usage: ./crosscheck.py <dir> or ./crosscheck.py foo.h5 foo.fil")
-
-        
-if __name__ == "__main__":
-    main()
