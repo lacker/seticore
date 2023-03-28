@@ -2,6 +2,7 @@
 #include "beamforming_pipeline.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <exception>
 #include "find_events.h"
@@ -117,6 +118,13 @@ int cadenceMode(const po::variables_map& vm) {
   }
   string output = vm["output"].as<string>();
 
+  // Make sure the right directories are created
+  boost::filesystem::path p(output);
+  boost::filesystem::path dir = p.parent_path();
+  if (boost::filesystem::create_directories(dir)) {
+    cerr << "created directory: " << dir << endl;
+  }
+  
   double max_drift = vm["max_drift"].as<double>();
   double snr_on = vm["snr"].as<double>();
   double snr_off = 5.0;
