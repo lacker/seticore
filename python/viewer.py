@@ -30,11 +30,8 @@ def beam_name(hit):
     return f"beam {n}"
 
 def plot_array(arr, cmap="viridis"):
-    if arr.shape[1] > 1000:
-        size = 30
-    else:
-        size = 15
-    fig, ax = plt.subplots(figsize=(size, size), dpi=300)
+    # TODO: decide size intelligently
+    fig, ax = plt.subplots(figsize=(10, 2), dpi=300)
     ax.imshow(arr, rasterized=True, interpolation="nearest", cmap=cmap, aspect="auto")
     return fig, ax
 
@@ -455,7 +452,13 @@ def read_stamps(filename):
         stamps = stamp_capnp.Stamp.read_multiple(f, traversal_limit_in_words=2**30)
         for s in stamps:
             yield Stamp(s)
-    
+
+def read_events(filename):
+    with open(filename) as f:
+        events = hit_capnp.Event.read_multiple(f)
+        for e in events:
+            yield e
+            
 def main():
     for hit in read_hits("data/voyager.hits"):
         print(hit.filterbank.numChannels, "x", hit.filterbank.numTimesteps,

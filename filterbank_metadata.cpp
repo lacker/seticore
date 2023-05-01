@@ -49,6 +49,19 @@ FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
   return subset;
 }
 
+// Checks if this metadata looks like Green Bank with this nfpc.
+bool FilterbankMetadata::inferGreenBank(int nfpc) {
+  if ((num_timesteps == 16 || num_timesteps == 32) && num_channels % nfpc == 0) {
+    // Looks like Green Bank data
+    if (coarse_channel_size == 0) {
+      coarse_channel_size = nfpc;
+    }
+    has_dc_spike = true;
+    return true;
+  }
+  return false;
+}
+
 /*
   Guesses some metadata from other metadata:
     coarse_channel_size
@@ -56,13 +69,9 @@ FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
     num_coarse_channels
  */
 void FilterbankMetadata::inferMetadata() {
-  if ((num_timesteps == 16 || num_timesteps == 32) && num_channels % 1048576 == 0) {
+  if (inferGreenBank(1048576) || inferGreenBank(1033216) || inferGreenBank(999424)) {
     // Looks like Green Bank data
     assert(telescope_id == NO_TELESCOPE_ID || telescope_id == GREEN_BANK);
-    if (coarse_channel_size == 0) {
-      coarse_channel_size = 1048576;
-    }
-    has_dc_spike = true;
   } else if (num_channels == 50331648) {
     // Looks like ATA data
     assert(telescope_id == NO_TELESCOPE_ID || telescope_id == ATA);

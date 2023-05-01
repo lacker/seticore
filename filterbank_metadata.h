@@ -57,4 +57,6 @@ class FilterbankMetadata {
   
  protected:
   void inferMetadata();
+
+  bool inferGreenBank(int nfpc);
 };
