@@ -51,7 +51,7 @@ FilterbankMetadata FilterbankMetadata::getSubsetMetadata(int beam, int band,
 
 // Checks if this metadata looks like Green Bank with this nfpc.
 bool FilterbankMetadata::inferGreenBank(int nfpc) {
-  if ((num_timesteps == 16 || num_timesteps == 32) && num_channels % nfpc == 0) {
+  if ((num_timesteps == 16 || num_timesteps == 32 || num_timesteps == 15) && num_channels % nfpc == 0) {
     // Looks like Green Bank data
     if (coarse_channel_size == 0) {
       coarse_channel_size = nfpc;
