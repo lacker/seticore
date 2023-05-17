@@ -12,13 +12,12 @@
 
 using namespace std;
 
-// The number of extra columns on each side of the hit to store
-const int EXTRA_COLUMNS = 40;
 
 HitFileWriter::HitFileWriter(const string& filename,
                              const FilterbankMetadata& metadata)
   : metadata(metadata), tmp_filename(filename + ".tmp"), final_filename(filename),
-    verbose(true) {
+    verbose(true),
+    channel_padding(40) {
   fd = open(tmp_filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
     int err = errno;
@@ -41,7 +40,9 @@ void HitFileWriter::recordHit(DedopplerHit dedoppler_hit, const float* input) {
   Filterbank::Builder filterbank = hit.getFilterbank();
 
   buildFilterbank(metadata, dedoppler_hit.beam, dedoppler_hit.coarse_channel,
-                  dedoppler_hit.lowIndex(), dedoppler_hit.highIndex(), input, filterbank);
+                  dedoppler_hit.lowIndex() - channel_padding,
+                  dedoppler_hit.highIndex() + channel_padding,
+                  input, filterbank);
   
   writeMessageToFd(fd, message);
 }
@@ -77,8 +78,8 @@ void buildFilterbank(const FilterbankMetadata& metadata, int beam, int coarse_ch
   
   // Find the interval [begin_index, end_index) that we actually want to copy over
   // Pad with extra columns but don't run off the edge
-  long begin_index = max(low_index - EXTRA_COLUMNS, 0L);
-  long end_index = min(high_index + EXTRA_COLUMNS, metadata.coarse_channel_size) - 1;
+  long begin_index = max(low_index, 0L);
+  long end_index = min(high_index, metadata.coarse_channel_size) - 1;
   long num_channels = end_index - begin_index;
   long coarse_offset = coarse_channel * metadata.coarse_channel_size;
   filterbank.setNumChannels(num_channels);

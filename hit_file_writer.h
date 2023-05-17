@@ -20,9 +20,12 @@ class HitFileWriter: public HitRecorder {
 
   const string tmp_filename;
   const string final_filename;
+
   
  public:
   bool verbose;
+  // The number of extra columns on each side of the hit to store
+  int channel_padding;
   
   HitFileWriter(const string& filename, const FilterbankMetadata& metadata);
   ~HitFileWriter();

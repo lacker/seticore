@@ -16,7 +16,7 @@ using namespace std;
 
 EventFileWriter::EventFileWriter(const string& filename,
                  const vector<shared_ptr<FilterbankFileReader> >& metadatas)
-  : metadatas(metadatas), tmp_filename(filename + ".tmp"), final_filename(filename)
+  : metadatas(metadatas), tmp_filename(filename + ".tmp"), final_filename(filename), channel_padding(40)
 {
   fd = open(tmp_filename.c_str(), O_WRONLY | O_CREAT, 0664);
   if (fd < 0) {
@@ -52,6 +52,9 @@ void EventFileWriter::write(const vector<DedopplerHit*>& hits,
     low_index = min(low_index, hits[i]->lowIndex());
     high_index = max(high_index, hits[i]->highIndex());
   }
+  
+  low_index -= channel_padding;
+  high_index += channel_padding;
   
   int beam = hits[0]->beam;
   int coarse_channel = hits[0]->coarse_channel;
