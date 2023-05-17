@@ -79,7 +79,7 @@ void buildFilterbank(const FilterbankMetadata& metadata, int beam, int coarse_ch
   // Find the interval [begin_index, end_index) that we actually want to copy over
   // Pad with extra columns but don't run off the edge
   long begin_index = max(low_index, 0L);
-  long end_index = min(high_index, metadata.coarse_channel_size) - 1;
+  long end_index = min(high_index, metadata.coarse_channel_size);
   long num_channels = end_index - begin_index;
   long coarse_offset = coarse_channel * metadata.coarse_channel_size;
   filterbank.setNumChannels(num_channels);
