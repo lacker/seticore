@@ -207,6 +207,7 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
       ++num_events;
       writer.write(candidate, buffers);
     }
-    cout << pluralize(num_events, "event") << " found" << endl;
+    cout << pluralize(num_events, "event") << " found in coarse channel "
+         << coarse_channel << "/" << num_coarse_channels << endl;
   }
 }
