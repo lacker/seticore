@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <assert.h>
 #include "dedoppler.h"
 #include "event_file_writer.h"
@@ -42,6 +43,14 @@ FindHitResult findHit(const map<int, DedopplerHit*>& hitmap,
 
   // We found at least two hits in the range.
   return FindHitResult{ 2, NULL };
+}
+
+void removeZeroDriftHits(vector<DedopplerHit>* hits) {
+  hits->erase(std::remove_if(hits->begin(), hits->end(),
+                             [](const DedopplerHit& hit) {
+                               return hit.drift_steps == 0;
+                             }),
+              hits->end());
 }
 
 /*
@@ -119,7 +128,8 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     files[0]->loadCoarseChannel(coarse_channel, buffers[0].get());
     dedopplerers[0]->search(*buffers[0], *files[0], NO_BEAM, coarse_channel, max_drift,
                             0.0, snr_on, &hit_lists[0]);
-
+    removeZeroDriftHits(&hit_lists[0]);
+    
     if (hit_lists[0].empty()) {
       // No hits in this coarse channel
       continue;
@@ -127,9 +137,13 @@ void findEvents(const vector<string>& input_filenames, const string& output_file
     
     // Scan the rest of the files
     for (int i = 1; i < (int) dedopplerers.size(); ++i) {
+      bool is_on = i % 2 == 0;
       files[i]->loadCoarseChannel(coarse_channel, buffers[i].get());
       dedopplerers[i]->search(*buffers[i], *files[i], NO_BEAM, coarse_channel, max_drift,
-                              0.0, (i % 2 == 0) ? snr_on : snr_off, &hit_lists[i]);
+                              0.0, is_on ? snr_on : snr_off, &hit_lists[i]);
+      if (is_on) {
+        removeZeroDriftHits(&hit_lists[i]);
+      }
     }
 
     // For each input file, make a map keying each hit by their

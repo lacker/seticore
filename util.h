@@ -6,7 +6,7 @@
 
 using namespace std;
 
-const string VERSION = "1.0.4";
+const string VERSION = "1.0.5";
 
 // This is allegedly a SIGPROC standard but the most authoritative source
 // I can find is:
