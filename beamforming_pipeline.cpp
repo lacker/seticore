@@ -236,11 +236,14 @@ void BeamformingPipeline::findHits() {
 
         if (coherent) {
           // Go find hits
+          int existing_size = hits_per_coarse_channel[coarse_channel].size();
           dedopplerer.search(fb_buffer, metadata, beam, coarse_channel, max_drift,
                              0.0, snr, &hits_per_coarse_channel[coarse_channel]);
           if (record_hits) {
-            for (DedopplerHit hit : hits_per_coarse_channel[coarse_channel]) {
-              hit_recorder->recordHit(hit, fb_buffer.data);
+            for (int i = existing_size;
+                 i < (int) hits_per_coarse_channel[coarse_channel].size(); ++i) {
+              hit_recorder->recordHit(hits_per_coarse_channel[coarse_channel][i],
+                                      fb_buffer.data);
             }
           }
         } else {
