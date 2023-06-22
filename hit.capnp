@@ -41,6 +41,7 @@ struct Signal {
   power @8 :Float32;
 
   # The total power for the same signal, calculated incoherently.
+  # This is available in the stamps files, but not in the hits files.
   incoherentPower @9 :Float32;
 }
 
