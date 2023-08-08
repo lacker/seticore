@@ -10,6 +10,7 @@ import math
 import numpy as np
 import os
 import pandas as pd
+import traceback
 
 from importlib_resources import files as package_files
 
@@ -473,7 +474,9 @@ def find_stamp_recipe(stamp_filepath, directory_path=None):
         return None
     try:
         return Recipe(closest_bfr5)
-    except:
+    except BaseException as err:
+        print(f"Error encountered instantiating Recipe from '{closest_bfr5}': {err}")
+        print(traceback.format_exc())
         return False
 
 def read_stamps(filepath, find_recipe=False):
