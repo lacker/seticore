@@ -144,7 +144,7 @@ class Recipe(object):
         self.nants = self.h5["/diminfo/nants"][()]
         self.nchan = self.h5["/diminfo/nchan"][()]
 
-        self.antenna_names = [s.decode("utf-8")
+        self.antenna_names = [s.decode("utf-8") if isinstance(s, bytes) else s
                               for s in self.h5["/telinfo/antenna_names"][()]]
         
         # Validate shapes of things
