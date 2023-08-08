@@ -13,8 +13,8 @@ import pandas as pd
 
 from importlib_resources import files as package_files
 
-hit_capnp = capnp.load(str(package_files('SeticorePy.schema').joinpath("hit.capnp")))
-stamp_capnp = capnp.load(str(package_files('SeticorePy.schema').joinpath("stamp.capnp")))
+hit_capnp = capnp.load(str(package_files('seticore.schema').joinpath("hit.capnp")))
+stamp_capnp = capnp.load(str(package_files('seticore.schema').joinpath("stamp.capnp")))
 
 def read_hits(filepath):
     with open(filepath) as f:

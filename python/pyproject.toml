@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "SeticorePy"
+name = "seticore"
 version = "0.0.2"
 authors = [
   { name="Kevin Lacker", email="lacker@gmail.com" },
@@ -22,16 +22,15 @@ dependencies = [
   "h5py",
   "numpy",
   "pandas",
-  "importlib_resources",
-  "PyQt5",
+  "importlib_resources"
 ]
 
 [project.scripts]
-seticoreviewer = "SeticorePy:viewer.main"
-seticorecrosscheck = "SeticorePy:crosscheck.main"
+seticoreviewer = "seticore:viewer.main"
+seticorecrosscheck = "seticore:crosscheck.main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-"SeticorePy.schema" = ["*.capnp"]
+"seticore.schema" = ["*.capnp"]
